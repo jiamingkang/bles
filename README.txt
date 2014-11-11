@@ -1,7 +1,4 @@
 Bath LEvel Set (BLES) version 5.30
-
-this is a just test....:
-
 Written by Dr. Peter D. Dunning - 7th January 2014
 Bugs, questions, praise to: en2pdd@gmail.com
 
