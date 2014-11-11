@@ -1,0 +1,137 @@
+** example input file for BLES v5.30
+** lines starting with "*" are keywords read in by the program
+** lines that start with "**" are comment lines and are not read by the program
+** WARNING!! This example file is not valid in itself, it is only for demonstration
+**
+*mesh
+** 1 data line, 3 entries: x elems, y elems, edge length, thickness (optional)
+** this should always appear before *bound & *load keywords
+100, 50, 0.5, 1.0
+**
+*mat
+** 1 data line, 2->3 entries: Young's Modulus, Poisson's ratio, density (optional)
+100.0, 0.3, 1.0
+**
+** multiple material can be defined,
+** they are number in the order they are found in the input file (maximum of 5) 
+** first material is the default and is material number 0
+*mat
+200.0, 0.3, 2.0
+**
+*def_mat
+** each subsequent data line has 5 entires: x_min, x_max, y_min, y_max, material number
+** set the material for a small central region to the second defined material
+24.0, 26.0, 11.5 13.5, 1
+**
+**
+*mass
+** define lumped masses (only used if objective type = freq)
+** 3 entries per line: x, y coords, mass
+50.0, 25.0, 100.0
+**
+*bound, point
+** fixed boundary conditions applied to a point
+** 4 entries per line: x, y coords, x flag, y flag (1=fix direction)
+0.0, 0.0, 1, 1
+0.0, 25.0, 0, 1
+**
+*bound, area
+** fixed boundary conditions applied over a rectangular area
+** 6 entries per line: x_min, x_max, y_min, y_max, x flag, y flag (1=fix direction)
+-0.01, 0.01, 14.99, 20.01, 1, 0
+**
+*load, point, 2
+** loads applied to single nodes
+** the '2' sets the number of load cases
+** 1st dataline has x, y coord
+** then enter a number of datelines equal to the number of cases
+** these will be the x and y load magnitudes for each case
+25.0, 0.0,
+0.0, -10.0
+0.0, 0.0
+**
+*load, dist
+** load distributed over a line
+** 1st dateline has 4 entries: min, max, level, flag
+** (defining a horizontal or vertical line)
+** flag = 1 or 2, if 1, then min and max are y coords and level is an x coord (horizontal)
+** otherwise, if 2, then min and max are x coords and level is an y coord (vertical)
+-0.01, 50.01, 25.0, 2
+** then enter a number of datelines equal to the number of cases
+** these will be the x and y load magnitudes for each case
+0.0, 0.0
+0.0, -1.0
+**
+*fix-lsf, point
+** fixed level set value at a node
+** 2 entries per line: x, y coords
+0.0, 0.0
+0.0, 50.0
+**
+*fix-lsf, area
+** fixed level set value over a rectangular region
+** 4 entries per line: x_min, x_max, y_min, y_max
+** this line is used to fix top 2 rows of elems in
+-0.01, 50.01, 23.99, 25.01
+**
+*hole, circle
+** initial circular holes
+** 3 entries per dataline: x, y coords, hole radius
+** repeat dataline for more holes
+25.0, 10.0, 2.0
+25.0, 15.0, 2.0
+**
+*hole, rect
+** initial rectangular holes
+** 4 entries per dataline: x min, x max, y min, y max
+** repeat dataline for more holes
+0.0, 1.0, 2.0, 3.0
+49.0, 50.0, 2.0, 3.0
+**
+*control
+** optional keyword to set some program controls, unto 7 values (defaults in brackets)
+** max iterations (200)
+** amount of info to print: 1 -> 3 (2),
+** flag to fix lsf at bcs: 0 = do not fix, otherwise do fix (1)
+** convergence criterion: 1e-4 -> 1e-2 (1e-3)
+** length of the narrow band: at least 2 (6)
+** minimum area ratio (stiffness): 0 -> 1e-3 (1e-6)
+** minimum area ratio (mass): 0 -> 1e-3 (1e-6)
+200, 2, 1, 1.0e-3, 6.0, 1e-3, 1e-5 
+**
+*objective, compliance
+** keyword for objective, several options (see README.txt)
+*constraint, 2
+** keyword for constraint(s), second is the number of constraints
+** several options that must match the objective type (see README.txt)
+** examples for all constraints are shown below
+**
+volume, -1, 0.5
+** maximum volume, can be used with all objective types (except *volume)
+** the -1 is for "less than" and 0.5 is 50% of the design domain
+**
+disp, 0, 50.0, 25.0, 2, 10.0, 0
+** target displacement (min squared diff to target), use with *volume or *compliance objectives
+** this is always an equality constraint, hence 0 on data line
+** 6 data values required after disp:
+**	0 (for equality constraint), x & y coordinates, direction of disp (1=X, 2=Y),
+** 	target value of constraint and finally the associated load case
+** Note than equality constraints are not properly implemented yet!
+**
+compliance, -1, 6.0e+03
+** maximum compliance, use with *volume objective
+** the -1 is for "less than" and second entry is the compliance constraint value
+**
+*eig_ratio, +1, 1.2
+** minimum ratio of 2nd / 1st eigen-frequencies, use with *freq objective
+** +1 for "greater than", ratio constraint value (should be > 1)
+**
+in_disp, -1, 200.0, 64.0, 20.0, 0.0, -2, 1, 2.0e-6
+** input displacement constraint for a compliant mechanism, use with *mech objective
+** -1 for "less than"
+** next 2 values are coords of the input force (x, y)
+** next 2 values are coords of the output force (x, y)
+** -2 means that input force is in -ve y direction
+** 1 means that output force is in +ve x direction
+** final value is the input displacement constraint (normalised for an input force of 1.0)
+**
