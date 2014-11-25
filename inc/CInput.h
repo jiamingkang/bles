@@ -28,13 +28,6 @@
 #ifndef CINPUT_H_
 #define CINPUT_H_
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include "CMesh.h"			// originally Numbering.h
-#include "COptimisation.h"	// originally Levels.h
-#include "CMathUtility.h"	// originally ABFG.h
 #include "CommonTypes.h"
 
 #define MAX_CHARS_PER_LINE 512
