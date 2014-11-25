@@ -25,6 +25,11 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <math.h>
+
+#include "CMaterial.h"
+#include "CMathUtility.h"
 #include "CFiniteElement.h"
 
 CFiniteElement::CFiniteElement() {
@@ -106,8 +111,16 @@ void AFG_Matrix(int mass, double **KE, double **ME, sp_mat *Kg, sp_mat *Mg, sp_m
 						mtemp = inMesh->mat_vars[mat_count++];
 
 						// modulus factor
-						if(inMesh->mat_lin){e_fac = mtemp*e_rat + (1.0-mtemp);}
-                        else{e_fac = HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]) / inMat[inMesh->mat1].e;}
+						if(inMesh->mat_lin)
+						{
+							e_fac = mtemp*e_rat + (1.0-mtemp);
+						}
+                        else
+                        {
+                        	// jeehanglee@gmail.com: temp code. Should be refactored....
+                        	CMaterial material;
+                        	e_fac = material.HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]) / inMat[inMesh->mat1].e;
+                        }
                         e_fac *= atemp;
 
 						// density factor
@@ -221,6 +234,9 @@ double InArea(int eStat, int eNum, int *Lnodes, short *NodeStat, int NumNodes, C
 	// need to change the algorithm if element status = 5
 	short nLook = (eStat==5) ? 0:1; // compute area outside structure if ElemStat is 5
 
+	// jeehanglee@gmail.com: temp code. Refactoring required.
+	CMathUtility mathUtil;
+
 	// first look at all elemet nodes
 	for(i=0;i<4;i++)
 	{
@@ -290,6 +306,8 @@ double InArea(int eStat, int eNum, int *Lnodes, short *NodeStat, int NumNodes, C
 	Coord chkPts[4]; // Array to send data to LineCross function
 	if(numPts > 3) // if only 3 points, then segments can't cross
 	{
+
+
 		do {
 			temp = 0;
 			for(i=0;i<(numPts-2);i++)
@@ -310,7 +328,7 @@ double InArea(int eStat, int eNum, int *Lnodes, short *NodeStat, int NumNodes, C
 					chkPts[3].x = pts[k].x;
 					chkPts[3].y = pts[k].y; // comparrison segment
 
-					if(LineCross(chkPts) == 1)
+					if(mathUtil.LineCross(chkPts) == 1)
 					{
 						// swap end point of 1st seg with start point of 2nd seg
 						ctemp.x = pts[i+1].x;
@@ -330,7 +348,7 @@ double InArea(int eStat, int eNum, int *Lnodes, short *NodeStat, int NumNodes, C
 	}
 
 	// Use PolyArea to compute element area - return value
-	return(PolyArea(numPts, pts));
+	return(mathUtil.PolyArea(numPts, pts));
 }
 
 // Array storing data for location of the 4 nodes in the square element

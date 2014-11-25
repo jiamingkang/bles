@@ -6,8 +6,8 @@
  *  Data structures used in BLES V5
  */
 
-#ifndef __LS_TYPES_H
-#define __LS_TYPES_H
+#ifndef __COMMON_TYPES_H
+#define __COMMON_TYPES_H
 
 #include <stdbool.h>
 #include <Accelerate/Accelerate.h>
@@ -146,4 +146,4 @@ typedef struct
 	int *mine;    // mine node numbers
 } levSet;
 	
-#endif
+#endif // __COMMON_TYPES_H

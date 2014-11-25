@@ -28,6 +28,8 @@
 #ifndef CMATERIAL_H_
 #define CMATERIAL_H_
 
+#include "CommonTypes.h"
+
 class CMaterial {
 public:
 	CMaterial();

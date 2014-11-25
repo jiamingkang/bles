@@ -25,7 +25,16 @@
 	along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
 #include "CBoundary.h"
+#include "CSolver.h"
+
+//
+// Constructor / Destructor
+//
 
 CBoundary::CBoundary() {
 	// TODO Auto-generated constructor stub
