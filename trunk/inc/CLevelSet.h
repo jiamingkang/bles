@@ -28,6 +28,8 @@
 #ifndef CLEVELSET_H_
 #define CLEVELSET_H_
 
+#include "CommonTypes.h"
+
 class CLevelSet {
 public:
 	CLevelSet();
@@ -100,7 +102,7 @@ public:
 
 	// function to find an initial set of lambda values
 	void get_lam0(int n, int m, int numCon, double *lam,  double *s, double *cA, double *b,
-				  double *lam_min, double *lam_max)
+				  double *lam_min, double *lam_max);
 };
 
 #endif /* CLEVELSET_H_ */
