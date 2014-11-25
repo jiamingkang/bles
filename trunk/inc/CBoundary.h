@@ -28,6 +28,12 @@
 #ifndef CBOUNDARY_H_
 #define CBOUNDARY_H_
 
+//
+// includes
+//
+
+#include "CommonTypes.h"
+
 class CBoundary {
 public:
 	CBoundary();

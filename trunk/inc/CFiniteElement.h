@@ -28,6 +28,7 @@
 #ifndef CFINITEELEMENT_H_
 #define CFINITEELEMENT_H_
 
+#include "CommonTypes.h"
 
 class CFiniteElement {
 public:
