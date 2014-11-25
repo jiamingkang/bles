@@ -5,6 +5,14 @@
  *      Author: jeehang
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+#include "CMesh.h"			// originally Numbering.h
+#include "CLevelSet.h"	// originally Levels.h --> should be changed to COptimisation.h (jeehanglee@gmail.com)
+#include "CMathUtility.h"	// originally ABFG.h
 #include "CInput.h"
 
 //
@@ -33,6 +41,10 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 {
 	int i,j,nd,nd2,ind,end;
 	const char* const DELIMITER = " ,\t";
+
+	// jeehanglee@gmail.com: temp code. Refactoring required.
+	CMesh cmesh;
+	CLevelSet cLevelSet;
 
 	// set default obj & const
 	lsprob->obj = 0;
@@ -193,9 +205,9 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 						}
 
 						// call fucntions to compute data arrays in inMesh
-						Numbering(inMesh);
-						Coordinates(inMesh);
-						NodeNums2(inMesh);
+						cmesh.Numbering(inMesh);
+						cmesh.Coordinates(inMesh);
+						cmesh.NodeNums2(inMesh);
 
 						// now mesh has been defined - set some memory
 						fixdof_temp = calloc(2*inMesh->NumNodes, sizeof(bool));
@@ -265,7 +277,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 						}
 
 						// call bar numbering function
-						Bar_numbering(inMesh);
+						cmesh.Bar_numbering(inMesh);
 
 						end=1; // found data line
 					}
@@ -607,7 +619,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 						sscanf(token[2],"%lf",&mass);  // mass
 
 						// find closest node to the co-ordinates
-						nd = closeNode(inMesh,xtemp,ytemp);
+						nd = cmesh.closeNode(inMesh,xtemp,ytemp);
 
 						// Now add mass to specified dof
 						nd *= NUM_DOF;
@@ -672,7 +684,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 							}
 
 							// find closest node to zero-displacement co-ordinates
-							nd = closeNode(inMesh,xtemp,ytemp);
+							nd = cmesh.closeNode(inMesh,xtemp,ytemp);
 
 							// first record node - for possible fixed lsf
 							// bc_fix[nd] = true;
@@ -891,7 +903,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 							sscanf(token[1],"%lf",&ytemp); // y coord
 
 							// find closest node to zero-displacement co-ordinates
-							nd = closeNode(inMesh,xtemp,ytemp);
+							nd = cmesh.closeNode(inMesh,xtemp,ytemp);
 
 							// first record node - for possible fixed lsf
 							levelset->fixed[nd] = true;
@@ -1026,7 +1038,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 								sscanf(token[1],"%lf",&ytemp); // y coord
 
 								// find closest node to zero-displacement co-ordinates
-								nd = closeNode(inMesh,xtemp,ytemp);
+								nd = cmesh.closeNode(inMesh,xtemp,ytemp);
 
 								case_cnt++; // up case count (next lines should contain magnitudes)
 							}
@@ -1157,8 +1169,8 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 					}
 
 					// first find end nodes (required for consistent loading)
-					nd = closeNode(inMesh, xmin, ymin); // end 1
-					nd2 = closeNode(inMesh, xmax, ymax); // end 2
+					nd = cmesh.closeNode(inMesh, xmin, ymin); // end 1
+					nd2 = cmesh.closeNode(inMesh, xmax, ymax); // end 2
 
 					for(i=0;i<*numCase;i++)
 					{
@@ -1396,7 +1408,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 									}
 
 									// data[1] will be dof number
-									nd = closeNode(inMesh, p.x, p.y); // closest node
+									nd = cmesh.closeNode(inMesh, p.x, p.y); // closest node
 									nd*=NUM_DOF; // x dof
 									nd+=flag-1;  // (possible) y dof
 									cons[count].data[1] = (double)nd;
@@ -2040,7 +2052,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 	levelset->mine = malloc(inMesh->NumNodes * sizeof(int));
 
 	// initalize signed distance function
-	initialLsf(inMesh, levelset, NumHole, holes, NumRect, Rect, control->lband);
+	cLevelSet.initialLsf(inMesh, levelset, NumHole, holes, NumRect, Rect, control->lband);
 
 	// clean up memory
 	free(holes);
