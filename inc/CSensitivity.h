@@ -77,6 +77,11 @@ public:
 	virtual ~CSensitivity();
 
 public:
+	// calculate sensitivies using least squares of integration points for AFG method
+	void AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, isoMat *inMat,  double *Nsens,
+				  double **prim, double **dual, int numDual, int numCase, double *wgt, Coord *gCoord,
+					double aMin, int mode, double *fact, bool sw, Coord *acc);
+
 	// Function that calculates the sensitivity of a node by a least squares (2nd order) filter of near-by gauss points
 	int Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, double aMin, double *alpha, double r2,
 					  Coord *gCoord, double *gSens, Elem **Number, int wFlag, int numDual, double *out);

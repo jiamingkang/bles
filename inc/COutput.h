@@ -75,6 +75,9 @@ public:
 
 	// function to output designable material varibles
 	void OutDesMat(mesh *inMesh, double *alpha, double aMin, int num_sens, double *sens, int pinfo, int itt, char *datafile);
+
+	// function to print solution to screen
+	void report(int n,  int m, int nu, double **v);
 };
 
 #endif /* COUTPUT_H_ */
