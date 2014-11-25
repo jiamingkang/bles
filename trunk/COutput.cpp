@@ -793,3 +793,47 @@ void COutput::OutDesMat(mesh *inMesh, double *alpha, double aMin, int num_sens, 
 	fclose(outfile);
 	printf("\nDesignable Material variable File written (Paraview)\n");
 }
+
+// function to print solution to screen
+void COutput::report(int n,  int m, int nu, double **v)
+{
+	int i;
+	int lim = (nu < 10) ? nu : 10;
+	int lim2 = (n < 10) ? n : 10;
+
+	printf("\nPrinting solution ...");
+	printf("\n\nX values\n--------");
+	for(i=0;i<lim2;i++)
+	{
+		printf("\nx[%i] = %12.6e",i,v[0][i]);
+	}
+
+	printf("\n\nZ values\n--------");
+	for(i=0;i<lim2;i++)
+	{
+		printf("\nz[%i] = %12.6e",i,v[1][i]);
+	}
+
+	if(nu > 0)
+	{
+		printf("\n\nS values\n--------");
+		for(i=0;i<lim;i++)
+		{
+			printf("\ns[%i] = %12.6e",i,v[2][i]);
+		}
+
+		printf("\n\nW values\n--------");
+		for(i=0;i<lim;i++)
+		{
+			printf("\nw[%i] = %12.6e",i,v[3][i]);
+		}
+	}
+
+	printf("\n\nY values\n--------");
+	for(i=0;i<m;i++)
+	{
+		printf("\ny[%i] = %12.6e",i,v[4][i]);
+	}
+
+	printf("\n\n-------------------");
+}
