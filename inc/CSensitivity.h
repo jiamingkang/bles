@@ -29,13 +29,7 @@
 #define CSENSITIVITY_H_
 
 // include
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
 #include "CommonTypes.h"
-
-#include "EMatrix.h"	// jeehang.lee@gmail.com, solving required.
-#include "CSolver.h"
 
 // pre-processors
 #define GP 1.577350269189626 // 1 + 1/sqrt(3)
@@ -116,6 +110,13 @@ public:
 
 	// derivative of E for H-S bound material model
 	double dE_dalpha(double alpha, double hs_int, isoMat *mat1, isoMat *mat2);
+
+public:
+	CMaterial GetMaterial() { return m_cMaterial; }
+	void SetMaterial(CMaterial cMat) { m_cMaterial = cMat; }
+
+private:
+	CMaterial m_cMaterial;
 
 };
 

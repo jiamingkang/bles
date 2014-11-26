@@ -55,6 +55,13 @@ public:
 	// Function to determine if two lines (p1 -> p2 & p3 -> p4) cross
 	short LineCross(Coord *pts);
 
+	// compute determinant of a 2x2 matrix
+	double det2(double a, double b, double c, double d)
+	{
+		// compute determinant of a 2x2 matrix
+		return( (a * d) - (b * c) );
+	}
+
 	// sub-fucntion for sorting in ascending order
 	int dcmpfunc(const void * p1, const void * p2);
 

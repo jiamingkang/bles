@@ -25,6 +25,7 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "CSolver.h"
 #include "CLevelSet.h"
 
 CLevelSet::CLevelSet() {
@@ -2608,7 +2609,7 @@ int CLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, do
             i=0;
             ftemp = 0.5;
             do{
-                err = LPsolve(numVarLP, numAct, numVar, lam_step, dlam, &dlam[numVarLP], b_step, lim_lam, pinfo);
+                err = getSolver().LPsolve(numVarLP, numAct, numVar, lam_step, dlam, &dlam[numVarLP], b_step, lim_lam, pinfo);
                 if(err==-1){
                     for(j=0;j<numAct;j++){b_step[j] = ftemp*b[j] - g_lam[j] - g_shift[j];}
                     ftemp*=0.5;
@@ -2617,7 +2618,7 @@ int CLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, do
             } while(err==-1 && i<5);
         }
 		else {
-			err = lp_simplex(numVar, numAct, numVar, lam_step, dlam, &dlam[numVar], b_step, lim_lam, lp_info);
+			err = getSolver().lp_simplex(numVar, numAct, numVar, lam_step, dlam, &dlam[numVar], b_step, lim_lam, lp_info);
 			if(err==-1 && numAdd==0){err = trust_sub(numVar, numAct, numVar, lam_step, dlam, &dlam[numVar], b_step, lim_lam, pinfo);}
 		}
 		for(i=0;i<m;i++)
@@ -2941,7 +2942,7 @@ int CLevelSet::trust_sub(int n, int m, int nu, double *x, double *c, double *A, 
 	}
 
 	// next invert Ar with rhs (a1 & b)
-	dun_slvLPK(trans, m, 2, Ar, rhs);
+	getSolver().dun_slvLPK(trans, m, 2, Ar, rhs);
 
 	// check feasible limits on x[0]
 	double x_max = u[0];
@@ -3189,7 +3190,7 @@ int CLevelSet::con_min3(int n, int m, int numCon, double *lam,  double *s, doubl
 			// compute update step (will be in dG_dlam)
             //printf("\ndg_dlam: %12.4e , %12.4e",dG_dlam[0],dG_dlam[1]);
             //printf("\nHes: %12.4e , %12.4e , %12.4e , %12.4e", Hes_fd[0],Hes_fd[1],Hes_fd[2],Hes_fd[3]);
-			i = dsy_slvLPK(m, 1, Hes_fd, dG_dlam);
+			i = getSolver().dsy_slvLPK(m, 1, Hes_fd, dG_dlam);
             if(i==-1)
             {
                 printf("\nError returned from dsy_slvLPK");
@@ -3246,7 +3247,7 @@ void CLevelSet::get_lam0(int n, int m, int numCon, double *lam,  double *s, doub
 	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, m, n, 1.0, cA, n, s, n, 0.0, M, m);
 
 	// invert M
-	din_LPK(M, m);
+	getSolver().din_LPK(M, m);
 
 	int i,ind;
 	double del_obj, ftemp;

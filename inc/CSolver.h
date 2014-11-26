@@ -31,6 +31,7 @@
 //
 // Includes
 //
+#include "CommonTypes.h"
 
 //
 // Pre-Definitions
@@ -86,6 +87,13 @@ public:
 
 	// multiply a sparse matrix by a vector
 	void Msp_Vec(int n, sp_mat *mat, double *vin, double *vout);
+
+public:
+	CMathUtility GetMathUtility() {return m_cMathUtil;}
+	void SetMathUtility(CMathUtility cMathUtil) { m_cMathUtil = cMathUtil; }
+
+private:
+	CMathUtility m_cMathUtil;
 };
 
 #endif /* CSOLVER_H_ */
