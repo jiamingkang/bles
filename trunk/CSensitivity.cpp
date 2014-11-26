@@ -25,6 +25,13 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include "CommonTypes.h"
+
+#include "CFiniteElement.h"	// jeehang.lee@gmail.com, solving required.
+#include "CSolver.h"
 #include "CSensitivity.h"
 
 //
@@ -108,8 +115,14 @@ void CSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, iso
                     mtemp = inMesh->mat_vars[mat_count++];
 
                     // modulus
-                    if(inMesh->mat_lin){ fgm.e =  (1.0-mtemp)*inMat[inMesh->mat1].e + mtemp*inMat[inMesh->mat2].e; }
-                    else{ fgm.e = HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]); }
+                    if(inMesh->mat_lin)
+                    {
+                    	fgm.e =  (1.0-mtemp)*inMat[inMesh->mat1].e + mtemp*inMat[inMesh->mat2].e;
+                    }
+                    else
+                    {
+                    	fgm.e = GetMaterial().HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]);
+                    }
 
                     // density
                     fgm.rho =  mtemp*inMat[inMesh->mat2].rho + (1.0-mtemp)*inMat[inMesh->mat1].rho;
@@ -336,7 +349,8 @@ int CSensitivity::Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, doubl
 
 	// solve least squares problem using LAPACK routine
 	// jeehang.lee@gmail.com -- located in solve.c, resolving required.
-	d_lsLPK(6, count, numDual, A, B);
+	CSolver cSolver;
+	cSolver.d_lsLPK(6, count, numDual, A, B);
 
 	// Finally evaluate sensitivity at the node using the co-efficients
 	for(j=0;j<numDual;j++)

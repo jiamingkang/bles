@@ -29,6 +29,7 @@
 #define CLEVELSET_H_
 
 #include "CommonTypes.h"
+#include "CSolver.h"
 
 class CLevelSet {
 public:
@@ -103,6 +104,14 @@ public:
 	// function to find an initial set of lambda values
 	void get_lam0(int n, int m, int numCon, double *lam,  double *s, double *cA, double *b,
 				  double *lam_min, double *lam_max);
+
+// jeehanglee@gmail.com: temp code. Refactoring required.
+public:
+	CSolver getSolver() { return m_solver; }
+	void setSolver(CSolver solver) { m_solver = solver; }
+
+private:
+	CSolver m_solver;
 };
 
 #endif /* CLEVELSET_H_ */

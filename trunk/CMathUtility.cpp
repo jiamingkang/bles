@@ -25,6 +25,10 @@
 	along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include "CommonTypes.h"
+#include "CSolver.h"
 #include "CMathUtility.h"
 
 //

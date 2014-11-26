@@ -25,6 +25,11 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "CMesh.h"
+#include "CMathUtility.h"
 #include "CSolver.h"
 
 //
@@ -519,7 +524,7 @@ int CSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, doub
 
 	// Initialize variables: v = (x,z,s,w,y)
 	// ---------------------
-	int err = initialize(n, m, nu, v, A, b, u, c);
+	int err = GetMathUtility().initialize(n, m, nu, v, A, b, u, c);
 	if(err != 0) {
 		// Clean up and exit
 
@@ -566,7 +571,7 @@ int CSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, doub
 	do {
 		//printf("\nIteration %i -------\n",count+1);
 		// Compute delP(v) = -F'(v)F(v) : special function
-		err = predictor(n, m, nu, v, delv, A, b, u, c);
+		err = GetMathUtility().predictor(n, m, nu, v, delv, A, b, u, c);
 		if (err==-1) {
 			// Clean up and exit
 
@@ -601,25 +606,29 @@ int CSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, doub
 		}
 
 		// determine mu (special fucntion)
-		mu = centering(n, m, nu, lim, v, delv);
+		mu = GetMathUtility().centering(n, m, nu, lim, v, delv);
 
 		// Compute delC(v) = -F'(v)F(v+delP(v)) - mu*e (e = 0 or 1)
-		corrector(n, nu, mu, v, delv);
+		GetMathUtility().corrector(n, nu, mu, v, delv);
 
 		// choose alpha > 0 : special function linked to update step
 		// update v(k+1) = v(k) + alpha( delP(v) + delC(v) )
 		// step length to ensure v(k+1) > 0
-		update(n, nu, m, v, delv);
+		GetMathUtility().update(n, nu, m, v, delv);
 
 		// Assess stopping crieria : special function
-		stop = stopping(n, m, nu, v, A, lenb, b, lenu, u, lenc, c);
+		stop = GetMathUtility().stopping(n, m, nu, v, A, lenb, b, lenu, u, lenc, c);
         stop_min = (stop < stop_min) ? stop : stop_min;
 		count++;
 
 		if(stop > 2.0*stop_min && stop > 0.1)
 		{
 			//printf("\nReporting v - update");
-			if(pinfo==3){report(n, m, nu, v);}
+			if(pinfo==3)
+			{
+				COutput cOutput;
+				cOutput.report(n, m, nu, v);
+			}
 			count = 200;
 		}
 
