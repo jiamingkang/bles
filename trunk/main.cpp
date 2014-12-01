@@ -209,20 +209,26 @@ int main(int argc, char *argv[])
 		// additional entries for designable bcs
 		numEnt += inMesh.NumBC * 4 * NUM_DOF;
 	}
-double *bc_sens=0; // bc senstivities
-double *bc_step=0; // bc update step
-double *bc_max=0, *bc_min=0; // move limits on bc variables
-if(inMesh.des_bc){j=inMesh.NumBC; bc_max=malloc(j*sizeof(double)); 
-	bc_min=malloc(j*sizeof(double)); bc_step=malloc(j*sizeof(double));
-	bc_sens = malloc(j * (1+lsprob.num) * sizeof(double));}
-int *bc_con=0, *bc_con_ind=0;
-double *bc_dist=0;
+	double *bc_sens = 0; // bc senstivities
+	double *bc_step = 0; // bc update step
+	double *bc_max=0, *bc_min = 0; // move limits on bc variables
+	if(inMesh.des_bc)
+	{
+		j = inMesh.NumBC;
+		bc_min = malloc(j*sizeof(double));
+		bc_step=malloc(j*sizeof(double));
+		bc_max=malloc(j*sizeof(double));
+		bc_sens = malloc(j * (1+lsprob.num) * sizeof(double));}
+	int *bc_con=0, *bc_con_ind=0;
+	double *bc_dist=0;
 	
-// designable material varibles
-double *mat_sens=0; // material sensitivites
-double *mat_step=0; // bc update step
-double *mat_max=0, *mat_min=0; // move limits on bc variables
-bool mat_opt = inMesh.dm_sim; // flag to switch between seq & sim opt
+	// !!!
+	// jeehanglee@gmail.com -- initialising for design variables
+	// designable material varibles
+	double *mat_sens=0; // material sensitivites
+	double *mat_step=0; // bc update step
+	double *mat_max=0, *mat_min=0; // move limits on bc variables
+	bool mat_opt = inMesh.dm_sim; // flag to switch between seq & sim opt
 	if(inMesh.des_mat){j=inMesh.NumDesMat; mat_max=malloc(j*sizeof(double));
 		mat_min=malloc(j*sizeof(double)); mat_step=malloc(j*sizeof(double));
 		mat_sens = malloc(j * (1+lsprob.num) * sizeof(double));}
