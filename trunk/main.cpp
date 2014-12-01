@@ -1,148 +1,214 @@
 /*
- *  BLES5.c
- *	
- *  Created by Peter Dunning
- *	Version 5.4 @ 23/04/2014
+	main.cpp
+
+ 	Created on: Dec 01, 2014
+	Author: Peter Dunning, JeeHang Lee
+
+	-- This file is part of Topology Optimisation Opensource Project,
+	owned by MSO (Multidisciplinary and Structural Optimisation) Research Group
+	(http://people.bath.ac.uk/ens/MSORG/index.html) at University of Bath.
+
+	The project is led by Dr. Hyunsun Alicia Kim
+	(http://www.bath.ac.uk/mech-eng/people/kim/).
+
+	-- This is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	-- This is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this. If not, see <http://www.gnu.org/licenses/>.
  */
- 
-#include "ls_types.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "EMatrix.h"
-#include "Numbering.h"
-#include "ABFG.h"
-#include "Solve.h"
-#include "Sens.h"
-#include "Levels.h"
-#include "Input.h"
-#include "Output.h"
+
+#include "CommonTypes.h"
+#include "CFiniteElement.h"
+#include "CMathUtility.h"
+#include "CSolver.h"
+#include "CSensitivity.h"
+#include "CLevelSet.h"
+#include "CInput.h"
+#include "COutput.h"
+#include "CMesh.h"
 
 // argv[1] = input file
 
 int main(int argc, char *argv[])
 {
+	printf("\n\n------*---Start of BLES Version 5.4 Program---*------\n");
 
-printf("\n\n------*---Start of BLES Version 5.4 Program---*------\n");
-int i,j,i2,j2,k,temp,temp2;	// incrementors
-double ftemp;
+	int i,j,i2,j2,k,temp,temp2;	// incrementors
+	double ftemp;
 
-/*----------------------------------------------------------------------------------/
-/																					/
-/		Read input file.															/
-/		Define: mesh, loads & BCs, level set, problem, controls, element matrices	/
-/																					/
-/----------------------------------------------------------------------------------*/
+	/*----------------------------------------------------------------------------------/
+	/																					/
+	/		Read input file.															/
+	/		Define: mesh, loads & BCs, level set, problem, controls, element matrices	/
+	/																					/
+	/----------------------------------------------------------------------------------*/
 
-char filename[100];
-for(i=0;i<100;i++)
-{
-	if(argv[1][i] == '.') {break;} // chop off file extension (if found)
-	else if(argv[1][i] == '\0'){break;}
-	else {filename[i] = argv[1][i];}
-}
-filename[i] = '\0';
+	// !!!---
+	// jeehanglee@gmail.com - below loop is designed for reading and assign a filename
+	// into filename[100] array. This should be done refactoring using simple method.
+	// How about using string class?
+	char filename[100];
+	for ( i = 0 ; i < 100 ; i++)
+	{
+		if (argv[1][i] == '.')
+		{
+			// chop off file extension (if found)
+			break;
+		}
+		else if (argv[1][i] == '\0')
+		{
+			break;
+		}
+		else
+		{
+			filename[i] = argv[1][i];
+		}
+	}
+	filename[i] = '\0';
+	// !!!---
+
+	//
+	// inital data arrays & structs
+	//
+	mesh inMesh;  		// struct to hold mesh data
+	int numMat; 		// number of materials
+	isoMat inMat[5]; 	// isotropic material - maximum of 5 different materials
+	levSet levelset; 	// struct to hold level set info
+	prob lsprob;  		// struct to hold problem defintion
+	ctrl control; 		// struct to hold control data
+	int numCase;  		// number load cases
+	double *load; 		// load vector (rhs)
+	bool sw = false;      // self-weight loading flag
+	Coord *acc;   		// acceleration vector for self-weight loading
+	int *fixDof;  		// fixed dof (turn into map)
+	int freeDof;  		// number of free dof
+	sp_mat lump_mass; 	// lumped mass matrix
 	
-// inital data arrays & structs
-mesh inMesh;  // struct to hold mesh data
-int numMat; // numberof materials
-isoMat inMat[5]; // isotropic material - maximum of 5 different materials
-levSet levelset; // struct to hold level set info
-prob lsprob;  // struct to hold problem defintion
-ctrl control; // struct to hold control data
-int numCase;  // number load cases
-double *load; // load vector (rhs)
-bool sw = false;      // self-weight loading flag
-Coord *acc;   // acceleration vector for self-weight loading
-int *fixDof;  // fixed dof (turn into map)
-int freeDof;  // number of free dof
-sp_mat lump_mass; // lumped mass matrix
+	// read the input file
+	CInput input;
+	temp = input.read_input(argv[1], &inMesh, &numMat, inMat, &levelset, &lsprob, &control, &fixDof,
+							&numCase, &load, &freeDof, &lump_mass, &sw, &acc);
+	if ( temp == -1)
+	{
+		// exit on error
+		printf("[Input Error] -- Fails in reading an input file. System stop! \n");
+		return -1;
+	}
 	
-// read the input file
-temp = read_input(argv[1], &inMesh, &numMat, inMat, &levelset, &lsprob, &control, &fixDof, 
-					&numCase, &load, &freeDof, &lump_mass, &sw, &acc);
-if(temp==-1){return -1;} // exit on error
+	// Check the amount of output
+	COutput coutput;
+	if ( control.pinfo == 3 )
+	{
+		coutput.OutNumber(&inMesh, filename);
+		coutput.OutNodeCoord(&inMesh, filename);
+	}
 	
-if(control.pinfo==3)
-{
-	OutNumber(&inMesh, filename);
-	OutNodeCoord(&inMesh, filename);
-}
-	
-// compute gauss point coords (used in sensitivity smoothing)
-Coord *gCoord = malloc(4 * inMesh.NumElem * sizeof(Coord));
-Gauss_Coord(&inMesh, gCoord);
+	// compute gauss point coords (used in sensitivity smoothing)
+	Coord *gCoord = malloc(4 * inMesh.NumElem * sizeof(Coord));
+	CMathUtility cmathutil;
+	cmathutil.Gauss_Coord(&inMesh, gCoord);
 
-// calculate IN element stiffness matrix (& mass matrix)
-
-calculateElementStiffness();
+	// calculate IN element stiffness matrix (& mass matrix)
+	calculateElementStiffness();
 
 	
-/*------------------------------------------------------------------/
-/																	/
-/		Optimise structure boundary by the level set method			/
-/																	/
-/------------------------------------------------------------------*/
+	/*------------------------------------------------------------------/
+	/																	/
+	/		Optimise structure boundary by the level set method			/
+	/																	/
+	/------------------------------------------------------------------*/
+	int itt = 0; 					// Initalise number of itterations to 0
+	int itt0 = 0;
+	double oMax, oMin, obj_val;	 	// varibale to compute convergence criterion
+	int ReCount = 0;  				// initialize reinitialization count
+	double cfl = 0.5; // set time step modifier (for CFL condition)
+	double u11, u12, u21, u22, p1, p2; // displacement & load values - used for compliant mechanism design
+	double fact[6];
 
+	// Variables and arrays to store additional mesh data
+	int Ntot;		 // total nodes, including auxillary ones
+	double *alpha = malloc(inMesh.NumElem * sizeof(double)); // Array to store element areas
 
+	// Arrays to store node data related to the optimisation
+	double *Nsens;  		// pointer for node (+ aux node) sensitivity array
+	double *vol_sens=0; 	// volume sensitivity array (will be all 1's)
+	double *mass_sens=0; 	// mass sensitvitiy array
+	double *zero_sens=0; 	// when lsf does not influence a constraint
+	double **sens_ptr = malloc( (1+lsprob.num) * sizeof(double *) ); // pointer to senstivity arrays for each fucntion (obj + constraints)
+	double *Vnorm;			// pointer for node (+ aux node) normal velocity array
+	double *Grad;   		// pointer for lsf gradient info (using upwind scheme)
+	int *active = malloc(lsprob.num * sizeof(int)); // array for active constraints
 
-int itt = 0; // Initalise number of itterations to 0
-int itt0 = 0;
-double oMax, oMin, obj_val;	 // varibale to compute convergence criterion
-int ReCount = 0;  // initialize reinitialization count
-double cfl = 0.5; // set time step modifier (for CFL condition)
-double u11, u12, u21, u22, p1, p2; // displacement & load values - used for compliant mechanism design
-double fact[6];
+	// !!!
+	//
+	// boundary integral variables
+	//
+	boundary Bndry;	// boundry discretization
+	// Initialise length of AuxNodes & Boundary segment arrays - generous initial size
+	// -- jeehanglee@gmail.com: it worths to pack as a single init function...
+	Bndry.AuxNodes = malloc(inMesh.NumElem * sizeof(Coord));
+	Bndry.Bound = malloc(inMesh.NumElem * sizeof(Bseg));
+	Bndry.BsegLen = malloc(sizeof(double)); // initial memory allocation
+	Bndry.Bwgt = malloc(sizeof(double)); // initial memory allocation
+	Bndry.na_conn = malloc(sizeof(int)); // initial memory allocation
+	Bndry.na_conn_ind = malloc( (inMesh.NumNodes+1) * sizeof(int)); // memory allocation
 
-// Variables and arrays to store additional mesh data
-int Ntot;		 // total nodes, including auxillary ones
-double *alpha = malloc(inMesh.NumElem * sizeof(double)); // Array to store element areas
+	double *Lbound;   // array to store boundary intergral coefficents
+	int *Lbound_nums; // global node nums corresponding to Lbound entries
+	int num_Lbound;   // length of Lbound & Lbound_nums
+	double *lambda = calloc(1 + lsprob.num, sizeof(double)); // lambda values
 
-// Arrays to store node data related to the optimisation
-double *Nsens;  // pointer for node (+ aux node) sensitivity array
-double *vol_sens=0; // volume sensitivity array (will be all 1's)
-double *mass_sens=0; // mass sensitvitiy array
-double *zero_sens=0; // when lsf does not influence a constraint
-double **sens_ptr = malloc( (1+lsprob.num) * sizeof(double *) ); // pointer to senstivity arrays for each fucntion (obj + constraints)
-double *Vnorm;	// pointer for node (+ aux node) normal velocity array
-double *Grad;   // pointer for lsf gradient info (using upwind scheme)
-int *active = malloc(lsprob.num * sizeof(int)); // array for active constraints
-
-// boundary integral variables
-boundary Bndry;	// boundry discretization
-// Initialise length of AuxNodes & Boundary segment arrays - generous initial size
-Bndry.AuxNodes = malloc(inMesh.NumElem * sizeof(Coord));
-Bndry.Bound = malloc(inMesh.NumElem * sizeof(Bseg));
-Bndry.BsegLen = malloc(sizeof(double)); // initial memory allocation
-Bndry.Bwgt = malloc(sizeof(double)); // initial memory allocation
-Bndry.na_conn = malloc(sizeof(int)); // initial memory allocation
-Bndry.na_conn_ind = malloc( (inMesh.NumNodes+1) * sizeof(int)); // memory allocation
-double *Lbound;   // array to store boundary intergral coefficents
-int *Lbound_nums; // global node nums corresponding to Lbound entries
-int num_Lbound;   // length of Lbound & Lbound_nums
-double *lambda = calloc(1+lsprob.num, sizeof(double)); // lambda values
-
-// stuff for Ku = f solve using MA57 solver (& eigenvalue solver)
-sp_mat Kg, Mg; // global stiffness and mass matrices
-Kg.irn=0; Kg.jcn=0; Kg.A=0; Mg.irn=0; Mg.jcn=0; Mg.A=0;
-int num_eig = (lsprob.obj == 3) ? 1 : 0; // number of eigenvalues to compute
-int comp_eig = (lsprob.obj == 3) ? 1 : 0; // flag to decide if eigenvalues are to be computed
-double *eig_vals, *eig_vecs; // arrays for eigenvalues and vectors
-double *save_freq; // used to store freq values for output
-int order = (inMesh.NumNodes * NUM_DOF); // full matrix order
-int numEnt = inMesh.NumElem * ((NUM_DOF*4)+1)*(NUM_DOF*2); // max number of index entries (symmetry!)
+	// stuff for Ku = f solve using MA57 solver (& eigenvalue solver)
+	sp_mat Kg, Mg; // global stiffness and mass matrices
+	Kg.irn=0; Kg.jcn=0; Kg.A=0; Mg.irn=0; Mg.jcn=0; Mg.A=0;
+	int num_eig = (lsprob.obj == 3) ? 1 : 0; // number of eigenvalues to compute
+	int comp_eig = (lsprob.obj == 3) ? 1 : 0; // flag to decide if eigenvalues are to be computed
+	double *eig_vals, *eig_vecs; // arrays for eigenvalues and vectors
+	double *save_freq; // used to store freq values for output
+	int order = (inMesh.NumNodes * NUM_DOF); // full matrix order
+	int numEnt = inMesh.NumElem * ((NUM_DOF*4)+1)*(NUM_DOF*2); // max number of index entries (symmetry!)
 	
-// bar additonal design variables
-if(inMesh.bars){numEnt += inMesh.NumBars * 4;} // additional entries for bar elements
-double *bar_sens=0; // bar senstivities
-double *bar_step=0; // bar update step
-double *bar_max=0, *bar_min=0; // move limits on bar areas
-if(inMesh.bars){j=inMesh.NumBars; bar_max=malloc(j*sizeof(double)); 
-	bar_min=malloc(j*sizeof(double)); bar_step=malloc(j*sizeof(double));
-	bar_sens = malloc(j * (1+lsprob.num) * sizeof(double));}
+	// !!!
+	// Could be just consecutive code of inMesh decalration....
+	// could be merged with that... jeehanglee@gmail.com
+	// bar additional design variables
+	if (inMesh.bars == true)
+	{
+		// additional entries for bar elements
+		numEnt += inMesh.NumBars * 4;
+	}
+	double *bar_sens=0; // bar senstivities
+	double *bar_step=0; // bar update step
+	double *bar_max=0, *bar_min=0; // move limits on bar areas
+	if (inMesh.bars == true)
+	{
+		j = inMesh.NumBars;
+		bar_max = malloc(j * sizeof(double));
+		bar_min = malloc(j * sizeof(double));
+		bar_step = malloc(j*sizeof(double));
+		bar_sens = malloc(j * (1 + lsprob.num) * sizeof(double));
+	}
+	// !!!
 
-// designable bc addtional variables
-if(inMesh.des_bc){numEnt += inMesh.NumBC * 4 * NUM_DOF;} // additional entries for designable bcs
+	// jeehanglee@gmail.com -- Boundary condition?
+	// designable bc addtional variables
+	if (inMesh.des_bc)
+	{
+		// additional entries for designable bcs
+		numEnt += inMesh.NumBC * 4 * NUM_DOF;
+	}
 double *bc_sens=0; // bc senstivities
 double *bc_step=0; // bc update step
 double *bc_max=0, *bc_min=0; // move limits on bc variables

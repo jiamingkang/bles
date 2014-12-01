@@ -2,6 +2,16 @@ Bath LEvel Set (BLES) version 5.30
 Written by Dr. Peter D. Dunning - 7th January 2014
 Bugs, questions, praise to: en2pdd@gmail.com
 
+--------------------------------------------------------------------------------------
+-- 01/12/2014 jeehanglee@gmail.com
+	Not sure this code can be compiled on both 32- and 64-bit machine
+	is it depending on compilers or the system itself?
+	my machine is based on 32-bit, thus OS is 32-bit Snow-Leopard (MacOS 10.6.8)
+	consequently gcc is 32-bit version, which brings about compile errors
+	when calling functions in lapack library.
+	-- Just upload and compile on Khalid's 64-bit machine.
+--------------------------------------------------------------------------------------
+
 This code is not guaranteed to be bug free or work on your system. You are free to modify this code for research purposes, with proper acknowledgment. The main references for the code are:
 
 Dunning, P.D., Kim, H.A., 2014. "Level set based optimization using sequential linear programming," 11th World Congress on Computational Mechanics, Barcelona, Spain, 20-25 July. 
@@ -87,3 +97,4 @@ Examples:
 	6) Cantilever with compliance constraint (cant_vol.txt)
 	7) Crunching compliant mechanism (crunch.txt)
 	8) Frequency maximisation (freq_test2.txt)
+	
