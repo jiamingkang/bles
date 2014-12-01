@@ -28,6 +28,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+//#include <vecLib/vecLib.h>
+
+#include "CommonTypes.h"
 #include "CMesh.h"
 #include "CMathUtility.h"
 #include "CSolver.h"
@@ -840,7 +843,10 @@ void CSolver::Msp_Vec(int n, sp_mat *mat, double *vin, double *vout)
 	int i,rn,cn;
 	int ne = mat->ne;
 	// reset vout to zero
-	for(i=0;i<n;i++){vout[i]=0.0;}
+	for(i=0;i<n;i++)
+	{
+		vout[i]=0.0;
+	}
 
 	// multiply
 	for(i=0;i<ne;i++)
