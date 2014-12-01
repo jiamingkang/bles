@@ -8,10 +8,10 @@
  	owned by MSO (Multidisciplinary and Structural Optimisation) Research Group
  	(http://people.bath.ac.uk/ens/MSORG/index.html) at University of Bath.
 
- 	The project is led by Dr. Hyunsun Alicia Kim
+ The project is led by Dr. Hyunsun Alicia Kim
  	(http://www.bath.ac.uk/mech-eng/people/kim/).
 
-	-- This is free software: you can redistribute it and/or modify
+    -- This is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
