@@ -92,6 +92,9 @@ public:
 	double stopping(int n,  int m, int nu, double **v, double *A, double lenb, double *b,
 				 double lenu, double *u, double lenc, double *c);
 
+private:
+	CSolver m_cSolver;
+
 };
 
 #endif /* CMATHUTILITY_H_ */
