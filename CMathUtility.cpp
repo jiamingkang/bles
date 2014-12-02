@@ -711,7 +711,7 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 		}
 
 		// solve using MA57
-		solve(m, len, irn, jcn, At, 1, y_rhs, 0);
+		m_cSolver.solve(m, len, irn, jcn, At, 1, y_rhs, 0);
 
 		// copy solution
 		cblas_dcopy(m, y_rhs, 1, delP[4], 1);
