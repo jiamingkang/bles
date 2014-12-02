@@ -10,8 +10,6 @@
 
 #include <string>
 
-namespace topopt {
-
 using std;
 
 class CExMinimiseCompliance {
@@ -20,11 +18,10 @@ public:
 	virtual ~CExMinimiseCompliance();
 
 public:
+	void Solve(char* arg, char* filename);
 
 private:
 	std::string m_filename;	// input file name
 };
-
-} /* namespace topopt */
 
 #endif /* CEXMINIMISECOMPLIANCE_H_ */
