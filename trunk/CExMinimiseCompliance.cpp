@@ -78,10 +78,10 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	double AreaElem = inMesh.h * inMesh.h; // Area of an element
 	double **KE = malloc(numMat*sizeof(double*));
 	double **ME = malloc(numMat*sizeof(double*));
-	for(i=0;i<numMat;i++)
+	for (i = 0; i < numMat; i++)
 	{
-		KE[i] = malloc(KE_SIZE*sizeof(double));
-		ME[i] = malloc(KE_SIZE*sizeof(double));
+		KE[i] = malloc(KE_SIZE * sizeof(double));
+		ME[i] = malloc(KE_SIZE * sizeof(double));
 		// use 1.0 for thickness, as E & rho already multipled by thickness
 		KEMatrix(KE[i], &inMat[i], inMesh.t);	// Element Stiffness Matrix for an IN element
 		MEMatrix(ME[i], inMat[i].rho, AreaElem, inMesh.t); // Element Mass Matrix for an IN element
@@ -107,9 +107,9 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 
 	// Arrays to store node data related to the optimisation
 	double *Nsens;  // pointer for node (+ aux node) sensitivity array
-	double *vol_sens=0; // volume sensitivity array (will be all 1's)
-	double *mass_sens=0; // mass sensitvitiy array
-	double *zero_sens=0; // when lsf does not influence a constraint
+	double *vol_sens = 0; // volume sensitivity array (will be all 1's)
+	double *mass_sens = 0; // mass sensitvitiy array
+	double *zero_sens = 0; // when lsf does not influence a constraint
 	double **sens_ptr = malloc( (1+lsprob.num) * sizeof(double *) ); // pointer to senstivity arrays for each fucntion (obj + constraints)
 	double *Vnorm;	// pointer for node (+ aux node) normal velocity array
 	double *Grad;   // pointer for lsf gradient info (using upwind scheme)
