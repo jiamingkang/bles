@@ -40,7 +40,7 @@ public:
 	virtual ~CInput();
 
 public:
-	int icmpfunc (const void * p1, const void * p2);
+	static int icmpfunc (const void * p1, const void * p2);
 
 	// function to read new-style input file
 	int read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,

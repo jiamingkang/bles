@@ -26,6 +26,7 @@
  */
 
 #include "CMesh.h"
+#include "CFiniteElement.h"
 
 //
 // Constructor & Destructor
@@ -177,14 +178,14 @@ void CMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, doub
 	int NumNodes = inMesh->NumNodes;
 	Coord *NodeCoord = inMesh->NodeCoord;
 	double *lsf = levelset->lsf;
-	Coord *AuxNodes = malloc(NumNodes * sizeof(Coord));
-	Bseg *bptr = malloc(NumElem * sizeof(Bseg));
+	Coord *AuxNodes = (Coord *) malloc(NumNodes * sizeof(Coord));
+	Bseg *bptr = (Bseg *) malloc(NumElem * sizeof(Bseg));
 
 	// Part 1: compute node & element status
 
 	// temp arrays for node & element status
-	short *NodeStat = malloc(NumNodes * sizeof(short));
-	short *ElemStat = malloc(NumElem * sizeof(short));
+	short *NodeStat = (short *) malloc(NumNodes * sizeof(short));
+	short *ElemStat = (short *) malloc(NumElem * sizeof(short));
 
 	// Calculate node status
 	for(n=0;n<NumNodes;n++)
@@ -240,8 +241,8 @@ void CMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, doub
 
 	// Part 2. Discretize the boundary
 	// Find & store all boundary sections and define Aux nodes
-	int *na_count = calloc(NumNodes, sizeof(int)); // count number of aux nodes connected to an element
-	int *na_conn = malloc(4*NumNodes * sizeof(int));
+	int *na_count = (int *) calloc(NumNodes, sizeof(int)); // count number of aux nodes connected to an element
+	int *na_conn = (int *) malloc(4*NumNodes * sizeof(int));
 	int ncnt;
 	count = 0;	// initialize count of auxiallry nodes
 	count2 = 0; // initialize count of boundary segments
@@ -456,20 +457,20 @@ void CMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, doub
 
 	// re-size auxillary node array and boundary segment data array to min size
     free(bound_in->AuxNodes);
-	if(count>0){AuxNodes = realloc(AuxNodes, (count * sizeof(Coord)));}
-    else{AuxNodes = realloc(AuxNodes, (sizeof(Coord)));}
+	if(count>0){AuxNodes = (Coord *) realloc(AuxNodes, (count * sizeof(Coord)));}
+    else{AuxNodes = (Coord *) realloc(AuxNodes, (sizeof(Coord)));}
     bound_in->AuxNodes = AuxNodes;
 
     free(bound_in->Bound);
-	if(count2>0){bptr = realloc(bptr, (count2 * sizeof(Bseg)));}
-    else{bptr = realloc(bptr, (sizeof(Bseg)));}
+	if(count2>0){bptr = (Bseg *) realloc(bptr, (count2 * sizeof(Bseg)));}
+    else{bptr = (Bseg *) realloc(bptr, (sizeof(Bseg)));}
     bound_in->Bound = bptr;
 
 	// consolodate na_conn data
 	// each aux node between 2 grid nodes
     free(bound_in->na_conn);
-	if(count>0){bound_in->na_conn = malloc(2*count*sizeof(int));}
-    else{bound_in->na_conn = malloc(sizeof(int));}
+	if(count>0){bound_in->na_conn = (int *) malloc(2*count*sizeof(int));}
+    else{bound_in->na_conn = (int *) malloc(sizeof(int));}
 	count = 0;
 	for(n=0;n<NumNodes;n++)
 	{
@@ -514,6 +515,7 @@ void CMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemSt
 	Elem **Number = inMesh->Number;
 	int NumNodes = inMesh->NumNodes;
 	Coord *NodeCoord = inMesh->NodeCoord;
+	CFiniteElement fem;
 
 	// For all elements
 	for(m=0;m<elemY;m++)
@@ -540,9 +542,10 @@ void CMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemSt
 				alpha[num] = aMin;
 			}
 			// If element is cut, but not status = 5
+
 			else if(temp != 5)
 			{
-				atemp = InArea(temp, num, Lnodes, NodeStat, NumNodes, NodeCoord, AuxNodes, NumBound, Boundary);
+				atemp = fem.InArea(temp, num, Lnodes, NodeStat, NumNodes, NodeCoord, AuxNodes, NumBound, Boundary);
 				alpha[num] = atemp / AreaElem;
 				alpha[num] = (alpha[num] < aMin) ? aMin : alpha[num]; // enforce minimum
 				//alpha[num] = (alpha[num] < 0.01) ? 0.01 : alpha[num];
@@ -550,7 +553,7 @@ void CMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemSt
 			// ElemStat=5 indicates that centre of element is outside structure
 			else
 			{
-				atemp = AreaElem - InArea(temp, num, Lnodes, NodeStat, NumNodes, NodeCoord, AuxNodes, NumBound, Boundary);
+				atemp = AreaElem - fem.InArea(temp, num, Lnodes, NodeStat, NumNodes, NodeCoord, AuxNodes, NumBound, Boundary);
 				alpha[num] = atemp / AreaElem;
 				alpha[num] = (alpha[num] < aMin) ? aMin : alpha[num]; // enforce minimum
 				//alpha[num] = (alpha[num] < 0.01) ? 0.01 : alpha[num];

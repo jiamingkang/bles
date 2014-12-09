@@ -185,7 +185,7 @@ int CMathUtility::initialize(int n,  int m, int nu, double **v, double *A, doubl
 	double dtemp;
 
 	// first compute AA^T matrix and initial y and x values
-	double *AAT = malloc(m*m*sizeof(double));
+	double *AAT = (double *) malloc(m*m*sizeof(double));
 
 	if(m==1)
 	{
@@ -248,7 +248,7 @@ int CMathUtility::initialize(int n,  int m, int nu, double **v, double *A, doubl
 		// initial x values (primary variables)
 
 		// copy b into a temp array for the solve
-		double *btemp = malloc(m * sizeof(double));
+		double *btemp = (double *) malloc(m * sizeof(double));
 		cblas_dcopy(m, b, 1, btemp, 1);
 
 		dpotrs_(&uplo, &m, &one, AAT, &m, btemp, &m, &info); //  complete sovlve: AAT^-1 * b = btemp
@@ -282,8 +282,8 @@ int CMathUtility::initialize(int n,  int m, int nu, double **v, double *A, doubl
 	double delx = (minx > 0.0) ? minx : 0.0;
 	double delz = (minz > 0.0) ? minz : 0.0;
 
-	double *xtemp = malloc(n * sizeof(double));
-	double *ztemp = malloc(n * sizeof(double));
+	double *xtemp = (double *) malloc(n * sizeof(double));
+	double *ztemp = (double *) malloc(n * sizeof(double));
 
 	// xtemp = x + delx
 	// ztemp = z + delz
@@ -406,7 +406,7 @@ int CMathUtility::initialize2(int n,  int m, int nu, double **v, double *A, doub
 	fact2 += 1.0;
 
 	// first compute AA^T matrix and initial y and x values
-	double *AAT = malloc(m*m*sizeof(double));
+	double *AAT = (double *) malloc(m*m*sizeof(double));
 
 	if(m==1)
 	{
@@ -447,7 +447,7 @@ int CMathUtility::initialize2(int n,  int m, int nu, double **v, double *A, doub
 		// initial x values (primary variables)
 
 		// copy b into a temp array for the solve
-		double *btemp = malloc(m * sizeof(double));
+		double *btemp = (double *) malloc(m * sizeof(double));
 		cblas_dcopy(m, b, 1, btemp, 1);
 
 		dpotrs_(&uplo, &m, &one, AAT, &m, btemp, &m, &info); //  complete sovlve: AAT^-1 * b = btemp
@@ -526,7 +526,7 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 
 	// compute D matrix
 	// as D is a diagonal matrix, store as an array
-	double *D = malloc(n*sizeof(double));
+	double *D = (double *) malloc(n*sizeof(double));
 
 	/*for(i=0;i<n;i++)
 	{
@@ -545,7 +545,7 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 	// -------------- compute rhs arrays (rb, ru, rc, rxz, rsw) -------------- //
 
 	// compute rb
-	double *rb = malloc(m*sizeof(double));
+	double *rb = (double *) malloc(m*sizeof(double));
 	// multiply: rb = A * x
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, 1.0, A, n, v[0], 1, 0.0, rb, 1);
 	// compute rb = rb - b
@@ -555,12 +555,12 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 	double *ru;
 	if(nu>0)
 	{
-		ru = malloc(nu*sizeof(double));
+		ru = (double *) malloc(nu*sizeof(double));
 		for(i=0;i<nu;i++){ ru[i] = v[0][i] + v[2][i] -  u[i]; } // x + s - u
 	}
 
 	// compute rc
-	double *rc = malloc(n*sizeof(double));
+	double *rc = (double *) malloc(n*sizeof(double));
 	// multiply: rc = A^T * y
 	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, 1.0, A, n, v[4], 1, 0.0, rc, 1);
 	// compute rc = rc + z - app(w) - c
@@ -571,7 +571,7 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 	}
 
 	// compute rxz
-	double *rxz = malloc(n*sizeof(double));
+	double *rxz = (double *) malloc(n*sizeof(double));
 	for(i=0;i<n;i++)
 	{
 		rxz[i] = v[0][i] * v[1][i]; // x * z
@@ -581,7 +581,7 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 	double *rsw;
 	if(nu>0)
 	{
-		rsw = malloc(nu*sizeof(double));
+		rsw = (double *) malloc(nu*sizeof(double));
 		for(i=0;i<nu;i++)
 		{
 			rsw[i] = v[2][i] * v[3][i]; // s * w
@@ -601,8 +601,8 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 
 	// compute dely (delP[4])
 	// compute the ADA^T matrix (assume dense)
-	double *ADA = malloc(m*m*sizeof(double));
-	double *row_temp = malloc(n*sizeof(double));
+	double *ADA = (double *) malloc(m*m*sizeof(double));
+	double *row_temp = (double *) malloc(n*sizeof(double));
 	for(i=0;i<m;i++) // row
 	{
 		ind = n*i; // start of row in A
@@ -619,7 +619,7 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 		}
 	}
 	// compute the rhs for the dely solve
-	double *y_rhs = malloc(m*sizeof(double));
+	double *y_rhs = (double *) malloc(m*sizeof(double));
 	// first compute row_temp = D*rc
 	for(i=0;i<n;i++)
 	{
@@ -695,9 +695,9 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 		int len = ((m+1)*m)/2; // storage space
 
 		// convert ADA to triplet form
-		int *irn = malloc(len*sizeof(int));
-		int *jcn = malloc(len*sizeof(int));
-		double *At = malloc(len*sizeof(double));
+		int *irn = (int *) malloc(len*sizeof(int));
+		int *jcn = (int *) malloc(len*sizeof(int));
+		double *At = (double *) malloc(len*sizeof(double));
 		ind=0;
 		for(i=0;i<m;i++) // row
 		{
@@ -709,9 +709,9 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 				At[ind++] = ADA[count+j];
 			}
 		}
-
+		CSolver slv;
 		// solve using MA57
-		m_cSolver.solve(m, len, irn, jcn, At, 1, y_rhs, 0);
+		slv.solve(m, len, irn, jcn, At, 1, y_rhs, 0);
 
 		// copy solution
 		cblas_dcopy(m, y_rhs, 1, delP[4], 1);
@@ -777,7 +777,7 @@ void CMathUtility::corrector(int n, int nu, double mu, double **v, double **delP
 {
 	int i;
 	// compute rxz
-	double *rxz = malloc(n*sizeof(double));
+	double *rxz = (double *) malloc(n*sizeof(double));
 	for(i=0;i<n;i++)
 	{
 		rxz[i] = (delP[0][i] * delP[1][i]) - mu; // delx * delz - mu
@@ -788,7 +788,7 @@ void CMathUtility::corrector(int n, int nu, double mu, double **v, double **delP
 	double *rsw;
 	if(nu>0)
 	{
-		rsw = malloc(nu*sizeof(double));
+		rsw = (double *) malloc(nu*sizeof(double));
 		for(i=0;i<nu;i++)
 		{
 			rsw[i] = (delP[2][i] * delP[3][i]) - mu; // dels * delw - mu
@@ -815,13 +815,13 @@ double CMathUtility::centering(int n, int m, int nu, double lim, double **v, dou
 {
 	double ap = 1.0;
 	double ad = 1.0;
-	double *z = malloc(n*sizeof(double));
-	double *x = malloc(n*sizeof(double));
+	double *z = (double *) malloc(n*sizeof(double));
+	double *x = (double *) malloc(n*sizeof(double));
 	double *s, *w;
 	if(nu > 0)
 	{
-		s = malloc(nu*sizeof(double));
-		w = malloc(nu*sizeof(double));
+		s = (double *) malloc(nu*sizeof(double));
+		w = (double *) malloc(nu*sizeof(double));
 	}
 
 	int i;
@@ -1027,7 +1027,7 @@ double CMathUtility::stopping(int n,  int m, int nu, double **v, double *A, doub
 	// compute size of rb, rc, ru
 
 	// compute rb
-	double *rb = malloc(m*sizeof(double));
+	double *rb = (double *) malloc(m*sizeof(double));
 	// multiply: rb = A * x
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, 1.0, A, n, v[0], 1, 0.0, rb, 1);
 	// compute rb = rb - b
@@ -1039,7 +1039,7 @@ double CMathUtility::stopping(int n,  int m, int nu, double **v, double *A, doub
 	double stop = cblas_dnrm2(m, rb, 1) / lenb;
 
 	// compute rc
-	double *rc = malloc(n*sizeof(double));
+	double *rc = (double *) malloc(n*sizeof(double));
 	// multiply: rc = A^T * y
 	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, 1.0, A, n, v[4], 1, 0.0, rc, 1);
 	// compute rc = rc + z - app(w) - c
@@ -1058,7 +1058,7 @@ double CMathUtility::stopping(int n,  int m, int nu, double **v, double *A, doub
 	double *ru;
 	if(nu>0)
 	{
-		ru = malloc(nu*sizeof(double));
+		ru = (double *) malloc(nu*sizeof(double));
 		for(i=0;i<nu;i++)
 		{
 			ru[i] = v[0][i] + v[2][i] -  u[i]; // x + s - u

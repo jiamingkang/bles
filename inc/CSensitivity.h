@@ -30,6 +30,7 @@
 
 // include
 #include "CommonTypes.h"
+#include "CMaterial.h"
 
 // pre-processors
 #define GP 1.577350269189626 // 1 + 1/sqrt(3)

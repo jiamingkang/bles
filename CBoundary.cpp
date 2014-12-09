@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+
 #include "CBoundary.h"
 #include "CSolver.h"
 
@@ -57,9 +58,9 @@ void CBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
 
 	// memory allocation
     free(bound_in->BsegLen);
-    bound_in->BsegLen = malloc(NumBound*sizeof(double)); // boundary segment lengths
+    bound_in->BsegLen = (double *) malloc(NumBound*sizeof(double)); // boundary segment lengths
     free(bound_in->Bwgt);
-	bound_in->Bwgt = malloc(NumBound*sizeof(double));	// boundary segment weights
+	bound_in->Bwgt = (double *) malloc(NumBound*sizeof(double));	// boundary segment weights
 
 	int i,j,temp,n1,n2;
 	int s1,s2;
@@ -149,8 +150,8 @@ void CBoundary::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int
 	int n1,n2,p1,p2; // boundary point node numbers
 	double ftemp,len,len2,sens1,sens2; // temporary variables
 	double *Ltemp, *b_len; // temporary array to store boundary data
-	Ltemp = calloc(Ntot*numFunc,sizeof(double));
-	b_len = calloc(Ntot, sizeof(double));
+	Ltemp = (double *) calloc(Ntot*numFunc,sizeof(double));
+	b_len = (double *) calloc(Ntot, sizeof(double));
 
 	for(i=0;i<NumBound;i++)
 	{

@@ -34,6 +34,7 @@
 #include "CMesh.h"
 #include "CMathUtility.h"
 #include "CSolver.h"
+#include "COutput.h"
 
 //
 // Constructor / Destructor
@@ -59,7 +60,7 @@ void CSolver::FE_Solve(sp_mat *Kg, int *dofMap, double *disp, int freeDof, int o
 
 	// copy disp array (input as the rhs load)
 	temp2 = freeDof*numRhs;
-	double *disp_temp = malloc(temp2*sizeof(double));
+	double *disp_temp = (double *) malloc(temp2*sizeof(double));
 	cblas_dcopy(temp2, disp, 1, disp_temp, 1);
 
 	// Solve the equation
@@ -117,30 +118,30 @@ void CSolver::solve(int n, int ne, int *irn, int *jcn, double *A, int n_rhs, dou
 
 	// setup workspace arrays
 	lkeep = 7*n+2*ne+42;
-	keep = malloc(lkeep * sizeof(int));
+	keep = (int *) malloc(lkeep * sizeof(int));
 	liwork = 5 * n;
-	iwork = malloc(liwork * sizeof(int));
+	iwork = (int *) malloc(liwork * sizeof(int));
 
 	// Do Analysis
 	ma57ad_(&n,&ne,irn,jcn,&lkeep,keep,iwork,icntl,info,rinfo);
 
 	// re-size integer work array for next phase
 	free(iwork);
-	iwork = malloc(n * sizeof(int));
+	iwork = (int *) malloc(n * sizeof(int));
 
 	// Setup Factorization arrays
 	lfact = 2 * info[8];
-	fact = malloc(lfact * sizeof(double));
+	fact = (double *) malloc(lfact * sizeof(double));
 
 	lifact = 2 * info[9];
-	ifact = malloc(lifact * sizeof(int));
+	ifact = (int *) malloc(lifact * sizeof(int));
 
 	// Do factorization
 	ma57bd_(&n,&ne,A,fact,&lfact,ifact,&lifact,&lkeep,keep,iwork,icntl,cntl,info,rinfo);
 
 	// Setup doubleing point workspace
 	lwork = n * n_rhs;
-	work  = malloc(lwork * sizeof(double));
+	work  = (double *) malloc(lwork * sizeof(double));
 
 	 // Do solve. NB: lrhs = n
 	lrhs = n;
@@ -170,7 +171,7 @@ void CSolver::d_lsLPK(int N, int M, int NRHS, double *A, double *b)
     // set work array
     int LWORK = (N < M) ? N : M;
     LWORK += (LWORK > NRHS) ? (LWORK*nBlock) : (NRHS*nBlock);
-    double *WORK = malloc(LWORK*sizeof(double));
+    double *WORK = (double *) malloc(LWORK*sizeof(double));
 
     // call the LAPACK routine
     dgels_(&trans, &M, &N, &NRHS, A, &M, b, &M, WORK, &LWORK, &INFO);
@@ -251,7 +252,7 @@ int CSolver::dun_slvLPK(char trans, int N, int NRHS, double *A, double *B)
 
 	else
 	{
-		int *IPIV = malloc(N*sizeof(int));
+		int *IPIV = (int *) malloc(N*sizeof(int));
 		int INFO;
 
 		dgetrf_(&N,&N,A,&N,IPIV,&INFO); // factroize
@@ -387,9 +388,9 @@ int CSolver::dsy_slvLPK(int N, int NRHS, double *A, double *B)
 // function to invert a matrix
 void CSolver::din_LPK(double* A, int N)
 {
-    int *IPIV = malloc((N+1)*sizeof(int));
+    int *IPIV = (int *) malloc((N+1)*sizeof(int));
     int LWORK = N*N;
-    double *WORK = malloc(LWORK*sizeof(double));
+    double *WORK = (double *) malloc(LWORK*sizeof(double));
     int INFO;
 
     dgetrf_(&N,&N,A,&N,IPIV,&INFO);
@@ -408,13 +409,13 @@ int CSolver::lp_simplex(int n, int m, int nu, double *x, double *c, double *A, d
 	int totCon = m + nu; // total number of constraints (equal + inequal)
 
 	// combine b & u
-	double *b_in = malloc(totCon*sizeof(double));
+	double *b_in = (double *) malloc(totCon*sizeof(double));
     //double b_in[3];
 	cblas_dcopy(nu, u, 1, b_in, 1);
 	cblas_dcopy(m, b, 1, &b_in[nu], 1);
 
 	// add I to A (for inequal constraints)
-	double *A_in = calloc(totCon*n,sizeof(double));
+	double *A_in = (double *) calloc(totCon*n,sizeof(double));
     //double A_in[6];
     //for(i=0;i<6;i++){A_in[i]=0.0;}
 	for(i=0;i<nu;i++)
@@ -434,8 +435,8 @@ int CSolver::lp_simplex(int n, int m, int nu, double *x, double *c, double *A, d
 
 	// other arrays
 	j=(totCon+1)*(totCon+3);
-	double *work = malloc(j*sizeof(double));
-	int *ind = malloc((totCon+1)*sizeof(int));
+	double *work = (double *) malloc(j*sizeof(double));
+	int *ind = (int *) malloc((totCon+1)*sizeof(int));
 
 	// call the routine
     int db = pinfo;
@@ -455,22 +456,22 @@ int CSolver::lp_simplex(int n, int m, int nu, double *x, double *c, double *A, d
 // function to solve linear prog using interior point method
 int CSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo)
 {
-	double *delx = malloc(n*sizeof(double));
+	double *delx = (double *) malloc(n*sizeof(double));
 	// array of slack varibles (s, length nu)
 	double *s, *dels;
-	if(nu > 0){s = malloc(nu*sizeof(double));
-		dels = malloc(nu*sizeof(double));}
+	if(nu > 0){s = (double *) malloc(nu*sizeof(double));
+		dels = (double *) malloc(nu*sizeof(double));}
 	else {s=0; dels=0;}
 	// array of adjoint variables (y, length m)
-	double *y = malloc(m*sizeof(double));
-	double *dely = malloc(m*sizeof(double));
+	double *y = (double *) malloc(m*sizeof(double));
+	double *dely = (double *) malloc(m*sizeof(double));
 	// more adjoint variables (z, length n)
-	double *z = malloc(n*sizeof(double));
-	double *delz = malloc(n*sizeof(double));
+	double *z = (double *) malloc(n*sizeof(double));
+	double *delz = (double *) malloc(n*sizeof(double));
 	// array of adjoint slack variables (w, length nu)
 	double *w, *delw;
-	if(nu > 0){w = malloc(nu*sizeof(double));
-		delw = malloc(nu*sizeof(double));}
+	if(nu > 0){w = (double *) malloc(nu*sizeof(double));
+		delw = (double *) malloc(nu*sizeof(double));}
 	else {w=0; delw=0;}
 	// assemble all variables into one array using pointers
 	double *v[5] = {x,z,s,w,y};
@@ -715,43 +716,43 @@ int CSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, int
 
 	// setup workspace arrays
 	lkeep = 7*n+2*num_ent+42;
-	keep = malloc(lkeep * sizeof(int));
+	keep = (int *) malloc(lkeep * sizeof(int));
 	liwork = 5 * n;
-	iwork = malloc(liwork * sizeof(int));
+	iwork = (int *) malloc(liwork * sizeof(int));
 
 	// Do Analysis
 	ma57ad_(&n,&num_ent,Kg->irn,Kg->jcn,&lkeep,keep,iwork,icntl,info,rinfo);
 
 	// re-size integer work array for next phase
 	free(iwork);
-	iwork = malloc(n * sizeof(int));
+	iwork = (int *) malloc(n * sizeof(int));
 
 	// Setup Factorization arrays
 	lfact = 2 * info[8];
-	fact = malloc(lfact * sizeof(double));
+	fact = (double *) malloc(lfact * sizeof(double));
 
 	lifact = 2 * info[9];
-	ifact = malloc(lifact * sizeof(int));
+	ifact = (int *) malloc(lifact * sizeof(int));
 
 	// Do factorization
 	ma57bd_(&n,&num_ent,Kg->A,fact,&lfact,ifact,&lifact,&lkeep,keep,iwork,icntl,cntl,info,rinfo);
 
 	// Setup doubleing point workspace
 	lwork = n;
-	work  = malloc(lwork * sizeof(double));
+	work  = (double *) malloc(lwork * sizeof(double));
 
 	int ido = 0; // initial value
 	int ncv = 2*nev +2; // default
 	double tol = 0.0; // default (use machine precision)
 	char which [] = "LM";
 	char bmat = 'G'; // generalized system
-	double *resid = malloc(n*sizeof(double)); // residual
-	double *v = malloc(n*ncv*sizeof(double)); // Lanczos basis vectors
+	double *resid = (double *) malloc(n*sizeof(double)); // residual
+	double *v = (double *) malloc(n*ncv*sizeof(double)); // Lanczos basis vectors
 	int ldv = n; // leading dimension of v (n * nev)
 	int ipntr[11]; // locations of various arrays used "under the hood"
-	double *workd = malloc(3*n*sizeof(double));
+	double *workd = (double *) malloc(3*n*sizeof(double));
 	int lworkl = ncv*(8+ncv); // length of lwork
-	double *workl = malloc(lworkl*sizeof(double));
+	double *workl = (double *) malloc(lworkl*sizeof(double));
 	//int ar_info = 0; // start with random residual vector
     int ar_info = 1; // start with set residual vector
     for(i=0;i<n;i++){ resid[i] = 1.0; }
@@ -787,9 +788,9 @@ int CSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, int
 
 	// now post-process to obtain eigenvalues & vectors
 	int rvec = 1; // compute vectors and values
-	int *select = malloc(ncv*sizeof(int));
+	int *select = (int *) malloc(ncv*sizeof(int));
 	for(i=0;i<ncv;i++){select[i]=1;}
-	double *vec_temp = malloc(n*nev*sizeof(double)); // temp array
+	double *vec_temp = (double *) malloc(n*nev*sizeof(double)); // temp array
 	dseupd_(&rvec,"All",select,vals,vec_temp,&n,&sigma,&bmat,&n,which,&nev,&tol,resid,&ncv,v,&ldv,iparam,ipntr,workd,workl,&lworkl,&ar_info);
 
 	if(pinfo>1) {
