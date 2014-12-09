@@ -41,6 +41,11 @@
 // Statics
 //
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+
 // declarations of MA57 Fortran functions (double precision)
 void ma57id_(double*,int*);
 void ma57ad_(int*,int*,int*,int*,int*,int*,int*,int*,int*,double*);
@@ -50,6 +55,11 @@ void ma57cd_(int*,int*,double*,int*,int*,int*,int*,double*,int*,double*,int*,int
 // declaration of ARPACK Fortran functions (double precision, general symmetric)
 void dsaupd_(int*,char*,int*,char*,int*,double*,double*,int*,double*,int*,int*,int*,double*,double*,int*,int*);
 void dseupd_(int*,char*,int*,double*,double*,int*,double*,char*,int*,char*,int*,double*,double*,int*,double*,int*,int*,int*,double*,double*,int*,int*);
+void la01bd_(int*,int*,int*,double*,double*,double*,double*,double*,int*,int*,int*,double*,int*);
+    
+#ifdef __cplusplus
+}
+#endif
 
 class CSolver {
 public:
@@ -76,7 +86,7 @@ public:
 	void din_LPK(double* A, int N);
 
 	// function to solve a linear program using HSL revised Simplex method
-	void la01bd_(int*,int*,int*,double*,double*,double*,double*,double*,int*,int*,int*,double*,int*);
+	
 	int lp_simplex(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo);
 
 	// function to solve linear prog using interior point method
