@@ -14,6 +14,7 @@
 #include "CLevelSet.h"	// originally Levels.h --> should be changed to COptimisation.h (jeehanglee@gmail.com)
 #include "CMathUtility.h"	// originally ABFG.h
 #include "CInput.h"
+#include "CFiniteElement.h"
 
 //
 // Constructur / Destructor
@@ -45,6 +46,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 	// jeehanglee@gmail.com: temp code. Refactoring required.
 	CMesh cmesh;
 	CLevelSet cLevelSet;
+	CFiniteElement fem;
 
 	// set default obj & const
 	lsprob->obj = 0;
@@ -67,9 +69,9 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 
 	// temp for initial holes
 	int NumHole=0;  // number of circular holes
-	CirH *holes = malloc(MAX_HOLES * sizeof(CirH)); // array to store circular hole data
+	CirH *holes = (CirH *) malloc(MAX_HOLES * sizeof(CirH)); // array to store circular hole data
 	int NumRect=0; // number of rectangular holes
-	Coord *Rect = malloc(2 * MAX_HOLES * sizeof(Coord)); // array to store rectangular hole data (max & min x&y coords)
+	Coord *Rect = (Coord *) malloc(2 * MAX_HOLES * sizeof(Coord)); // array to store rectangular hole data (max & min x&y coords)
 
 	FILE *infile = fopen(datafile, "r"); // Try to open the file
 	// If file does not exist then abort
@@ -186,9 +188,9 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 						inMesh->NumNodes = (1+inMesh->elemX)*(1+inMesh->elemY);
 						inMesh->maxX = inMesh->elemX * inMesh->h;
 						inMesh->maxY = inMesh->elemY * inMesh->h;
-						inMesh->NodeCoord = calloc(inMesh->NumNodes, sizeof(Coord));
+						inMesh->NodeCoord = (Coord *) calloc(inMesh->NumNodes, sizeof(Coord));
 						inMesh->tol = inMesh->h * 1.0E-6; // rounding tollerance
-						inMesh->mat_type = calloc(inMesh->NumElem, sizeof(int)); // default to first material
+						inMesh->mat_type = (int *) calloc(inMesh->NumElem, sizeof(int)); // default to first material
 						inMesh->bars = false; // no bars (yet)
 						inMesh->des_bc = false; // no designable bsc (yet)
 						inMesh->des_mat = false; // no designable material (yet)
@@ -210,8 +212,8 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 						cmesh.NodeNums2(inMesh);
 
 						// now mesh has been defined - set some memory
-						fixdof_temp = calloc(2*inMesh->NumNodes, sizeof(bool));
-						levelset->fixed = calloc(inMesh->NumNodes, sizeof(bool));
+						fixdof_temp = (bool *) calloc(2*inMesh->NumNodes, sizeof(bool));
+						levelset->fixed = (bool *) calloc(inMesh->NumNodes, sizeof(bool));
 
 						meshFound = 1;
 						end=1; // found data line
@@ -238,8 +240,8 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 				inMesh->bars = true; // problem contains bars
 				nd = (inMesh->elemX * (1+inMesh->elemY)) + (inMesh->elemY * (1+inMesh->elemX));
 				inMesh->NumBars = nd; // total number of bars
-				inMesh->bar_nums = malloc(nd * sizeof(Bseg));
-				inMesh->bar_areas = malloc(nd * sizeof(double));
+				inMesh->bar_nums = (Bseg *) malloc(nd * sizeof(Bseg));
+				inMesh->bar_areas = (double *) malloc(nd * sizeof(double));
 
 				// read in remaining data from the dataline
 				end=0;
@@ -499,7 +501,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 				double h = inMesh->h;
 				double tol = inMesh->tol;
 				double xmin,xmax,ymin,ymax;
-				bool *exclude = calloc(numElem,sizeof(bool));
+				bool *exclude = (bool *) calloc(numElem,sizeof(bool));
 
 				// now check for exclusion zones
 				end=0;
@@ -556,7 +558,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 				}
 
 				// set array of elements with designable material
-				int *enum_temp = malloc(numElem*sizeof(int));
+				int *enum_temp = (int *) malloc(numElem*sizeof(int));
 				nd = 0; // count number of elements
 				for(i=0;i<numElem;i++){ if(!exclude[i]){enum_temp[nd++] = i;} }
 				free(exclude);
@@ -564,7 +566,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 				if(nd>0)
 				{
 					inMesh->NumDesMat = nd; // total number of variables
-					if(nd<numElem){enum_temp = realloc(enum_temp, nd*sizeof(int));}
+					if(nd<numElem){enum_temp = (int *) realloc(enum_temp, nd*sizeof(int));}
 					inMesh->mat_elems = enum_temp;
 					inMesh->des_mat = true;
 				}
@@ -591,7 +593,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 				if(!lm_temp)
 				{
 					// if not done already - set memory for lumped masses
-					lm_temp = calloc(nn*NUM_DOF,sizeof(double));
+					lm_temp = (double *) calloc(nn*NUM_DOF,sizeof(double));
 				}
 
 				while(end==0 && !feof(infile))
@@ -647,7 +649,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 					return -1;
 				}
 
-				int *flag = malloc(NUM_DOF*sizeof(int));
+				int *flag = (int *) malloc(NUM_DOF*sizeof(int));
 				int nn = inMesh->NumNodes;
 				Coord *cp = inMesh->NodeCoord;
 
@@ -825,12 +827,12 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 								{
 									inMesh->des_bc=true;
 									inMesh->NumBC=num;
-									inMesh->BC_nums = malloc(num*sizeof(int));
+									inMesh->BC_nums = (int *) malloc(num*sizeof(int));
 								}
 								else
 								{
 									inMesh->NumBC += num;
-									inMesh->BC_nums = realloc(inMesh->BC_nums,inMesh->NumBC*sizeof(int));
+									inMesh->BC_nums = (int *) realloc(inMesh->BC_nums,inMesh->NumBC*sizeof(int));
 								}
 
 								num = inMesh->NumBC - num; // start of new memory portion
@@ -1008,14 +1010,14 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 					}
 
 					// set storage for load cases (dof x number cases)
-					load = calloc(NUM_DOF*nn*(*numCase), sizeof(double));
+					load = (double *) calloc(NUM_DOF*nn*(*numCase), sizeof(double));
 				}
 
 				// if type is point
 				if(strncasecmp(token[1], "point", 5)==0)
 				{
 					int case_cnt = -1; // count number of cases found
-					double *mag = malloc(NUM_DOF * sizeof(double));
+					double *mag = (double *) malloc(NUM_DOF * sizeof(double));
 					double xtemp,ytemp;
 					end=0;
 					while(end==0 && !feof(infile) && case_cnt<*numCase)
@@ -1076,7 +1078,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 					double h = inMesh->h;
 					double min,max,level,xmin,xmax,ymin,ymax;
 					int flag;
-					double *mag = calloc(*numCase*NUM_DOF,sizeof(double));
+					double *mag = (double *) calloc(*numCase*NUM_DOF,sizeof(double));
 					end=0;
 					while(end==0 && !feof(infile) && case_cnt<*numCase)
 					{
@@ -1219,7 +1221,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
                     else
                     {
                         *sw = true; // set self-weight flag to true
-                        *acc = malloc(*numCase * sizeof(Coord));
+                        *acc = (Coord *) malloc(*numCase * sizeof(Coord));
 
                         int case_cnt = 0; // count number of cases found
                         double xtemp,ytemp;
@@ -1295,7 +1297,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 				if(numC > 0)
 				{
 					// create array to store constraint data
-					cnst *cons = malloc(numC * sizeof(cnst));
+					cnst *cons = (cnst *) malloc(numC * sizeof(cnst));
 					lsprob->con = cons;
 					int count = 0;
 
@@ -1706,7 +1708,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 	// use fixdof to create a dof map (saves time later)
 	// also reduce load array
 	int allDof = NUM_DOF * inMesh->NumNodes; // total dof
-	*map = malloc(allDof * sizeof(int));
+	*map = (int *) malloc(allDof * sizeof(int));
 	nd = 0; // count free dof
     for(i=0;i<allDof;i++)
     {
@@ -1749,7 +1751,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 		if(*numCase>0)
 		{
 			// create reduced load array from map
-			*load_in = calloc((*freeDof)*(*numCase), sizeof(double));
+			*load_in = (double *) calloc((*freeDof)*(*numCase), sizeof(double));
 
 			for(i=0;i<allDof;i++) // for all dof
 			{
@@ -1786,7 +1788,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 		// set initial memory
 		lump_mass->ne = allDof;
 		lump_mass->irn=0; lump_mass->jcn=0; lump_mass->A=0;
-		set_sp_mat(lump_mass);
+		fem.set_sp_mat(lump_mass);
 
 		j=0;
 		for(i=0;i<allDof;i++) // for all dof
@@ -1802,9 +1804,9 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 
 		// reallocate memory
 		lump_mass->ne = j;
-		lump_mass->irn=realloc(lump_mass->irn,j*sizeof(int));
-		lump_mass->jcn=realloc(lump_mass->jcn,j*sizeof(int));
-		lump_mass->A=realloc(lump_mass->A,j*sizeof(double));
+		lump_mass->irn=(int *) realloc(lump_mass->irn,j*sizeof(int));
+		lump_mass->jcn=(int *) realloc(lump_mass->jcn,j*sizeof(int));
+		lump_mass->A=(double *) realloc(lump_mass->A,j*sizeof(double));
 	}
 	else {
 		lump_mass->ne=0;
@@ -1967,7 +1969,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 		qsort(inMesh->BC_nums, inMesh->NumBC, sizeof(int), icmpfunc);
 
 		// initialize designable bc variables
-		inMesh->K_bc = malloc(inMesh->NumBC * sizeof(double));
+		inMesh->K_bc = (double *) malloc(inMesh->NumBC * sizeof(double));
 		inMesh->K0_bc = inMat[0].e * 1.0e6; // max stiffness
 		double ftemp = lsprob->con[i].data[0] / (double)inMesh->NumBC; // initial design is feasible
 		for(j=0;j<inMesh->NumBC;j++)
@@ -1985,7 +1987,7 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 			return -1;
 		}
 
-		inMesh->mat_vars = malloc(inMesh->NumDesMat * sizeof(double));
+		inMesh->mat_vars = (double *) malloc(inMesh->NumDesMat * sizeof(double));
 		for(j=0;j<inMesh->NumDesMat;j++)
 		{
 			inMesh->mat_vars[j] = 0.5; // start with 50/50 mix
@@ -2046,10 +2048,10 @@ int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat,
 
 	// populate the level set struct
 	levelset->num = inMesh->NumNodes;
-	levelset->lsf =  malloc(inMesh->NumNodes * sizeof(double));
-	levelset->active = malloc(inMesh->NumNodes * sizeof(bool));
+	levelset->lsf =  (double *) malloc(inMesh->NumNodes * sizeof(double));
+	levelset->active = (bool *) malloc(inMesh->NumNodes * sizeof(bool));
 	levelset->numMine = 0;
-	levelset->mine = malloc(inMesh->NumNodes * sizeof(int));
+	levelset->mine = (int *) malloc(inMesh->NumNodes * sizeof(int));
 
 	// initalize signed distance function
 	cLevelSet.initialLsf(inMesh, levelset, NumHole, holes, NumRect, Rect, control->lband);

@@ -71,20 +71,21 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 
 	// compute gauss point coords (used in sensitivity smoothing)
 	CMathUtility cmu;
-	Coord *gCoord = malloc(4 * inMesh.NumElem * sizeof(Coord));
+	CFiniteElement fem;
+	Coord *gCoord = (Coord *) malloc(4 * inMesh.NumElem * sizeof(Coord));
 	cmu.Gauss_Coord(&inMesh, gCoord);
 
 	// calculate IN element stiffness matrix (& mass matrix)
 	double AreaElem = inMesh.h * inMesh.h; // Area of an element
-	double **KE = malloc(numMat*sizeof(double*));
-	double **ME = malloc(numMat*sizeof(double*));
-	for (i = 0; i < numMat; i++)
+	double **KE = (double **)malloc(numMat*sizeof(double*));
+	double **ME = (double **)malloc(numMat*sizeof(double*));
+	for(i=0;i<numMat;i++)
 	{
-		KE[i] = malloc(KE_SIZE * sizeof(double));
-		ME[i] = malloc(KE_SIZE * sizeof(double));
+		KE[i] = (double *) malloc(KE_SIZE*sizeof(double));
+		ME[i] = (double *) malloc(KE_SIZE*sizeof(double));
 		// use 1.0 for thickness, as E & rho already multipled by thickness
-		KEMatrix(KE[i], &inMat[i], inMesh.t);	// Element Stiffness Matrix for an IN element
-		MEMatrix(ME[i], inMat[i].rho, AreaElem, inMesh.t); // Element Mass Matrix for an IN element
+		fem.KEMatrix(KE[i], &inMat[i], inMesh.t);	// Element Stiffness Matrix for an IN element
+		fem.MEMatrix(ME[i], inMat[i].rho, AreaElem, inMesh.t); // Element Mass Matrix for an IN element
 	}
 
 	/*------------------------------------------------------------------/
@@ -103,31 +104,31 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 
 	// Variables and arrays to store additional mesh data
 	int Ntot;		 // total nodes, including auxillary ones
-	double *alpha = malloc(inMesh.NumElem * sizeof(double)); // Array to store element areas
+	double *alpha = (double *) malloc(inMesh.NumElem * sizeof(double)); // Array to store element areas
 
 	// Arrays to store node data related to the optimisation
 	double *Nsens;  // pointer for node (+ aux node) sensitivity array
-	double *vol_sens = 0; // volume sensitivity array (will be all 1's)
-	double *mass_sens = 0; // mass sensitvitiy array
-	double *zero_sens = 0; // when lsf does not influence a constraint
-	double **sens_ptr = malloc( (1+lsprob.num) * sizeof(double *) ); // pointer to senstivity arrays for each fucntion (obj + constraints)
+	double *vol_sens=0; // volume sensitivity array (will be all 1's)
+	double *mass_sens=0; // mass sensitvitiy array
+	double *zero_sens=0; // when lsf does not influence a constraint
+	double **sens_ptr = (double **) malloc( (1+lsprob.num) * sizeof(double *) ); // pointer to senstivity arrays for each fucntion (obj + constraints)
 	double *Vnorm;	// pointer for node (+ aux node) normal velocity array
 	double *Grad;   // pointer for lsf gradient info (using upwind scheme)
-	int *active = malloc(lsprob.num * sizeof(int)); // array for active constraints
+	int *active = (int *) malloc(lsprob.num * sizeof(int)); // array for active constraints
 
 	// boundary integral variables
 	boundary Bndry;	// boundry discretization
 	// Initialise length of AuxNodes & Boundary segment arrays - generous initial size
-	Bndry.AuxNodes = malloc(inMesh.NumElem * sizeof(Coord));
-	Bndry.Bound = malloc(inMesh.NumElem * sizeof(Bseg));
-	Bndry.BsegLen = malloc(sizeof(double)); // initial memory allocation
-	Bndry.Bwgt = malloc(sizeof(double)); // initial memory allocation
-	Bndry.na_conn = malloc(sizeof(int)); // initial memory allocation
-	Bndry.na_conn_ind = malloc( (inMesh.NumNodes+1) * sizeof(int)); // memory allocation
+	Bndry.AuxNodes = (Coord *) malloc(inMesh.NumElem * sizeof(Coord));
+	Bndry.Bound = (Bseg *) malloc(inMesh.NumElem * sizeof(Bseg));
+	Bndry.BsegLen = (double *)malloc(sizeof(double)); // initial memory allocation
+	Bndry.Bwgt = (double *) malloc(sizeof(double)); // initial memory allocation
+	Bndry.na_conn =(int *) malloc(sizeof(int)); // initial memory allocation
+	Bndry.na_conn_ind = (int *) malloc( (inMesh.NumNodes+1) * sizeof(int)); // memory allocation
 	double *Lbound;   // array to store boundary intergral coefficents
 	int *Lbound_nums; // global node nums corresponding to Lbound entries
 	int num_Lbound;   // length of Lbound & Lbound_nums
-	double *lambda = calloc(1+lsprob.num, sizeof(double)); // lambda values
+	double *lambda = (double *) calloc(1+lsprob.num, sizeof(double)); // lambda values
 
 	// stuff for Ku = f solve using MA57 solver (& eigenvalue solver)
 	sp_mat Kg, Mg; // global stiffness and mass matrices
@@ -144,18 +145,18 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	double *bar_sens=0; // bar senstivities
 	double *bar_step=0; // bar update step
 	double *bar_max=0, *bar_min=0; // move limits on bar areas
-	if(inMesh.bars){j=inMesh.NumBars; bar_max=malloc(j*sizeof(double));
-		bar_min=malloc(j*sizeof(double)); bar_step=malloc(j*sizeof(double));
-		bar_sens = malloc(j * (1+lsprob.num) * sizeof(double));}
+	if(inMesh.bars){j=inMesh.NumBars; bar_max= (double *) malloc(j*sizeof(double));
+		bar_min= (double *) malloc(j*sizeof(double)); bar_step=(double *) malloc(j*sizeof(double));
+		bar_sens = (double *) malloc(j * (1+lsprob.num) * sizeof(double));}
 
 	// designable bc addtional variables
 	if(inMesh.des_bc){numEnt += inMesh.NumBC * 4 * NUM_DOF;} // additional entries for designable bcs
 	double *bc_sens=0; // bc senstivities
 	double *bc_step=0; // bc update step
 	double *bc_max=0, *bc_min=0; // move limits on bc variables
-	if(inMesh.des_bc){j=inMesh.NumBC; bc_max=malloc(j*sizeof(double));
-		bc_min=malloc(j*sizeof(double)); bc_step=malloc(j*sizeof(double));
-		bc_sens = malloc(j * (1+lsprob.num) * sizeof(double));}
+	if(inMesh.des_bc){j=inMesh.NumBC; bc_max= (double *) malloc(j*sizeof(double));
+		bc_min=(double *) malloc(j*sizeof(double)); bc_step=(double *) malloc(j*sizeof(double));
+		bc_sens =(double *) malloc(j * (1+lsprob.num) * sizeof(double));}
 	int *bc_con=0, *bc_con_ind=0;
 	double *bc_dist=0;
 
@@ -164,9 +165,9 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	double *mat_step=0; // bc update step
 	double *mat_max=0, *mat_min=0; // move limits on bc variables
 	bool mat_opt = inMesh.dm_sim; // flag to switch between seq & sim opt
-		if(inMesh.des_mat){j=inMesh.NumDesMat; mat_max=malloc(j*sizeof(double));
-			mat_min=malloc(j*sizeof(double)); mat_step=malloc(j*sizeof(double));
-			mat_sens = malloc(j * (1+lsprob.num) * sizeof(double));}
+		if(inMesh.des_mat){j=inMesh.NumDesMat; mat_max=(double *) malloc(j*sizeof(double));
+			mat_min=(double *) malloc(j*sizeof(double)); mat_step=(double *) malloc(j*sizeof(double));
+			mat_sens = (double *) malloc(j * (1+lsprob.num) * sizeof(double));}
 
 	double *disp; // displacement array
 	double *load_sw; // load vector, including self_weight load vector
@@ -197,13 +198,13 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 						// or row = eigenvalue num, col = dual state num
 	double *wgt; // weights for load cases
 
-	if(lsprob.obj==5){ prim_ptr = malloc(3 * sizeof(double*));
-						dual_ptr = malloc(3 * sizeof(double*));
-						wgt = malloc(sizeof(double));
+	if(lsprob.obj==5){ prim_ptr = (double **) malloc(3 * sizeof(double*));
+						dual_ptr = (double **) malloc(3 * sizeof(double*));
+						wgt = (double *) malloc(sizeof(double));
 						wgt[0] = 1.0; } // special cosideration for compliant mech
-	else{ prim_ptr = malloc(numCase * sizeof(double*));
-			dual_ptr = malloc(numCase * num_sens * sizeof(double*));
-			wgt = malloc(numCase * sizeof(double));
+	else{ prim_ptr = (double **) malloc(numCase * sizeof(double*));
+			dual_ptr = (double **) malloc(numCase * num_sens * sizeof(double*));
+			wgt = (double *) malloc(numCase * sizeof(double));
 			for(i=0;i<numCase;i++){wgt[i]=1.0;} } // set to 1.0 (for now)
 
 	// compute load magnitudes for compliant mech design
@@ -225,13 +226,13 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	}
 
 	// Arrays to store objective & constraint data for each iteration
-	double *obj = malloc(control.maxItt*sizeof(double));
-	double *cnstr = malloc(lsprob.num*control.maxItt*sizeof(double));
-	double *pred = malloc((1+lsprob.num)*control.maxItt*sizeof(double)); // predicted obj & constraint change
-	double *pred_temp = malloc((1+lsprob.num)*sizeof(double)); // temp to feed SLPsubSol
-	double *delcon = malloc(lsprob.num*sizeof(double)); // array to store distance from constraint (constraint violation)
-	double *relax = malloc(lsprob.num*sizeof(double)); // relaxation factor
-	if(comp_eig==1){save_freq = malloc(num_eig*2*control.maxItt*sizeof(double)); } // frequencies
+	double *obj = (double *) malloc(control.maxItt*sizeof(double));
+	double *cnstr = (double *) malloc(lsprob.num*control.maxItt*sizeof(double));
+	double *pred = (double *) malloc((1+lsprob.num)*control.maxItt*sizeof(double)); // predicted obj & constraint change
+	double *pred_temp = (double *) malloc((1+lsprob.num)*sizeof(double)); // temp to feed SLPsubSol
+	double *delcon = (double *) malloc(lsprob.num*sizeof(double)); // array to store distance from constraint (constraint violation)
+	double *relax = (double *) malloc(lsprob.num*sizeof(double)); // relaxation factor
+	if(comp_eig==1){save_freq = (double *) malloc(num_eig*2*control.maxItt*sizeof(double)); } // frequencies
 	for(i=0;i<lsprob.num;i++){relax[i] = 1.0;} // initialize to 1
 
 	// jeehanglee@gmail.com -- temp code
@@ -266,13 +267,13 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		// Assemble global matrices (in triplet form)
 
 		// Initialize Index Arrays using dynamic memory allocation
-		Kg.ne = numEnt; set_sp_mat(&Kg);
+		Kg.ne = numEnt; fem.set_sp_mat(&Kg);
 
 		if(comp_eig==1)
 		{
-			Mg.ne = numEnt+lump_mass.ne; set_sp_mat(&Mg); // mass matrix
-			eig_vals = malloc(num_eig * 2 * sizeof(double)); // eigenvalues
-			eig_vecs = malloc(num_eig * 2 * order * sizeof(double)); // eigenvectors
+			Mg.ne = numEnt+lump_mass.ne; fem.set_sp_mat(&Mg); // mass matrix
+			eig_vals = (double *) malloc(num_eig * 2 * sizeof(double)); // eigenvalues
+			eig_vecs = (double *) malloc(num_eig * 2 * order * sizeof(double)); // eigenvectors
 		}
 
 		// calculate total structure volume (area) by summing element area array
@@ -354,21 +355,21 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	    }
 
 		// asemble gloabl stiffness (& maybe mass) matrix
-		AFG_Matrix(comp_eig, KE, ME, &Kg, &Mg, &lump_mass, alpha, &inMesh, inMat, control.aMin, control.mMin);
+		fem.AFG_Matrix(comp_eig, KE, ME, &Kg, &Mg, &lump_mass, alpha, &inMesh, inMat, control.aMin, control.mMin);
 
 		// Solve the FE equation using the MA57 solver
 
 		// solve Ku = f (for all cases)
 		// remove fixed dof from global matrix
-	    rem_sp_mat(&Kg, fixDof, 1);
+	    fem.rem_sp_mat(&Kg, fixDof, 1);
 
 		if(lsprob.obj != 3)
 		{
-	        disp = malloc(dispLen * sizeof(double));
+	        disp = (double *) malloc(dispLen * sizeof(double));
 	        // compute total load vector (in case of self-weight)
 	        if(sw)
 	        {
-	            load_sw = malloc(dispLen * sizeof(double));
+	            load_sw = (double *) malloc(dispLen * sizeof(double));
 	            cmat.self_weight(&inMesh, inMat, control.aMin, control.mMin, alpha, freeDof, fixDof, numCase, load, load_sw, acc);
 	            cblas_dcopy(loadLen, load_sw, 1, disp, 1); // copy in load to send to FE_solve
 	        }
@@ -382,7 +383,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		// compute eigenvalues (if required)
 		if(comp_eig==1)
 		{
-			rem_sp_mat(&Mg, fixDof, 1); // remove fixed dof from global matrix
+			fem.rem_sp_mat(&Mg, fixDof, 1); // remove fixed dof from global matrix
 			csolver.eig_solve(num_eig, &Kg, &Mg, freeDof, order, fixDof, eig_vals, eig_vecs, control.pinfo);
 			if(lsprob.obj==3){ obj[itt] = sqrt(eig_vals[0]); } // 1st freq
 			for(i=0;i<lsprob.num;i++){
@@ -436,7 +437,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	    if(sw){free(load_sw);} // no longer needed
 
 		// calculate constraint values and adjoints for displacement constraints
-		if(num_adj>0){adjont = calloc(order*num_adj, sizeof(double));}
+		if(num_adj>0){adjont = (double *) calloc(order*num_adj, sizeof(double));}
 		temp=0; // count adjoint load cases
 		for(i=0;i<lsprob.num;i++)
 		{
@@ -512,7 +513,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		}
 
 		// clear memory for K (&M) matrices
-		free_sp_mat(&Kg); if(comp_eig==1){free_sp_mat(&Mg);}
+		fem.free_sp_mat(&Kg); if(comp_eig==1){fem.free_sp_mat(&Mg);}
 
 		if(control.pinfo == 3) {
 			// write displacement & mode shape info file
@@ -527,7 +528,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		/--------------------------------------------------------------*/
 
 		// Calculate boundary node sensitivities
-		Nsens = calloc(Ntot*num_sens,sizeof(double));
+		Nsens = (double *) calloc(Ntot*num_sens,sizeof(double));
 
 		// point to correct senstivities etc ...
 
@@ -548,7 +549,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 			sens_ptr[0] = &Nsens[temp++]; // compliance sens
 			for(i=0;i<numCase;i++){dual_ptr[i*num_sens] = prim_ptr[i];} // compliance is self-adjoint
 		}
-		else if(lsprob.obj==2){vol_sens = malloc(Ntot*sizeof(double));
+		else if(lsprob.obj==2){vol_sens = (double *) malloc(Ntot*sizeof(double));
 								for(k=0;k<Ntot;k++){ vol_sens[k] = -1.0; }
 								sens_ptr[0] = vol_sens;}   // volume sens
 		else if(lsprob.obj==3){
@@ -566,13 +567,13 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 			j = lsprob.con[i].type;
 			if(j==1)
 			{
-				vol_sens = malloc(Ntot*sizeof(double));
+				vol_sens = (double *) malloc(Ntot*sizeof(double));
 				for(k=0;k<Ntot;k++){ vol_sens[k] = -1.0; } // sensitvity for volume is -1 (geometric constraint)
 				sens_ptr[i+1] = vol_sens;
 			}
 			else if(j==2)
 			{
-				mass_sens = calloc(Ntot,sizeof(double));
+				mass_sens = (double *) calloc(Ntot,sizeof(double));
 
 				if(inMesh.des_mat)
 				{
@@ -645,7 +646,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 			}
 			else if(j==10)
 			{
-				zero_sens = calloc(Ntot,sizeof(double));
+				zero_sens = (double *) calloc(Ntot,sizeof(double));
 				sens_ptr[i+1] = zero_sens;
 			}
 		}
@@ -771,9 +772,9 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 				// analyse connectivity of des bc elements
 				int xMin, xMax, yMin, yMax, n, m;
 				temp = inMesh.NumBC;
-				bc_con = malloc(8*temp*sizeof(int));
-				bc_dist = malloc(8*temp*sizeof(double));
-				bc_con_ind = malloc((temp+1)*sizeof(int));
+				bc_con = (int *) malloc(8*temp*sizeof(int));
+				bc_dist = (double *) malloc(8*temp*sizeof(double));
+				bc_con_ind = (int *) malloc((temp+1)*sizeof(int));
 				int count = 0;
 				for(i=0;i<temp;i++)
 				{
@@ -811,14 +812,14 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 					}
 				}
 				bc_con_ind[temp] = count;
-				bc_con = realloc(bc_con, count * sizeof(int));
-				bc_dist = realloc(bc_dist, count * sizeof(double));
+				bc_con = (int *) realloc(bc_con, count * sizeof(int));
+				bc_dist = (double *) realloc(bc_dist, count * sizeof(double));
 			}
 
 			// Filter!
 			{
 				temp = inMesh.NumBC;
-				double *bc_temp = malloc(temp*sizeof(double));
+				double *bc_temp = (double *) malloc(temp*sizeof(double));
 				cblas_dcopy(temp, bc_sens, 1, bc_temp, 1); // copy original
 
 				for(i=0;i<temp;i++) // for all des bcs
@@ -884,7 +885,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		// material sensitvities
 		if(inMesh.des_mat)
 		{
-	        double *mat_sens_temp = calloc(numCase * inMesh.NumDesMat, sizeof(double));
+	        double *mat_sens_temp = (double *) calloc(numCase * inMesh.NumDesMat, sizeof(double));
 
 	        // call routine for computing material complinace senstivites
 	        if(lsprob.obj == 1)
@@ -1103,9 +1104,9 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		// Compute boundary intergral of shape senstivities
 		// then use LP sub-problem to obtain the velocity function
 		temp = lsprob.num + 1; // number of "functions"
-		Vnorm = calloc(Ntot,sizeof(double));		// normal velocity array
-		Lbound = malloc(Ntot*temp*sizeof(double));	// boundary intergral data array
-		Lbound_nums = malloc(Ntot*sizeof(int)); // global boundary point numbers
+		Vnorm = (double *) calloc(Ntot,sizeof(double));		// normal velocity array
+		Lbound = (double *) malloc(Ntot*temp*sizeof(double));	// boundary intergral data array
+		Lbound_nums = (int *) malloc(Ntot*sizeof(int)); // global boundary point numbers
 
 		// compute variabe weights for boundary intergral
 		cboundary.BsegWgt(&Bndry, &inMesh);
@@ -1119,8 +1120,8 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		}
 
 		// realloc & free memory
-		Lbound = realloc(Lbound, num_Lbound*temp*sizeof(double));
-		Lbound_nums = realloc(Lbound_nums, num_Lbound*sizeof(int));
+		Lbound = (double *) realloc(Lbound, num_Lbound*temp*sizeof(double));
+		Lbound_nums = (int *) realloc(Lbound_nums, num_Lbound*sizeof(int));
 
 		// obtian Vnorm using SLP subproblem
 		if(inMesh.bars)
@@ -1163,7 +1164,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	        if(inMesh.dm_sim || mat_opt)
 	        {
 	            // reduce number of mat vars using a map
-	            bool *inc_mv = malloc(inMesh.NumDesMat*sizeof(bool));
+	            bool *inc_mv = (bool *) malloc(inMesh.NumDesMat*sizeof(bool));
 	            int num_reduced=0;
 	            for(i=0;i<inMesh.NumDesMat;i++)
 	            {
@@ -1172,8 +1173,8 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	                else{inc_mv[i]=0;}
 	            }
 
-	            double *mat_sens_red = malloc(num_reduced*(1+lsprob.num)*sizeof(double));
-	            double *mat_step_red = malloc(num_reduced*sizeof(double));
+	            double *mat_sens_red = (double *) malloc(num_reduced*(1+lsprob.num)*sizeof(double));
+	            double *mat_step_red = (double *) malloc(num_reduced*sizeof(double));
 	            j=0;
 	            for(i=0;i<inMesh.NumDesMat;i++)
 	            {
@@ -1359,7 +1360,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		// Fast marching method to determine Extension Velocities
 		clevelset.Vext(&inMesh, &levelset, &Bndry, Vnorm);
 
-		Grad = calloc(inMesh.NumNodes, sizeof(double)); // array for gradinet info
+		Grad = (double *) calloc(inMesh.NumNodes, sizeof(double)); // array for gradinet info
 
 		// Calculate lsf gradients & update
 		j2=inMesh.NodeY-1;

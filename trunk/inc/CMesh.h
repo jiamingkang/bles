@@ -28,6 +28,9 @@
 #ifndef CMESH_H_
 #define CMESH_H_
 
+#include "CommonTypes.h"
+#include "CFiniteElement.h"
+
 class CMesh {
 public:
 	CMesh();

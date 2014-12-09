@@ -10,7 +10,7 @@
 
 #include <string>
 
-using std;
+//using std;
 
 class CExMinimiseCompliance {
 public:
@@ -21,7 +21,7 @@ public:
 	void Solve(char* arg, char* filename);
 
 private:
-	std::string m_filename;	// input file name
+	//std::string m_filename;	// input file name
 };
 
 #endif /* CEXMINIMISECOMPLIANCE_H_ */

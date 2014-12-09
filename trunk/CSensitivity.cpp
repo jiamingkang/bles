@@ -82,7 +82,7 @@ void CSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, iso
 	int Gcount = 0;		// varible to track number of points evaluated
 	int tnodes[4];
 	int gpoints = NumElem * 4; // number of sensitivity values (4 per element)
-	double *gSens = calloc(gpoints*numDual,sizeof(double));	// define memory for gauss point sensitivities
+	double *gSens = (double *) calloc(gpoints*numDual,sizeof(double));	// define memory for gauss point sensitivities
 	isoMat *mptr; // pointer for material
 
 	int mat_count = 0; // count for designable material
@@ -149,8 +149,8 @@ void CSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, iso
 				}
 				else if(mode==2) // compliant mechanism sensitivites
 				{
-					double *gSens2 = calloc(8, sizeof(double));
-					double *gSens3 = calloc(4, sizeof(double));	// temp memory for gauss point sensitivities
+					double *gSens2 = (double *) calloc(8, sizeof(double));
+					double *gSens3 = (double *) calloc(4, sizeof(double));	// temp memory for gauss point sensitivities
 
 					GaSens_Q4(tnodes, prim, dual, atemp, h, thk, mptr, 0, gSens2, 1, 2, wgt, sw, acc);
 					GaSens_Q4(tnodes, &dual[1], &dual[1], atemp, h, thk, mptr, 0, gSens3, 1, 1, wgt, sw, acc);
@@ -177,10 +177,10 @@ void CSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, iso
 
 	// Step 2. Compute node sensitivities using least squares method
 
-	double *sens_temp = malloc(numDual * sizeof(double)); // array for sens of each dual state
+	double *sens_temp = (double *) malloc(numDual * sizeof(double)); // array for sens of each dual state
 
 	// calculate smoothed sensitivities for all boundary (or non-OUT) nodes
-	bool *done = calloc(Ntot, sizeof(bool));
+	bool *done = (bool *) calloc(Ntot, sizeof(bool));
 	double ftemp;
 
 	// first search through each boundary segment
@@ -298,10 +298,10 @@ int CSensitivity::Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, doubl
 		return(1);
 	}
 
-	double *A = malloc( 6 * count * sizeof(double)); // array to store gpoint values
-	double *B = malloc(numDual * count * sizeof(double)); // array to store rhs' of equation
-	double *Bmax =  calloc(numDual, sizeof(double)); // array to store maximum sens values
-	double *Bmin =  calloc(numDual, sizeof(double)); // array to store minimum sens values
+	double *A = (double *) malloc( 6 * count * sizeof(double)); // array to store gpoint values
+	double *B = (double *) malloc(numDual * count * sizeof(double)); // array to store rhs' of equation
+	double *Bmax =  (double *) calloc(numDual, sizeof(double)); // array to store maximum sens values
+	double *Bmin =  (double *) calloc(numDual, sizeof(double)); // array to store minimum sens values
 
 	for(i=0;i<count;i++)
 	{
@@ -377,11 +377,11 @@ void CSensitivity::GaSens_Q4(int *tnodes, double **prim, double **dual, double a
 {
 	int i,j,k,n,p,temp,temp2,ind,ind2;	// incrementors etc
 	int totDof = 4*NUM_DOF; // total dof per element
-	double *Eprim = malloc(totDof*sizeof(double));	// Primary Element displacement array
-	double *Edual = malloc(totDof*numDual*sizeof(double));	// Adjoint Element displacement array
+	double *Eprim = (double *) malloc(totDof*sizeof(double));	// Primary Element displacement array
+	double *Edual = (double *) malloc(totDof*numDual*sizeof(double));	// Adjoint Element displacement array
 	double stress[3], strain[3], sens;	 // Variabes for strain tensors
     Coord ug;
-    Coord *pg = malloc(numDual*sizeof(Coord)); // primal & dual displacements at gauss point
+    Coord *pg = (Coord *) malloc(numDual*sizeof(Coord)); // primal & dual displacements at gauss point
 
 	// copy material property matrix
 	double Emat[9];
@@ -495,8 +495,8 @@ void CSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, doubl
 {
 	int i,j,k,p,temp,temp2,ind,ind2;	// incrementors etc
 	int totDof = 4*NUM_DOF; // total dof per element
-	double *Eprim = malloc(totDof*sizeof(double));	// Primary Element displacement array
-	double *Edual = malloc(totDof*sizeof(double));	// Adjoint Element displacement array
+	double *Eprim = (double *) malloc(totDof*sizeof(double));	// Primary Element displacement array
+	double *Edual = (double *) malloc(totDof*sizeof(double));	// Adjoint Element displacement array
 	double stress[3], strain[3], sens, ftemp;	 // Variabes for strain tensors
 	double Iprim, Idual; // variables for interpolated displacements
 
@@ -654,9 +654,9 @@ void CSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, double 
 	Elem **Number = inMesh->Number;
 
 	int totDof = 4*NUM_DOF; // total dof per element
-	double *Eprim = malloc(totDof*sizeof(double));	// primary element disp array
-    double *Edual = malloc(totDof*sizeof(double));	// primary element disp array
-	double *aux = malloc(totDof*sizeof(double));
+	double *Eprim = (double *) malloc(totDof*sizeof(double));	// primary element disp array
+    double *Edual = (double *) malloc(totDof*sizeof(double));	// primary element disp array
+	double *aux = (double *) malloc(totDof*sizeof(double));
 
 	// realtive material properties
 	double E1 = inMat[inMesh->mat1].e;
@@ -753,8 +753,8 @@ void CSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *
 	Elem **Number = inMesh->Number;
 
 	int totDof = 4*NUM_DOF; // total dof per element
-	double *Eprim = malloc(totDof*sizeof(double));	// element eigenvector array
-	double *aux = malloc(totDof*sizeof(double));
+	double *Eprim = (double *) malloc(totDof*sizeof(double));	// element eigenvector array
+	double *aux = (double *) malloc(totDof*sizeof(double));
 
 	// realtive material properties
 	double E1 = inMat[inMesh->mat1].e;
@@ -839,8 +839,8 @@ void CSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *
 	Elem **Number = inMesh->Number;
 
 	int totDof = 4*NUM_DOF; // total dof per element
-	double *Eprim = malloc(totDof*sizeof(double));	// element eigenvector array
-	double *aux = malloc(totDof*sizeof(double));
+	double *Eprim = (double *) malloc(totDof*sizeof(double));	// element eigenvector array
+	double *aux = (double *) malloc(totDof*sizeof(double));
 
 	// realtive material properties
 	double E1 = inMat[inMesh->mat1].e;

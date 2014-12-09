@@ -83,7 +83,7 @@ public:
 					 double *low_lim, double *max_lam, double *min_lam, double *grad, int pinfo);
 
 	// sub-function for sorting in ascending order
-	int dcmpfunc (const void * p1, const void * p2);
+	static int dcmpfunc (const void * p1, const void * p2);
 
 	// function to get limits for lambda
 	void getLamLim(int n, int m, double *inmax, double *inmin, double *s, double *c,

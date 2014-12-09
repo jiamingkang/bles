@@ -31,8 +31,8 @@
 //
 // Includes
 //
-//#include "CommonTypes.h"
-
+#include "CommonTypes.h"
+#include "CMathUtility.h"
 //
 // Pre-Definitions
 //

@@ -204,7 +204,7 @@ void CLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
 	bool *fixed = levelset->fixed;
 
 	// reset mine array memory
-	levelset->mine = realloc(levelset->mine,NumNodes * sizeof(int));
+	levelset->mine = (int *) realloc(levelset->mine,NumNodes * sizeof(int));
 	int mineCnt = 0; // count number of mine nodes
 
 	int i;
@@ -230,12 +230,12 @@ void CLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
 	// reallocate memory for mine array
     if(mineCnt>0)
     {
-        levelset->mine = realloc(levelset->mine,mineCnt * sizeof(int));
+        levelset->mine = (int *) realloc(levelset->mine,mineCnt * sizeof(int));
         levelset->numMine = mineCnt;
     }
     else
     {
-        levelset->mine = realloc(levelset->mine,sizeof(int));
+        levelset->mine = (int *) realloc(levelset->mine,sizeof(int));
         levelset->numMine = 0;
     }
 }
@@ -260,8 +260,8 @@ void CLevelSet::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int
 	int n1,n2,p1,p2; // boundary point node numbers
 	double ftemp,len,len2,sens1,sens2; // temporary variables
 	double *Ltemp, *b_len; // temporary array to store boundary data
-	Ltemp = calloc(Ntot*numFunc,sizeof(double));
-	b_len = calloc(Ntot, sizeof(double));
+	Ltemp = (double *) calloc(Ntot*numFunc,sizeof(double));
+	b_len = (double *) calloc(Ntot, sizeof(double));
 
 	for(i=0;i<NumBound;i++)
 	{
@@ -344,18 +344,18 @@ void CLevelSet::Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, double 
 	double ftemp, dtemp; // temp variables
 	double Lsum, Fsum; //varibales to calcualte Vext from neighbour nodes
 
-	bool *known = calloc(NumNodes,sizeof(bool)); // array to for computed velocity values
-	bool *trial = calloc(NumNodes,sizeof(bool)); // array for trail nodes in fast marching method
-	double *lsf_temp = calloc(NumNodes,sizeof(double)); // temp lsf during fast marching method
-	double *Vtemp = calloc(NumNodes,sizeof(double)); // array to store velocity values
+	bool *known = (bool *) calloc(NumNodes,sizeof(bool)); // array to for computed velocity values
+	bool *trial = (bool *) calloc(NumNodes,sizeof(bool)); // array for trail nodes in fast marching method
+	double *lsf_temp = (double *) calloc(NumNodes,sizeof(double)); // temp lsf during fast marching method
+	double *Vtemp = (double *) calloc(NumNodes,sizeof(double)); // array to store velocity values
 
 	short flag; // used to detect when all extension velocities for active node set have been calcualted
-	double *lsf_trial = calloc(NumNodes,sizeof(double)); // array to store trial values of the lsf_temp during the fast marching method
+	double *lsf_trial = (double *) calloc(NumNodes,sizeof(double)); // array to store trial values of the lsf_temp during the fast marching method
 
 	// set two arrays to store nodes to be updated during each iteration of the fast marching method
 	int *xind, *yind, ncount;
-	xind = malloc(NumNodes * sizeof(int));
-	yind = malloc(NumNodes * sizeof(int));
+	xind = (int *) malloc(NumNodes * sizeof(int));
+	yind = (int *) malloc(NumNodes * sizeof(int));
 
 	// Initalise Known set
 	for(i=0;i<NumNodes;i++)
@@ -1378,7 +1378,7 @@ void CLevelSet::ReInt(mesh *inMesh, levSet *levelset)
 	double h = inMesh->h;
 
 	//array to temp store lsf function during re-initalisation calcs
-	double *lsf_temp = malloc(NumNodes * sizeof(double));
+	double *lsf_temp = (double *) malloc(NumNodes * sizeof(double));
 
 	int i,j,k,sign; // incrementors
 	int Nnum,Nnum2,Nnum3; // node numbers
@@ -1387,8 +1387,8 @@ void CLevelSet::ReInt(mesh *inMesh, levSet *levelset)
 	double Af, Bf, Cf; // variables for lsf_temp calculation by solution of a quadratic equn.
 	double ftemp, dtemp; // tempory variables
 
-	bool *known = calloc(NumNodes,sizeof(bool));
-	bool *trial = calloc(NumNodes,sizeof(bool));
+	bool *known = (bool *) calloc(NumNodes,sizeof(bool));
+	bool *trial = (bool *) calloc(NumNodes,sizeof(bool));
 
 	// first ensure all nodes on domain boundary have lsf <= 0.0
 	// bottom edge
@@ -1500,12 +1500,12 @@ void CLevelSet::ReInt(mesh *inMesh, levSet *levelset)
 		// Do until trial set is empty
 		short flag;
 		double *lsf_trial;
-		lsf_trial = calloc(NumNodes,sizeof(double)); // array to store trial values of the lsf_temp during the fast marching method
+		lsf_trial = (double *) calloc(NumNodes,sizeof(double)); // array to store trial values of the lsf_temp during the fast marching method
 
 		// set two arrays to store nodes to be updatedduring each iteration of the fast marching method
 		int *xind, *yind, ncount;
-		xind = malloc(NumNodes * sizeof(int));
-		yind = malloc(NumNodes * sizeof(int));
+		xind = (int *) malloc(NumNodes * sizeof(int));
+		yind = (int *) malloc(NumNodes * sizeof(int));
 
 		double lsf_max = (NodeX > NodeY) ? (100.0 * h * NodeX) : (100.0 * h * NodeY);
 		do
@@ -1894,12 +1894,12 @@ void CLevelSet::get_delD(int n, int m, double *x, double *lam, double *s, double
 void CLevelSet::get_slpGrad(int n, int m, int numVar, double *lam, double *s, double *c, double *up_lim,
 				 double *low_lim, double *max_lam, double *min_lam, double *grad, int pinfo)
 {
-	double *x = malloc(n * sizeof(double));  // boundary move vector
+	double *x = (double *) malloc(n * sizeof(double));  // boundary move vector
 
 	// define trial values of lam for finite difference
 	double lam1,lam2;
-	double *lam_temp = malloc(m * sizeof(double));
-	double *del_lam = malloc(m * sizeof(double));
+	double *lam_temp = (double *) malloc(m * sizeof(double));
+	double *del_lam = (double *) malloc(m * sizeof(double));
 
 	// make initial guess
 	int i,j;
@@ -1913,8 +1913,8 @@ void CLevelSet::get_slpGrad(int n, int m, int numVar, double *lam, double *s, do
 		del_lam[i] = inc;
 	}
 
-	double *val1 = malloc(m * sizeof(double));
-	double *val2 = malloc(m * sizeof(double));
+	double *val1 = (double *) malloc(m * sizeof(double));
+	double *val2 = (double *) malloc(m * sizeof(double));
 	double delLam,ftemp;
 	// evaluate each function for each value of lam
 	for(i=0;i<m;i++) // for each lambda value (column in grad matrix)
@@ -2011,8 +2011,8 @@ void CLevelSet::getLamLim(int n, int m, double *inmax, double *inmin, double *s,
     else
     {
         // first compute objective / constrant ratios
-        double *rmax = malloc(nr*sizeof(double));
-        double *rmin = malloc(nr*sizeof(double));
+        double *rmax = (double *) malloc(nr*sizeof(double));
+        double *rmin = (double *) malloc(nr*sizeof(double));
 
         double ob_max = cblas_ddot(n, c, 1, up_lim, 1);
         double ob_min = cblas_ddot(n, c, 1, low_lim, 1);
@@ -2029,8 +2029,8 @@ void CLevelSet::getLamLim(int n, int m, double *inmax, double *inmin, double *s,
         }
 
         // then compute lam_max and lam_min for each point
-        double *lammax = malloc(n*sizeof(double));
-        double *lammin = malloc(n*sizeof(double));
+        double *lammax = (double *) malloc(n*sizeof(double));
+        double *lammin = (double *) malloc(n*sizeof(double));
 
         for(i=0;i<n;i++)
         {
@@ -2143,14 +2143,14 @@ int CLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, do
 	Coord Crd;
 	double a1,del1,del2;
 
-	double *sfg = malloc(m * n * sizeof(double)); // objective & constraint shape sens
-	double *x = malloc(n * sizeof(double));  // boundary move vector
-	double *u_low = malloc(n * sizeof(double)); // upper limit on x
-	double *u_up = malloc(n * sizeof(double));  // lower limit on x
-	double *b = malloc(numCon * sizeof(double)); // constraint change targets (sent to LP)
-	double *lam = malloc(numVar * sizeof(double));	 // multiplers for each shape senstivity (+ add vars)
-	double *maxS = calloc(m,sizeof(double)); // find abolute maximum sensitivty (of each function)
-	double *maxC = calloc(m,sizeof(double)); // find abolute maximum integral coefficient (of each function)
+	double *sfg = (double *) malloc(m * n * sizeof(double)); // objective & constraint shape sens
+	double *x = (double *) malloc(n * sizeof(double));  // boundary move vector
+	double *u_low = (double *) malloc(n * sizeof(double)); // upper limit on x
+	double *u_up = (double *) malloc(n * sizeof(double));  // lower limit on x
+	double *b = (double *) malloc(numCon * sizeof(double)); // constraint change targets (sent to LP)
+	double *lam = (double *) malloc(numVar * sizeof(double));	 // multiplers for each shape senstivity (+ add vars)
+	double *maxS = (double *) calloc(m,sizeof(double)); // find abolute maximum sensitivty (of each function)
+	double *maxC = (double *) calloc(m,sizeof(double)); // find abolute maximum integral coefficient (of each function)
 
 	// condense the raw senstivity matrix
 	for(i=0;i<n;i++)
@@ -2440,8 +2440,8 @@ int CLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, do
     }
 
 	// get lambda limits
-	double *min_lam = malloc(m * sizeof(double));
-	double *max_lam = malloc(m * sizeof(double));
+	double *min_lam = (double *) malloc(m * sizeof(double));
+	double *max_lam = (double *) malloc(m * sizeof(double));
 	getLamLim(n, m, max_lam, min_lam, sfg, cA, u_up, u_low, pinfo);
 
 	// re-scale to make each lamba approx -1 -> +1
@@ -2457,17 +2457,17 @@ int CLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, do
 
 	// SLP loop to find "optimal" values for lam
 	// lots of data arrays
-	double *min_lam_step = calloc(numVarLP, sizeof(double));
-	double *max_lam_step = malloc(numVarLP * sizeof(double)); // limits for current step size
-	double *lim_lam = malloc(numVar * sizeof(double));      // limits for reduced step lengths in SLP
-	double *dlam = malloc(m * numVarLP * sizeof(double));     // gradients of obj & constraint, wrt lam
-	double *lam_trial = malloc(numVar * sizeof(double));    // trial values for lambda
-	double *lam_step = malloc(numVarLP * sizeof(double));     // change in lambda
-	double *lam_best =  malloc(numVar * sizeof(double));    // best solutionlambda
-	double *b_step = malloc(numAct * sizeof(double));  // targets for constraint change, change !
-	double *g_trial = malloc(numAct * sizeof(double)); // trial constraint values (using lam_trial)
-	double *g_lam = malloc(numAct * sizeof(double));   // constraint values
-	double *g_shift = malloc(numAct * sizeof(double)); // shift due to shift to lam_min=0 in LP
+	double *min_lam_step = (double *) calloc(numVarLP, sizeof(double));
+	double *max_lam_step = (double *) malloc(numVarLP * sizeof(double)); // limits for current step size
+	double *lim_lam = (double *) malloc(numVar * sizeof(double));      // limits for reduced step lengths in SLP
+	double *dlam = (double *) malloc(m * numVarLP * sizeof(double));     // gradients of obj & constraint, wrt lam
+	double *lam_trial = (double *) malloc(numVar * sizeof(double));    // trial values for lambda
+	double *lam_step = (double *) malloc(numVarLP * sizeof(double));     // change in lambda
+	double *lam_best =  (double *) malloc(numVar * sizeof(double));    // best solutionlambda
+	double *b_step = (double *) malloc(numAct * sizeof(double));  // targets for constraint change, change !
+	double *g_trial = (double *) malloc(numAct * sizeof(double)); // trial constraint values (using lam_trial)
+	double *g_lam = (double *) malloc(numAct * sizeof(double));   // constraint values
+	double *g_shift = (double *) malloc(numAct * sizeof(double)); // shift due to shift to lam_min=0 in LP
 	double f_filter[200];
 	double h_filter[200]; // filters for objective and constraints
 	double f_best, h_best;
@@ -2925,8 +2925,8 @@ int CLevelSet::trust_sub(int n, int m, int nu, double *x, double *c, double *A, 
 	char trans = 'T'; // transpose (for FORTRAN column major order)
 
 	// first split the A matrix into 1st column and a square mxm matrix
-	double *rhs = malloc(2*m*sizeof(double)); // first row = a1, second row = b
-	double *Ar = malloc(m*m*sizeof(double));
+	double *rhs = (double *) malloc(2*m*sizeof(double)); // first row = a1, second row = b
+	double *Ar = (double *) malloc(m*m*sizeof(double));
 
 	for(i=0;i<m;i++) // each row in A
 	{
@@ -2974,7 +2974,7 @@ int CLevelSet::trust_sub(int n, int m, int nu, double *x, double *c, double *A, 
 		if(pinfo==3){ printf("\nWarning x_min=%12.4e, x_max=%12.4e",x_min,x_max); }
 
 		// try again !!!
-		double *bd = malloc(m*sizeof(double));
+		double *bd = (double *) malloc(m*sizeof(double));
 		for(i=0;i<m;i++){ bd[i] = 0.5*u[i+1] - rhs[m+i]; }
 
 		x[0] = cblas_ddot(m, rhs, 1, bd, 1);
@@ -3051,19 +3051,19 @@ int CLevelSet::con_min3(int n, int m, int numCon, double *lam,  double *s, doubl
 	// b = target constraint values
 
 	// lots of data arrays
-	double *dG_dlam = malloc(m*sizeof(double));
+	double *dG_dlam = (double *) malloc(m*sizeof(double));
     //double dG_dlam[2];
-	double *Hes_fd = malloc(m*m*sizeof(double));
+	double *Hes_fd = (double *) malloc(m*m*sizeof(double));
     //double Hes_fd[4];
-	double *dgdl_mat = malloc(numCon*m*sizeof(double)); // row is lam, col is g
-	double *g_b = malloc(numCon*sizeof(double));
-	double *g0 = malloc(numCon*sizeof(double));
-	double *g1 = malloc(numCon*sizeof(double));
-	double *g2 = malloc(numCon*sizeof(double));
-	double *g3 = malloc(numCon*sizeof(double));
-	double *g4 = malloc(numCon*sizeof(double));
-	double *x = malloc(n*sizeof(double));
-	double *lam_best = malloc(m*sizeof(double));
+	double *dgdl_mat = (double *) malloc(numCon*m*sizeof(double)); // row is lam, col is g
+	double *g_b = (double *) malloc(numCon*sizeof(double));
+	double *g0 = (double *) malloc(numCon*sizeof(double));
+	double *g1 = (double *) malloc(numCon*sizeof(double));
+	double *g2 = (double *) malloc(numCon*sizeof(double));
+	double *g3 = (double *) malloc(numCon*sizeof(double));
+	double *g4 = (double *) malloc(numCon*sizeof(double));
+	double *x = (double *) malloc(n*sizeof(double));
+	double *lam_best = (double *) malloc(m*sizeof(double));
 
 	double h_trial, step, ftemp;
 
@@ -3242,7 +3242,7 @@ void CLevelSet::get_lam0(int n, int m, int numCon, double *lam,  double *s, doub
 			  double *lam_min, double *lam_max)
 {
 	// first compute the matrix M = cA x s^T (m x m)
-	double *M = malloc(m*m*sizeof(double));
+	double *M = (double *) malloc(m*m*sizeof(double));
 
 	cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, m, n, 1.0, cA, n, s, n, 0.0, M, m);
 
@@ -3251,7 +3251,7 @@ void CLevelSet::get_lam0(int n, int m, int numCon, double *lam,  double *s, doub
 
 	int i,ind;
 	double del_obj, ftemp;
-	double *gc = malloc(m*sizeof(double));
+	double *gc = (double *) malloc(m*sizeof(double));
 
 	for(i=0;i<m;i++)
 	{

@@ -100,7 +100,7 @@ void CMaterial::self_weight(mesh *inMesh, isoMat *inMat, double aMin, double mMi
     double vol = inMesh->t * inMesh->h * inMesh->h; // element volume
 
     // copy load_in to load_temp (expanding)
-    double *load_temp = calloc(totDof*numCase, sizeof(double));
+    double *load_temp = (double *) calloc(totDof*numCase, sizeof(double));
     for(i=0;i<totDof;i++)
     {
         if(dofMap[i] != -1)	// if dof not fixed copy accross the value
