@@ -145,5 +145,10 @@ typedef struct
 	int numMine;  // number of mines on edge of narrow band
 	int *mine;    // mine node numbers
 } levSet;
+
+//
+// jeehanglee@gmail.com: start conversions from struct to class
+//
+
 	
 #endif // __COMMON_TYPES_H
