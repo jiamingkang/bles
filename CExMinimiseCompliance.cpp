@@ -5,6 +5,8 @@
  *      Author: jeehang
  */
 
+#include <stdlib.h>
+
 #include "CommonTypes.h"
 #include "CFiniteElement.h"
 #include "CMathUtility.h"
@@ -77,7 +79,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 
 	// calculate IN element stiffness matrix (& mass matrix)
 	double AreaElem = inMesh.h * inMesh.h; // Area of an element
-	double **KE = (double **)malloc(numMat*sizeof(double*));
+	double **KE = (double **)malloc(numMat * sizeof(double*));
 	double **ME = (double **)malloc(numMat*sizeof(double*));
 	for(i=0;i<numMat;i++)
 	{
