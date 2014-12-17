@@ -1,5 +1,5 @@
 /*
-   CMaterial.cpp
+   CHakMaterial.cpp
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,14 +25,14 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CMaterial.h"
+#include "CHakMaterial.h"
 
-CMaterial::CMaterial() {
+CHakMaterial::CHakMaterial() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CMaterial::~CMaterial() {
+CHakMaterial::~CHakMaterial() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -41,7 +41,7 @@ CMaterial::~CMaterial() {
 //
 
 // function to compute elastic modulus from two materials
-double CMaterial::HS_mat(double alpha, double hs_int, isoMat *mat1, isoMat *mat2)
+double CHakMaterial::HS_mat(double alpha, double hs_int, isoMat *mat1, isoMat *mat2)
 {
     double kmax, kmin, gmax, gmin, khs, ghs;
     double fact, ftemp, ftemp2;
@@ -78,7 +78,7 @@ double CMaterial::HS_mat(double alpha, double hs_int, isoMat *mat1, isoMat *mat2
 }
 
 // function to compute self-weight load vector
-void CMaterial::self_weight(mesh *inMesh, isoMat *inMat, double aMin, double mMin, double *alpha,
+void CHakMaterial::self_weight(mesh *inMesh, isoMat *inMat, double aMin, double mMin, double *alpha,
                     int freeDof, int *dofMap, int numCase, double *load_in, double *load_out, Coord *acc)
 {
     int i,j,n,m,o,num,ind,temp,temp2;

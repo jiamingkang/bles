@@ -29,7 +29,7 @@
 #define CHakMesh_H_
 
 #include "CommonTypes.h"
-#include "CFiniteElement.h"
+#include "CHakFiniteElement.h"
 
 class CHakMesh {
 public:

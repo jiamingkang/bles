@@ -1,5 +1,5 @@
 /*
-	CMathUtility.h
+	CHakMathUtility.h
 
 	Created on: Nov 24, 2014
 	Author: Peter Dunning, JeeHang Lee
@@ -25,8 +25,8 @@
 	along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CMATHUTILITY_H_
-#define CMATHUTILITY_H_
+#ifndef CHakMathUtility_H_
+#define CHakMathUtility_H_
 
 //
 // Includes
@@ -40,10 +40,10 @@
 #define SMALL 1.0E-8
 #define BIG 1.0E6
 
-class CMathUtility {
+class CHakMathUtility {
 public:
-	CMathUtility();
-	virtual ~CMathUtility();
+	CHakMathUtility();
+	virtual ~CHakMathUtility();
 
 public:
 	// function to compute gauss point coords
@@ -94,4 +94,4 @@ public:
 
 };
 
-#endif /* CMATHUTILITY_H_ */
+#endif /* CHakMathUtility_H_ */

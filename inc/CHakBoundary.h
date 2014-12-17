@@ -1,5 +1,5 @@
 /*
-	CBoundary.h
+	CHakBoundary.h
 
 	Created on: Nov 24, 2014
 	Author: Peter Dunning, JeeHang Lee
@@ -25,8 +25,8 @@
 	along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CBOUNDARY_H_
-#define CBOUNDARY_H_
+#ifndef CHakBoundary_H_
+#define CHakBoundary_H_
 
 //
 // includes
@@ -34,10 +34,10 @@
 
 #include "CommonTypes.h"
 
-class CBoundary {
+class CHakBoundary {
 public:
-	CBoundary();
-	virtual ~CBoundary();
+	CHakBoundary();
+	virtual ~CHakBoundary();
 
 public:
 	// function to weight boundary segments so that lengths are more even
@@ -49,4 +49,4 @@ public:
 
 };
 
-#endif /* CBOUNDARY_H_ */
+#endif /* CHakBoundary_H_ */

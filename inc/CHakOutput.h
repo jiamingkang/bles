@@ -1,5 +1,5 @@
 /*
-	COutput.h
+	CHakOutput.h
 
   	Created on: Nov 24, 2014
 	Author: Peter Dunning, JeeHang Lee
@@ -25,8 +25,8 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COUTPUT_H_
-#define COUTPUT_H_
+#ifndef CHakOutput_H_
+#define CHakOutput_H_
 
 // include
 #include <stdio.h>
@@ -34,10 +34,10 @@
 #include <string.h>
 #include "CommonTypes.h"
 
-class COutput {
+class CHakOutput {
 public:
-	COutput();
-	virtual ~COutput();
+	CHakOutput();
+	virtual ~CHakOutput();
 
 public:
 	// function to write element and node numbering info
@@ -80,4 +80,4 @@ public:
 	void report(int n,  int m, int nu, double **v);
 };
 
-#endif /* COUTPUT_H_ */
+#endif /* CHakOutput_H_ */

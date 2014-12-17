@@ -1,5 +1,5 @@
 /*
-	CMathUtility.cpp
+	CHakMathUtility.cpp
 
 	Created on: Nov 24, 2014
 	Author: Peter Dunning, JeeHang Lee
@@ -28,18 +28,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "CommonTypes.h"
-#include "CSolver.h"
-#include "CMathUtility.h"
+#include "CHakSolver.h"
+#include "CHakMathUtility.h"
 
 //
 // Constructor / Destructor
 //
-CMathUtility::CMathUtility() {
+CHakMathUtility::CHakMathUtility() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CMathUtility::~CMathUtility() {
+CHakMathUtility::~CHakMathUtility() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -49,7 +49,7 @@ CMathUtility::~CMathUtility() {
 
 // Function that calculates the area of any Polygon
 // NB: vertices have to be numbered anti-clockwise
-double CMathUtility::PolyArea(int N,Coord *point)
+double CHakMathUtility::PolyArea(int N,Coord *point)
 {
 	int i,j;
 	double area = 0.0;
@@ -66,7 +66,7 @@ double CMathUtility::PolyArea(int N,Coord *point)
 }
 
 // function to determine if two lines (p1 -> p2 & p3 -> p4) cross
-short CMathUtility::LineCross(Coord *pts)
+short CHakMathUtility::LineCross(Coord *pts)
 {
 	int i;
 	double tol = 1.0e-5;
@@ -119,7 +119,7 @@ short CMathUtility::LineCross(Coord *pts)
 }
 
 // function to compute gauss point coords
-void CMathUtility::Gauss_Coord(mesh *inMesh, Coord *gCoord)
+void CHakMathUtility::Gauss_Coord(mesh *inMesh, Coord *gCoord)
 {
 	// read in mesh data
 	double h = inMesh->h;
@@ -160,7 +160,7 @@ void CMathUtility::Gauss_Coord(mesh *inMesh, Coord *gCoord)
 }
 
 // sub-function for sorting in ascending order
-int CMathUtility::dcmpfunc(const void * p1, const void * p2)
+int CHakMathUtility::dcmpfunc(const void * p1, const void * p2)
 {
 	double cd = ( *(double*)p1 - *(double*)p2 );
 	int c = (cd < 0.0) ? -1 : 1;
@@ -168,7 +168,7 @@ int CMathUtility::dcmpfunc(const void * p1, const void * p2)
 }
 
 // function to handle divide by zero
-double CMathUtility::divZero(double num, double denom)
+double CHakMathUtility::divZero(double num, double denom)
 {
 	if(fabs(denom) < SMALL) {
 		return 1.0E+8;
@@ -179,7 +179,7 @@ double CMathUtility::divZero(double num, double denom)
 }
 
 // function to find an initial point
-int CMathUtility::initialize(int n,  int m, int nu, double **v, double *A, double *b, double *u, double *c)
+int CHakMathUtility::initialize(int n,  int m, int nu, double **v, double *A, double *b, double *u, double *c)
 {
 	int i;
 	double dtemp;
@@ -385,7 +385,7 @@ int CMathUtility::initialize(int n,  int m, int nu, double **v, double *A, doubl
 }
 
 // function to find an initial point
-int CMathUtility::initialize2(int n,  int m, int nu, double **v, double *A, double *b, double *u, double *c)
+int CHakMathUtility::initialize2(int n,  int m, int nu, double **v, double *A, double *b, double *u, double *c)
 {
 	int i;
 	double dtemp,fact1,fact2;
@@ -519,7 +519,7 @@ int CMathUtility::initialize2(int n,  int m, int nu, double **v, double *A, doub
 }
 
 // function to compute delP(v) - predictor
-int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, double *A, double *b, double *u, double *c)
+int CHakMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, double *A, double *b, double *u, double *c)
 {
 	int i,j,ind;
 	double dtemp;
@@ -773,7 +773,7 @@ int CMathUtility::predictor(int n,  int m, int nu, double **v, double **delP, do
 }
 
 // function to compute delC(v) - corrector
-void CMathUtility::corrector(int n, int nu, double mu, double **v, double **delP)
+void CHakMathUtility::corrector(int n, int nu, double mu, double **v, double **delP)
 {
 	int i;
 	// compute rxz
@@ -811,7 +811,7 @@ void CMathUtility::corrector(int n, int nu, double mu, double **v, double **delP
 }
 
 // function to compute the centering parameter
-double CMathUtility::centering(int n, int m, int nu, double lim, double **v, double **delP)
+double CHakMathUtility::centering(int n, int m, int nu, double lim, double **v, double **delP)
 {
 	double ap = 1.0;
 	double ad = 1.0;
@@ -900,7 +900,7 @@ double CMathUtility::centering(int n, int m, int nu, double lim, double **v, dou
 }
 
 // function to find the duality gap
-double CMathUtility::dual_gap(int n, int nu, double **v)
+double CHakMathUtility::dual_gap(int n, int nu, double **v)
 {
 	double g =  cblas_ddot(n, v[0], 1, v[1], 1); // xTz
 	if(nu > 0) {
@@ -911,7 +911,7 @@ double CMathUtility::dual_gap(int n, int nu, double **v)
 }
 
 // update the variables
-void CMathUtility::update(int n, int nu, int m, double **v, double **delP)
+void CHakMathUtility::update(int n, int nu, int m, double **v, double **delP)
 {
 	double g,ming;
 
@@ -1020,7 +1020,7 @@ void CMathUtility::update(int n, int nu, int m, double **v, double **delP)
 }
 
 // compute the stopping criterion
-double CMathUtility::stopping(int n,  int m, int nu, double **v, double *A, double lenb, double *b,
+double CHakMathUtility::stopping(int n,  int m, int nu, double **v, double *A, double lenb, double *b,
 			 double lenu, double *u, double lenc, double *c)
 {
 	int i;

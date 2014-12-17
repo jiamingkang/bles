@@ -1,5 +1,5 @@
 /*
-   CMaterial.h
+   CHakMaterial.h
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,15 +25,15 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CMATERIAL_H_
-#define CMATERIAL_H_
+#ifndef CHakMaterial_H_
+#define CHakMaterial_H_
 
 #include "CommonTypes.h"
 
-class CMaterial {
+class CHakMaterial {
 public:
-	CMaterial();
-	virtual ~CMaterial();
+	CHakMaterial();
+	virtual ~CHakMaterial();
 
 public:
 	// function to compute elastic modulus from two materials
@@ -45,4 +45,4 @@ public:
 
 };
 
-#endif /* CMATERIAL_H_ */
+#endif /* CHakMaterial_H_ */

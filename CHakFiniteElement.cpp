@@ -1,5 +1,5 @@
 /*
-   CFiniteElement.cpp
+   CHakFiniteElement.cpp
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -28,16 +28,16 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "CMaterial.h"
-#include "CMathUtility.h"
-#include "CFiniteElement.h"
+#include "CHakMaterial.h"
+#include "CHakMathUtility.h"
+#include "CHakFiniteElement.h"
 
-CFiniteElement::CFiniteElement() {
+CHakFiniteElement::CHakFiniteElement() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CFiniteElement::~CFiniteElement() {
+CHakFiniteElement::~CHakFiniteElement() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -46,7 +46,7 @@ CFiniteElement::~CFiniteElement() {
 //
 
 // Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
-void CFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, sp_mat *Kg, sp_mat *Mg, sp_mat *lump_mass, double *alpha,
+void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, sp_mat *Kg, sp_mat *Mg, sp_mat *lump_mass, double *alpha,
 					mesh *inMesh, isoMat *inMat, double aMin, double mMin)
 {
 	int n,m,o,num;
@@ -224,7 +224,7 @@ void CFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, sp_mat *Kg, 
 
 
 // function to compute a cut element area
-double CFiniteElement::InArea(int eStat, int eNum, int *Lnodes, short *NodeStat, int NumNodes, Coord *NodeCoord,
+double CHakFiniteElement::InArea(int eStat, int eNum, int *Lnodes, short *NodeStat, int NumNodes, Coord *NodeCoord,
 			  Coord *AuxNodes, int NumBound, Bseg *Boundary)
 {
 	int numPts = 0;
@@ -359,7 +359,7 @@ static Coord Q4[4] = {{-1.,-1.},{1.,-1.},{1.,1.},{-1.,1.}};
 // These functions integrate the matrix exactly. Trust me it works
 
 // For odd (i + j = odd) Matrix enrites
-double CFiniteElement::Aodd(int i,int j,double e,double g)
+double CHakFiniteElement::Aodd(int i,int j,double e,double g)
 {
 	double a = (Q4[i].y * Q4[j].x);
 	double b = (Q4[i].x * Q4[j].y);
@@ -370,7 +370,7 @@ double CFiniteElement::Aodd(int i,int j,double e,double g)
 }
 
 // For even (i + j = even) Matrix enrites
-double CFiniteElement::Aeven(int i,int j,double e,double g)
+double CHakFiniteElement::Aeven(int i,int j,double e,double g)
 {
 	double a = 1.5 + (0.5 * (Q4[i].y * Q4[j].y));
 	a *= (Q4[i].x * Q4[j].x);
@@ -385,7 +385,7 @@ double CFiniteElement::Aeven(int i,int j,double e,double g)
 
 // Complete square IN element stiffness matix computation
 // only for isotropic material
-void CFiniteElement::KEMatrix(double *KE, isoMat *mat, double t)
+void CHakFiniteElement::KEMatrix(double *KE, isoMat *mat, double t)
 {
 	// multiply by constant thickness
 	double c = mat->mat[0] * t;
@@ -426,7 +426,7 @@ static const double me_const[64]= {
 	0,2,0,1,0,2,0,4};
 
 // consistent mass matrix for a 2D plane element
-void CFiniteElement::MEMatrix(double *ME, double rho, double area, double t)
+void CHakFiniteElement::MEMatrix(double *ME, double rho, double area, double t)
 {
 	double mass = t*area*rho/36.0; // mass = volume x density
 	int i;
@@ -438,7 +438,7 @@ void CFiniteElement::MEMatrix(double *ME, double rho, double area, double t)
 
 // Function that assemebles the element matricies into the global matrix (in triplet form)
 // Symmetric matrix - upper triangle
-void CFiniteElement::Assemble2(int *K_begin, int *M_begin, int nNod, int nDof, int *tnodes, double *KE, double *ME,
+void CHakFiniteElement::Assemble2(int *K_begin, int *M_begin, int nNod, int nDof, int *tnodes, double *KE, double *ME,
 					sp_mat *Kg, sp_mat *Mg, int mass)
 {
 	int start,row,col,n,m,rn,cm,k_num,m_num,p,q,i,j,temp; // Incrementors
@@ -487,7 +487,7 @@ void CFiniteElement::Assemble2(int *K_begin, int *M_begin, int nNod, int nDof, i
 
 
 // function to free memory for a sparse matrix
-void CFiniteElement::free_sp_mat(sp_mat *m)
+void CHakFiniteElement::free_sp_mat(sp_mat *m)
 {
 	if(m->irn){free(m->irn); m->irn=0;}
 	if(m->jcn){free(m->jcn); m->jcn=0;}
@@ -495,7 +495,7 @@ void CFiniteElement::free_sp_mat(sp_mat *m)
 }
 
 // function to create memory for a sparse matrix
-void CFiniteElement::set_sp_mat(sp_mat *m)
+void CHakFiniteElement::set_sp_mat(sp_mat *m)
 {
 	// first ensure memory if free
 	free_sp_mat(m);
@@ -511,7 +511,7 @@ void CFiniteElement::set_sp_mat(sp_mat *m)
 }
 
 // function to remove dof from a sparse matrix
-void CFiniteElement::rem_sp_mat(sp_mat *m, int *map, int inc)
+void CHakFiniteElement::rem_sp_mat(sp_mat *m, int *map, int inc)
 {
 	int i,j,k;
 
