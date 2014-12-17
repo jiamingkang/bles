@@ -1,5 +1,5 @@
 /*
-   CMesh.cpp
+   CHakMesh.cpp
 
    	Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,18 +25,18 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CMesh.h"
+#include "CHakMesh.h"
 #include "CFiniteElement.h"
 
 //
 // Constructor & Destructor
 //
-CMesh::CMesh() {
+CHakMesh::CHakMesh() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CMesh::~CMesh() {
+CHakMesh::~CHakMesh() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -55,7 +55,7 @@ CMesh::~CMesh() {
 */
 
 // Function that numbers all elements and nodes in the FG domain
-void CMesh::Numbering(mesh *inMesh)
+void CHakMesh::Numbering(mesh *inMesh)
 {
 	int i,j;
 	int num = 0; // first element number is zero
@@ -120,7 +120,7 @@ void CMesh::Numbering(mesh *inMesh)
 
 
 // function to find the nearest grid node number to a set of co-ordinates
-int CMesh::closeNode(mesh *inMesh, double xp, double yp)
+int CHakMesh::closeNode(mesh *inMesh, double xp, double yp)
 {
 	// read data
 	int NumNodes = inMesh->NumNodes;
@@ -159,7 +159,7 @@ int CMesh::closeNode(mesh *inMesh, double xp, double yp)
 // 1. determines the node and element status
 // 2. discretizes the boundary
 // 3. computes area ratios for AFG method
-void CMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, double *alpha, double aMin)
+void CHakMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, double *alpha, double aMin)
 {
 	int n,m,o; //Incrementors
 	int temp,temp2,num; // Temperary variables
@@ -499,8 +499,7 @@ void CMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, doub
 }
 
 // function to compute area ratio for all elements
-void CMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes,
-				int NumBound, Bseg *Boundary, double aMin)
+void CHakMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes, int NumBound, Bseg *Boundary, double aMin)
 {
 	int n,m;	// incrementors
 	int temp,num; // temp variables
@@ -564,7 +563,7 @@ void CMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemSt
 
 
 // Node Co-ordinate calculation function
-void CMesh::Coordinates(mesh *inMesh)
+void CHakMesh::Coordinates(mesh *inMesh)
 {
 	// data from inMesh
 	int elemX = inMesh->elemX;
@@ -607,7 +606,7 @@ void CMesh::Coordinates(mesh *inMesh)
 
 
 // function that orders node numbers into a 2D based on their relative positions
-void CMesh::NodeNums2(mesh *inMesh)
+void CHakMesh::NodeNums2(mesh *inMesh)
 {
 	// data from inMesh
 	int NodeX = inMesh->NodeX;
@@ -656,7 +655,7 @@ void CMesh::NodeNums2(mesh *inMesh)
 
 
 // function to number bars elements
-void CMesh::Bar_numbering(mesh *inMesh)
+void CHakMesh::Bar_numbering(mesh *inMesh)
 {
 	// read data
 	Elem **Number = inMesh->Number; // pointer to Numbering array

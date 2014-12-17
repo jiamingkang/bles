@@ -1,5 +1,5 @@
 /*
-   CMesh.h
+   CHakMesh.h
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,16 +25,16 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CMESH_H_
-#define CMESH_H_
+#ifndef CHakMesh_H_
+#define CHakMesh_H_
 
 #include "CommonTypes.h"
 #include "CFiniteElement.h"
 
-class CMesh {
+class CHakMesh {
 public:
-	CMesh();
-	virtual ~CMesh();
+	CHakMesh();
+	virtual ~CHakMesh();
 
 public:
 	// Function that numbers all elements and nodes in the FG domain
@@ -167,6 +167,6 @@ private:
 	bool mat_lin;
 };
 
-#endif /* CMESH_H_ */
+#endif /* CHakMesh_H_ */
 
 

@@ -13,9 +13,9 @@
 #include "CSolver.h"
 #include "CSensitivity.h"
 #include "CLevelSet.h"
-#include "CInput.h"
+#include "CHakInput.h"
 #include "COutput.h"
-#include "CMesh.h"
+#include "CHakMesh.h"
 #include "CBoundary.h"
 
 #include "CExMinimiseCompliance.h"
@@ -55,7 +55,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	sp_mat lump_mass; // lumped mass matrix
 
 	// read the input file
-	CInput cinput;
+	CHakInput cinput;
 	temp = cinput.read_input(arg, &inMesh, &numMat, inMat, &levelset, &lsprob, &control, &fixDof,
 			&numCase, &load, &freeDof, &lump_mass, &sw, &acc);
 	if(temp==-1)//{return -1;} // exit on error
