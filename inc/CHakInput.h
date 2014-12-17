@@ -29,17 +29,29 @@
 #define CINPUT_H_
 
 #include "CommonTypes.h"
+#include "CHakIsoMaterial.h"
+#include <string>
 
 #define MAX_CHARS_PER_LINE 512
 #define MAX_TOKENS_PER_LINE 16
 #define MAX_HOLES 500
 
+//
+// Class CHakInput 
+//	- Mainly read the input file and retrieve initial data
+//	- All initial data are preserved in this scope. No manipulation is allowed.
+//	- To use the data, external entities should get reference of the member.
+//
 class CHakInput {
 public:
 	CHakInput();
+	CHakInput(char *filename) { m_filename = filename; }
 	virtual ~CHakInput();
 
 public:
+	// function to read new-style input file & assign to classes
+	int ReadFile(char *datafile);
+
 	// function to read new-style input file
 	int read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,
 				   ctrl *control, int **fixDof, int *numCase, double **load, int *freeDof, sp_mat *lump_mass, bool *sw, Coord **acc);
@@ -48,7 +60,15 @@ protected:
 	static int icmpfunc(const void *p1, const void *p2);
 
 private:
+	// Mesh 
+	CHakMesh m_mesh;
 
+	// isotropic material including material data and its count
+	CHakIsoMaterial m_isoMat;
+
+private:
+	// input file name
+	std::string m_filename;
 };
 
 #endif /* CINPUT_H_ */

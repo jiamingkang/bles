@@ -8,15 +8,15 @@
 #include <stdlib.h>
 
 #include "CommonTypes.h"
-#include "CFiniteElement.h"
-#include "CMathUtility.h"
-#include "CSolver.h"
-#include "CSensitivity.h"
-#include "CLevelSet.h"
+#include "CHakFiniteElement.h"
+#include "CHakMathUtility.h"
+#include "CHakSolver.h"
+#include "CHakSensitivity.h"
+#include "CHakLevelSet.h"
 #include "CHakInput.h"
-#include "COutput.h"
+#include "CHakOutput.h"
 #include "CHakMesh.h"
-#include "CBoundary.h"
+#include "CHakBoundary.h"
 
 #include "CExMinimiseCompliance.h"
 
@@ -64,7 +64,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		return;
 	}
 
-	COutput coutput;
+	CHakOutput coutput;
 	if(control.pinfo==3)
 	{
 		coutput.OutNumber(&inMesh, filename);
@@ -72,8 +72,8 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	}
 
 	// compute gauss point coords (used in sensitivity smoothing)
-	CMathUtility cmu;
-	CFiniteElement fem;
+	CHakMathUtility cmu;
+	CHakFiniteElement fem;
 	Coord *gCoord = (Coord *) malloc(4 * inMesh.NumElem * sizeof(Coord));
 	cmu.Gauss_Coord(&inMesh, gCoord);
 
