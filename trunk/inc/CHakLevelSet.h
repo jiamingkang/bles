@@ -107,11 +107,11 @@ public:
 
 // jeehanglee@gmail.com: temp code. Refactoring required.
 public:
-	CSolver getSolver() { return m_solver; }
-	void setSolver(CSolver solver) { m_solver = solver; }
+	CHakSolver getSolver() { return m_solver; }
+	void setSolver(CHakSolver solver) { m_solver = solver; }
 
 private:
-	CSolver m_solver;
+	CHakSolver m_solver;
 };
 
 #endif /* CHakLevelSet_H_ */

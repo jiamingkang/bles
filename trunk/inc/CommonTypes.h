@@ -146,9 +146,5 @@ typedef struct
 	int *mine;    // mine node numbers
 } levSet;
 
-//
-// jeehanglee@gmail.com: start conversions from struct to class
-//
-
 	
 #endif // __COMMON_TYPES_H

@@ -11,10 +11,10 @@
 #include <math.h>
 
 #include "CHakMesh.h"			// originally Numbering.h
-#include "CLevelSet.h"	// originally Levels.h --> should be changed to COptimisation.h (jeehanglee@gmail.com)
-#include "CMathUtility.h"	// originally ABFG.h
+#include "CHakLevelSet.h"		// originally Levels.h --> should be changed to COptimisation.h (jeehanglee@gmail.com)
+#include "CHakMathUtility.h"	// originally ABFG.h
 #include "CHakInput.h"
-#include "CFiniteElement.h"
+#include "CHakFiniteElement.h"
 
 //
 // Constructur / Destructor
@@ -45,8 +45,8 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inM
 
 	// jeehanglee@gmail.com: temp code. Refactoring required.
 	CHakMesh cmesh;
-	CLevelSet cLevelSet;
-	CFiniteElement fem;
+	CHakLevelSet cLevelSet;
+	CHakFiniteElement fem;
 
 	// set default obj & const
 	lsprob->obj = 0;
