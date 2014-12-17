@@ -1,5 +1,5 @@
 /*
-   CLevelSet.h
+   CHakLevelSet.h
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,16 +25,16 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CLEVELSET_H_
-#define CLEVELSET_H_
+#ifndef CHakLevelSet_H_
+#define CHakLevelSet_H_
 
 #include "CommonTypes.h"
-#include "CSolver.h"
+#include "CHakSolver.h"
 
-class CLevelSet {
+class CHakLevelSet {
 public:
-	CLevelSet();
-	virtual ~CLevelSet();
+	CHakLevelSet();
+	virtual ~CHakLevelSet();
 
 public:
 	// function to create the initial signed distance function - inc holes
@@ -114,4 +114,4 @@ private:
 	CSolver m_solver;
 };
 
-#endif /* CLEVELSET_H_ */
+#endif /* CHakLevelSet_H_ */
