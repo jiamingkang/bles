@@ -21,7 +21,16 @@ public:
 	void Solve(char* arg, char* filename);
 
 private:
-	//std::string m_filename;	// input file name
+	std::string m_filename;	// input file name
+
+	// handle input files
+	CHakInput m_input;
+
+	// handle output files
+	COutput m_output;
+
+	// Mesh from input file
+	CHakMesh m_mesh;
 };
 
 #endif /* CEXMINIMISECOMPLIANCE_H_ */

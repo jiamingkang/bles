@@ -1,5 +1,5 @@
 /*
- * CInput.cpp
+ * CHakInput.cpp
  *
  *  Created on: Nov 24, 2014
  *      Author: jeehang
@@ -10,41 +10,41 @@
 #include <string.h>
 #include <math.h>
 
-#include "CMesh.h"			// originally Numbering.h
+#include "CHakMesh.h"			// originally Numbering.h
 #include "CLevelSet.h"	// originally Levels.h --> should be changed to COptimisation.h (jeehanglee@gmail.com)
 #include "CMathUtility.h"	// originally ABFG.h
-#include "CInput.h"
+#include "CHakInput.h"
 #include "CFiniteElement.h"
 
 //
 // Constructur / Destructor
 //
-CInput::CInput() {
+CHakInput::CHakInput() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CInput::~CInput() {
+CHakInput::~CHakInput() {
 	// TODO Auto-generated destructor stub
 }
 
 //
 // Implementation - Interfaces
-int CInput::icmpfunc (const void * p1, const void * p2)
+int CHakInput::icmpfunc (const void * p1, const void * p2)
 {
-	int c = ( *(int*)p1 > *(int*)p2 ) ? 1 : -1;
+	int c = ( *(int *)p1 > *(int *)p2 ) ? 1 : -1;
 	return c;
 }
 
 // function to read new-style input file
-int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,
+int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,
 			   ctrl *control, int **map, int *numCase, double **load_in, int *freeDof, sp_mat *lump_mass, bool *sw, Coord **acc)
 {
 	int i,j,nd,nd2,ind,end;
 	const char* const DELIMITER = " ,\t";
 
 	// jeehanglee@gmail.com: temp code. Refactoring required.
-	CMesh cmesh;
+	CHakMesh cmesh;
 	CLevelSet cLevelSet;
 	CFiniteElement fem;
 
