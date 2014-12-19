@@ -47,6 +47,30 @@ public:
 	void BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
 				  int *Lbound_nums, int *numLbound,  double *Lbound);
 
+private:
+	// number of auxillary nodes
+	int m_numAux;		
+
+	// aux node coords
+	Coord *m_pAuxNodes; 
+
+	// number of boundary segments
+	int m_numBound; 
+	
+	// boundary segment data
+	Bseg *Bound; 
+
+	// grid node -> aux node connectivity
+	int *m_pConnAuxNode; 
+	
+	// indicator array for na_conn (compressed storage)
+	int *m_pIndConnAuxNode; 
+
+	// boundary segment lengths 
+	double *m_pLenBseg;
+	
+	// boundary segment weights
+	double *m_pWeightBseg; 
 };
 
 #endif /* CHakBoundary_H_ */
