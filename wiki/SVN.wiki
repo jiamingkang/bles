@@ -59,7 +59,7 @@ svn add CHakBetterCode.cpp
 svn add CHakBetterCode.cpp
 svn ci -m "added the CHakBetterCode.cpp"
 
-After that, the addition of the code is really happened in the server repository.
+After that, the addition of the code is completed in the server repository.
 
 <B>
 6. Delete items in the repository
@@ -77,4 +77,4 @@ svn delete CHakLegacyCode.cpp
 svn delete CHakLegacyCode.cpp
 svn ci -m "delete CHakLegacyCode.cpp"
 
-After that, the deletion of the code is really happened in the server repository.
+After that, the deletion of the code is completed in the server repository.
