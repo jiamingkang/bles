@@ -66,15 +66,15 @@ After that, the addition of the code is completed in the server repository.
 </B>
 
 -- Usage:
-svn delete ${ITEM_TO_BE_DELETED}
+svn rm ${ITEM_TO_BE_DELETED}
 
 -- Example:
-svn delete CHakLegacyCode.cpp
+svn rm CHakLegacyCode.cpp
 
 -- Comments:
 'svn delete' does not mean the deletion of the item from the server. To complete the deletion, it should be followed by 'svn ci'. Please see below
 
-svn delete CHakLegacyCode.cpp
+svn rm CHakLegacyCode.cpp
 svn ci -m "delete CHakLegacyCode.cpp"
 
 After that, the deletion of the code is completed in the server repository.
