@@ -1,5 +1,5 @@
 /*
-	CHakOutput.cpp
+	COutput.cpp
 
   	Created on: Nov 24, 2014
 	Author: Peter Dunning, JeeHang Lee
@@ -24,17 +24,17 @@
     You should have received a copy of the GNU General Public License
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "CHakOutput.h"
+#include "COutput.h"
 
 //
 // Constructor / Destructor
 //
-CHakOutput::CHakOutput() {
+COutput::COutput() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CHakOutput::~CHakOutput() {
+COutput::~COutput() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -43,7 +43,7 @@ CHakOutput::~CHakOutput() {
 //
 
 // function to write element and node numbering info
-void CHakOutput::OutNumber(mesh *inMesh, char *datafile)
+void COutput::OutNumber(mesh *inMesh, char *datafile)
 {
 	// read data
 	int elemX = inMesh->elemX;
@@ -78,7 +78,7 @@ void CHakOutput::OutNumber(mesh *inMesh, char *datafile)
 }
 
 // function to write node co-ordinate information file
-void CHakOutput::OutNodeCoord(mesh *inMesh, char *datafile)
+void COutput::OutNodeCoord(mesh *inMesh, char *datafile)
 {
 	// read data
 	int NumNodes = inMesh->NumNodes;
@@ -107,7 +107,7 @@ void CHakOutput::OutNodeCoord(mesh *inMesh, char *datafile)
 }
 
 // fucntion to output lsf (& maybe alpha) in vtk format
-void CHakOutput::OutPLotShapeVTK2(mesh *inMesh, double *lsf, double *alpha, int pinfo, int itt, char *datafile)
+void COutput::OutPLotShapeVTK2(mesh *inMesh, double *lsf, double *alpha, int pinfo, int itt, char *datafile)
 {
 	// read data
 	int NodeX = inMesh->NodeX-2;
@@ -177,7 +177,7 @@ void CHakOutput::OutPLotShapeVTK2(mesh *inMesh, double *lsf, double *alpha, int 
 }
 
 // function to output boundary as a mesh for Paraview (with shape sensitivities)
-void CHakOutput::OutBoundVTK(mesh *inMesh, boundary *bound_in, int num_sens, double **Sens, int itt, char *datafile)
+void COutput::OutBoundVTK(mesh *inMesh, boundary *bound_in, int num_sens, double **Sens, int itt, char *datafile)
 {
 	// read data
 	int NumNodes = inMesh->NumNodes;
@@ -245,7 +245,7 @@ void CHakOutput::OutBoundVTK(mesh *inMesh, boundary *bound_in, int num_sens, dou
 }
 
 // function to output boundary integration data
-void CHakOutput::OutBoundInt(int numFunc, int numLbound, int *Lbound_nums, double *Lbound, int itt, char *datafile)
+void COutput::OutBoundInt(int numFunc, int numLbound, int *Lbound_nums, double *Lbound, int itt, char *datafile)
 {
 	int i,j,p2;
 	FILE *outfile;	// File varible for output files
@@ -281,7 +281,7 @@ void CHakOutput::OutBoundInt(int numFunc, int numLbound, int *Lbound_nums, doubl
 }
 
 // function to output Vext & Grad in vtk format for Paraview
-void CHakOutput::OutHJVTK(mesh *inMesh, double *Vnorm, double *Grad, int itt, char *datafile)
+void COutput::OutHJVTK(mesh *inMesh, double *Vnorm, double *Grad, int itt, char *datafile)
 {
 	// read data
 	int NodeX = inMesh->NodeX-2;
@@ -349,7 +349,7 @@ void CHakOutput::OutHJVTK(mesh *inMesh, double *Vnorm, double *Grad, int itt, ch
 }
 
 // function to output displacements (and mode shapes) in vtk format for Paraview
-void CHakOutput::OutDispVTK(mesh *inMesh, int numCase, double *disp, int num_eig, double *vec, int itt, char *datafile)
+void COutput::OutDispVTK(mesh *inMesh, int numCase, double *disp, int num_eig, double *vec, int itt, char *datafile)
 {
 	// read data
 	int NodeX = inMesh->NodeX-2;
@@ -425,7 +425,7 @@ void CHakOutput::OutDispVTK(mesh *inMesh, int numCase, double *disp, int num_eig
 }
 
 // function to output object & constraint convergence data
-void CHakOutput::OutConv(int itt, prob *lsprob, double *Obj, double *constr, char *datafile)
+void COutput::OutConv(int itt, prob *lsprob, double *Obj, double *constr, char *datafile)
 {
 	int numCon = lsprob->num;
 	int i,j,ind; // incrementor
@@ -511,7 +511,7 @@ void CHakOutput::OutConv(int itt, prob *lsprob, double *Obj, double *constr, cha
 }
 
 // function to output covergence history of frequencies
-void CHakOutput::OutFreq(int itt, int num_eig, double *freq, char *datafile)
+void COutput::OutFreq(int itt, int num_eig, double *freq, char *datafile)
 {
 	int i,j,ind; // incrementor
 	int tot_eig = 2*num_eig;
@@ -546,7 +546,7 @@ void CHakOutput::OutFreq(int itt, int num_eig, double *freq, char *datafile)
 }
 
 // function to output bar areas
-void CHakOutput::OutBars(mesh *inMesh, int numFunc, double *sens, int pinfo, int itt, char *datafile)
+void COutput::OutBars(mesh *inMesh, int numFunc, double *sens, int pinfo, int itt, char *datafile)
 {
 	// read data
 	int NumBars = inMesh->NumBars;
@@ -647,7 +647,7 @@ void CHakOutput::OutBars(mesh *inMesh, int numFunc, double *sens, int pinfo, int
 }
 
 // function to output designable bc varibles
-void CHakOutput::OutDesBC(mesh *inMesh, double *sens, int pinfo, int itt, char *datafile)
+void COutput::OutDesBC(mesh *inMesh, double *sens, int pinfo, int itt, char *datafile)
 {
 	// read data
 	int *BC_nums = inMesh->BC_nums;
@@ -718,7 +718,7 @@ void CHakOutput::OutDesBC(mesh *inMesh, double *sens, int pinfo, int itt, char *
 }
 
 // function to output designable material varibles
-void CHakOutput::OutDesMat(mesh *inMesh, double *alpha, double aMin, int num_sens, double *sens, int pinfo, int itt, char *datafile)
+void COutput::OutDesMat(mesh *inMesh, double *alpha, double aMin, int num_sens, double *sens, int pinfo, int itt, char *datafile)
 {
 	// read data
     int NumDesMat = inMesh->NumDesMat;
@@ -795,7 +795,7 @@ void CHakOutput::OutDesMat(mesh *inMesh, double *alpha, double aMin, int num_sen
 }
 
 // function to print solution to screen
-void CHakOutput::report(int n,  int m, int nu, double **v)
+void COutput::report(int n,  int m, int nu, double **v)
 {
 	int i;
 	int lim = (nu < 10) ? nu : 10;

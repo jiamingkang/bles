@@ -1,5 +1,5 @@
 /*
-	CHakSolver.cpp
+	CSolver.cpp
 
 	Created on: Nov 24, 2014
 	Author: jeehang
@@ -31,21 +31,21 @@
 //#include <vecLib/vecLib.h>
 
 #include "CommonTypes.h"
-#include "CHakMesh.h"
-#include "CHakMathUtility.h"
-#include "CHakSolver.h"
-#include "CHakOutput.h"
+#include "CMesh.h"
+#include "CMathUtility.h"
+#include "CSolver.h"
+#include "COutput.h"
 
 //
 // Constructor / Destructor
 //
 
-CHakSolver::CHakSolver() {
+CSolver::CSolver() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CHakSolver::~CHakSolver() {
+CSolver::~CSolver() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -54,7 +54,7 @@ CHakSolver::~CHakSolver() {
 //
 
 // Function that sets up and calls the MA57 to solve Ku = f
-void CHakSolver::FE_Solve(sp_mat *Kg, int *dofMap, double *disp, int freeDof, int order, int numRhs)
+void CSolver::FE_Solve(sp_mat *Kg, int *dofMap, double *disp, int freeDof, int order, int numRhs)
 {
 	int i,j,temp,temp2;
 
@@ -93,7 +93,7 @@ void CHakSolver::FE_Solve(sp_mat *Kg, int *dofMap, double *disp, int freeDof, in
 }
 
 // Function that sets up and runs the MA57 Multifrontal Solver
-void CHakSolver::solve(int n, int ne, int *irn, int *jcn, double *A, int n_rhs, double *rhs, int pinfo)
+void CSolver::solve(int n, int ne, int *irn, int *jcn, double *A, int n_rhs, double *rhs, int pinfo)
 {
 	// Lots of variables for MA57 fortran multi-frontal solver
 	int lkeep,lfact,lifact,lrhs,lwork,liwork;
@@ -156,7 +156,7 @@ void CHakSolver::solve(int n, int ne, int *irn, int *jcn, double *A, int n_rhs, 
 }
 
 // function to solve a linear least squares problem (by factorization)
-void CHakSolver::d_lsLPK(int N, int M, int NRHS, double *A, double *b)
+void CSolver::d_lsLPK(int N, int M, int NRHS, double *A, double *b)
 {
     int INFO;
     char trans = 'N';
@@ -189,7 +189,7 @@ void CHakSolver::d_lsLPK(int N, int M, int NRHS, double *A, double *b)
 }
 
 // fucntion to solve a non-symmetric system (LU decomposition)
-int CHakSolver::dun_slvLPK(char trans, int N, int NRHS, double *A, double *B)
+int CSolver::dun_slvLPK(char trans, int N, int NRHS, double *A, double *B)
 {
 	int i,j;
 	if(N==1)
@@ -285,7 +285,7 @@ int CHakSolver::dun_slvLPK(char trans, int N, int NRHS, double *A, double *B)
 }
 
 // function to solve a symmetric system (Cholesky factorization)
-int CHakSolver::dsy_slvLPK(int N, int NRHS, double *A, double *B)
+int CSolver::dsy_slvLPK(int N, int NRHS, double *A, double *B)
 {
 	int i,j;
 
@@ -386,7 +386,7 @@ int CHakSolver::dsy_slvLPK(int N, int NRHS, double *A, double *B)
 }
 
 // function to invert a matrix
-void CHakSolver::din_LPK(double* A, int N)
+void CSolver::din_LPK(double* A, int N)
 {
     int *IPIV = (int *) malloc((N+1)*sizeof(int));
     int LWORK = N*N;
@@ -401,7 +401,7 @@ void CHakSolver::din_LPK(double* A, int N)
 }
 
 // function to solve a linear program using HSL revised Simplex method
-int CHakSolver::lp_simplex(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo)
+int CSolver::lp_simplex(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo)
 {
 	int i,j,k,err;
 	double f;
@@ -454,7 +454,7 @@ int CHakSolver::lp_simplex(int n, int m, int nu, double *x, double *c, double *A
 }
 
 // function to solve linear prog using interior point method
-int CHakSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo)
+int CSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo)
 {
 	double *delx = (double *) malloc(n*sizeof(double));
 	// array of slack varibles (s, length nu)
@@ -682,7 +682,7 @@ int CHakSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, d
 }
 
 // funciton to use ARPACK reverse communication to solve generalized eigenvalue problem (mode 3)
-int CHakSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, int *dofMap, double *vals, double *vecs, int pinfo)
+int CSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, int *dofMap, double *vals, double *vecs, int pinfo)
 {
 	int nev = 2 * nev_in; // always compute twice the required amount (for repeated values)
 	int i,j;
@@ -839,7 +839,7 @@ int CHakSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, 
 }
 
 // multiply a sparse matrix by a vector
-void CHakSolver::Msp_Vec(int n, sp_mat *mat, double *vin, double *vout)
+void CSolver::Msp_Vec(int n, sp_mat *mat, double *vin, double *vout)
 {
 	int i,rn,cn;
 	int ne = mat->ne;

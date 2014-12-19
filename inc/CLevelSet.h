@@ -1,5 +1,5 @@
 /*
-   CHakLevelSet.h
+   CLevelSet.h
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,16 +25,16 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CHakLevelSet_H_
-#define CHakLevelSet_H_
+#ifndef CLEVELSET_H_
+#define CLEVELSET_H_
 
 #include "CommonTypes.h"
-#include "CHakSolver.h"
+#include "CSolver.h"
 
-class CHakLevelSet {
+class CLevelSet {
 public:
-	CHakLevelSet();
-	virtual ~CHakLevelSet();
+	CLevelSet();
+	virtual ~CLevelSet();
 
 public:
 	// function to create the initial signed distance function - inc holes
@@ -107,32 +107,11 @@ public:
 
 // jeehanglee@gmail.com: temp code. Refactoring required.
 public:
-	CHakSolver getSolver() { return m_solver; }
-	void setSolver(CHakSolver solver) { m_solver = solver; }
+	CSolver getSolver() { return m_solver; }
+	void setSolver(CSolver solver) { m_solver = solver; }
 
 private:
-	CHakSolver m_solver;
-
-private:
-	// number of nodes for level set discretization
-	int m_numNode;	 
-
-	// pointer to array containing nodal lsf values
-	double *m_pNodalLsf; 
-	
-	//bool *bound; // nodes that are on fixed boundaries (not currently used)
-	
-	// array for fixed lsf values (NULL if none fixed)
-	bool *m_pFixedLsf; 
-
-	// array for nodes within narrow band (and not fixed)
-	bool *m_pActive; 
-
-	// number of mines on edge of narrow band
-	int m_numMine;
-
-	// mine node numbers
-	int *m_pMine;    
+	CSolver m_solver;
 };
 
-#endif /* CHakLevelSet_H_ */
+#endif /* CLEVELSET_H_ */

@@ -1,5 +1,5 @@
 /*
-   CHakLevelSet.cpp
+   CLevelSet.cpp
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,15 +25,15 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "CHakSolver.h"
-#include "CHakLevelSet.h"
+#include "CSolver.h"
+#include "CLevelSet.h"
 
-CHakLevelSet::CHakLevelSet() {
+CLevelSet::CLevelSet() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CHakLevelSet::~CHakLevelSet() {
+CLevelSet::~CLevelSet() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -42,7 +42,7 @@ CHakLevelSet::~CHakLevelSet() {
 //
 
 // function to create the initial signed distance function - inc holes
-void CHakLevelSet::initialLsf(mesh *inMesh, levSet *levelset, int NumHole, CirH *holes, int NumRect, Coord *Rect, double lBand)
+void CLevelSet::initialLsf(mesh *inMesh, levSet *levelset, int NumHole, CirH *holes, int NumRect, Coord *Rect, double lBand)
 {
 	int i,j;
 	double ftemp,dist,minX,minY;
@@ -104,7 +104,7 @@ void CHakLevelSet::initialLsf(mesh *inMesh, levSet *levelset, int NumHole, CirH 
 }
 
 // Function to calcualte lsf around a rectangular hole
-void CHakLevelSet::RectHole(int NumNodes, Coord *NodeCoord, int NumRect, Coord *Rect, double *lsf)
+void CLevelSet::RectHole(int NumNodes, Coord *NodeCoord, int NumRect, Coord *Rect, double *lsf)
 {
 	int i,j,k;
 	double xtemp,ytemp,ftemp,dist;
@@ -194,7 +194,7 @@ void CHakLevelSet::RectHole(int NumNodes, Coord *NodeCoord, int NumRect, Coord *
 }
 
 // Function to calculate active and mine nodes for the narrow band method
-void CHakLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
+void CLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
 {
 	int NumNodes = inMesh->NumNodes;
 	double h = inMesh->h;
@@ -241,7 +241,7 @@ void CHakLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
 }
 
 // Function to perfrom boundary intergration of objective and constraint shape sens
-void CHakLevelSet::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
+void CLevelSet::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
 				int *Lbound_nums, int *numLbound,  double *Lbound)
 {
 	// read in data
@@ -322,7 +322,7 @@ void CHakLevelSet::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, 
 }
 
 // Function to calculate extension velocities using the fast marching method
-void CHakLevelSet::Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, double *Vnorm)
+void CLevelSet::Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, double *Vnorm)
 {
 	// read in data
 	int NodeX = inMesh->NodeX - 1;
@@ -725,7 +725,7 @@ void CHakLevelSet::Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, doub
 }
 
 // function that works out Velocity for nodes close to the boundary
-void CHakLevelSet::LocalVext2(int NodeX, int NodeY, int **Nodes, double *Vnorm, double *Vtemp, double *lsf, double *lsf_temp, double tol,
+void CLevelSet::LocalVext2(int NodeX, int NodeY, int **Nodes, double *Vnorm, double *Vtemp, double *lsf, double *lsf_temp, double tol,
 				bool *known, bool *trial, boundary *bound_in, double h, int NumNodes, Coord *NodeCoord, int sign)
 {
 	// read data
@@ -992,7 +992,7 @@ void CHakLevelSet::LocalVext2(int NodeX, int NodeY, int **Nodes, double *Vnorm, 
 }
 
 // Function to calcualte gradient using WENO scheme
-double CHakLevelSet::GradWENO(int Xi, int Yj, int num, double *lsf, mesh *inMesh, int sign, double Vn, double dt)
+double CLevelSet::GradWENO(int Xi, int Yj, int num, double *lsf, mesh *inMesh, int sign, double Vn, double dt)
 {
 	// read data
 	int NodeX = inMesh->NodeX;
@@ -1311,7 +1311,7 @@ double CHakLevelSet::GradWENO(int Xi, int Yj, int num, double *lsf, mesh *inMesh
 }
 
 // sub-function for GradWENO
-double CHakLevelSet::GWsub(double v1,double v2,double v3,double v4,double v5)
+double CLevelSet::GWsub(double v1,double v2,double v3,double v4,double v5)
 {
 	double ftemp;
 
@@ -1366,7 +1366,7 @@ double CHakLevelSet::GWsub(double v1,double v2,double v3,double v4,double v5)
 }
 
 // Function to re-initalise the lsf as a signed distance function - similar to Vext above
-void CHakLevelSet::ReInt(mesh *inMesh, levSet *levelset)
+void CLevelSet::ReInt(mesh *inMesh, levSet *levelset)
 {
 	// read in data
 	int NodeX = inMesh->NodeX - 1;
@@ -1692,7 +1692,7 @@ void CHakLevelSet::ReInt(mesh *inMesh, levSet *levelset)
 }
 
 // Function to reinitalise lsf for inital set of trial nodes - similar to LocalVext above
-void CHakLevelSet::LocalInt(int NodeX, int NodeY, int **Nodes, double *lsf, double *lsf_temp,
+void CLevelSet::LocalInt(int NodeX, int NodeY, int **Nodes, double *lsf, double *lsf_temp,
 			  bool *known, bool *trial, double h, double tol, int sign)
 {
 	double s,s1,s2,t,t1,t2; // distance variables
@@ -1864,7 +1864,7 @@ void CHakLevelSet::LocalInt(int NodeX, int NodeY, int **Nodes, double *lsf, doub
 // ---- set of functions for SLP Level-set method ---- //
 
 // obtain a boundary move vector from input of lam, s and move limits
-void CHakLevelSet::get_delD(int n, int m, double *x, double *lam, double *s, double *up_lim, double *low_lim)
+void CLevelSet::get_delD(int n, int m, double *x, double *lam, double *s, double *up_lim, double *low_lim)
 {
 	// n = num boundary points
 	// m = num functions
@@ -1891,7 +1891,7 @@ void CHakLevelSet::get_delD(int n, int m, double *x, double *lam, double *s, dou
 }
 
 // function to obtain gradients by finite difference
-void CHakLevelSet::get_slpGrad(int n, int m, int numVar, double *lam, double *s, double *c, double *up_lim,
+void CLevelSet::get_slpGrad(int n, int m, int numVar, double *lam, double *s, double *c, double *up_lim,
 				 double *low_lim, double *max_lam, double *min_lam, double *grad, int pinfo)
 {
 	double *x = (double *) malloc(n * sizeof(double));  // boundary move vector
@@ -1966,7 +1966,7 @@ void CHakLevelSet::get_slpGrad(int n, int m, int numVar, double *lam, double *s,
 }
 
 // sub-function for sorting in ascending order
-int CHakLevelSet::dcmpfunc (const void * p1, const void * p2)
+int CLevelSet::dcmpfunc (const void * p1, const void * p2)
 {
 	double cd = ( *(double*)p1 - *(double*)p2 );
 	int c = (cd < 0.0) ? -1 : 1;
@@ -1974,7 +1974,7 @@ int CHakLevelSet::dcmpfunc (const void * p1, const void * p2)
 }
 
 // function to get limits for lambda
-void CHakLevelSet::getLamLim(int n, int m, double *inmax, double *inmin, double *s, double *c,
+void CLevelSet::getLamLim(int n, int m, double *inmax, double *inmin, double *s, double *c,
 					double *up_lim, double *low_lim, int pinfo)
 {
 	int i,j,ind;
@@ -2117,7 +2117,7 @@ void CHakLevelSet::getLamLim(int n, int m, double *inmax, double *inmin, double 
 }
 
 // function to set velocity (or move dist) using SLP - filter method
-int CHakLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, double alt, double *delCon, int numCon,
+int CLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, double alt, double *delCon, int numCon,
                 double **sens, double *cA, int n, int *bound, double *lam_in, int *active, double *Vnorm, double *pred,
 				int numAdd, double *add_sens, double *add_min, double *add_max, double *add_change, int pinfo)
 {
@@ -2910,7 +2910,7 @@ int CHakLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in,
 }
 
 // sub-solve function for the trust region method
-int CHakLevelSet::trust_sub(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo)
+int CLevelSet::trust_sub(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo)
 {
 	// n = num variables
 	// m = num equality constraints
@@ -3040,7 +3040,7 @@ int CHakLevelSet::trust_sub(int n, int m, int nu, double *x, double *c, double *
 }
 
 // function to minimise constraint violation using Newtons method (more efficient)
-int CHakLevelSet::con_min3(int n, int m, int numCon, double *lam,  double *s, double *A, double *b,
+int CLevelSet::con_min3(int n, int m, int numCon, double *lam,  double *s, double *A, double *b,
 			 double *lam_min, double *lam_max, double *up_lim, double *low_lim, int pinfo)
 {
 	int i,j,k,ind;
@@ -3238,7 +3238,7 @@ int CHakLevelSet::con_min3(int n, int m, int numCon, double *lam,  double *s, do
 // sub-function to compute sum of constraint
 
 // function to find an initial set of lambda values
-void CHakLevelSet::get_lam0(int n, int m, int numCon, double *lam,  double *s, double *cA, double *b,
+void CLevelSet::get_lam0(int n, int m, int numCon, double *lam,  double *s, double *cA, double *b,
 			  double *lam_min, double *lam_max)
 {
 	// first compute the matrix M = cA x s^T (m x m)

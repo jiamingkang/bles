@@ -1,5 +1,5 @@
 /*
-	CHakSensitivity.cpp
+	CSensitivity.cpp
 
 	Created on: Nov 24, 2014
 	Author: Peter Dunning, JeeHang Lee
@@ -30,19 +30,19 @@
 #include <math.h>
 #include "CommonTypes.h"
 
-#include "CHakFiniteElement.h"	// jeehang.lee@gmail.com, solving required.
-#include "CHakSolver.h"
-#include "CHakSensitivity.h"
+#include "CFiniteElement.h"	// jeehang.lee@gmail.com, solving required.
+#include "CSolver.h"
+#include "CSensitivity.h"
 
 //
 // Constructor & Destructor
 //
-CHakSensitivity::CHakSensitivity() {
+CSensitivity::CSensitivity() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CHakSensitivity::~CHakSensitivity() {
+CSensitivity::~CSensitivity() {
 	// TODO Auto-generated destructor stub
 }
 
@@ -51,7 +51,7 @@ CHakSensitivity::~CHakSensitivity() {
 //
 
 // calculate sensitivies using least squares of integration points for AFG method
-void CHakSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, isoMat *inMat,  double *Nsens,
+void CSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, isoMat *inMat,  double *Nsens,
 				double **prim, double **dual, int numDual, int numCase, double *wgt, Coord *gCoord,
 					double aMin, int mode, double *fact, bool sw, Coord *acc)
 {
@@ -244,7 +244,7 @@ void CHakSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, 
 }
 
 // Function that calculates the sensitivity of a node by a least squares (2nd order) filter of near-by gauss points
-int CHakSensitivity::Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, double aMin, double *alpha, double r2,
+int CSensitivity::Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, double aMin, double *alpha, double r2,
 					Coord *gCoord, double *gSens, Elem **Number, int wFlag, int numDual, double *out)
 {
 	int i,j,n,m,num,ind;  // Incrementor
@@ -372,7 +372,7 @@ int CHakSensitivity::Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, do
 
 // Function to calculate sensitivity values for an element at 4 gauss points
 // for for a plane 4-node element (Q4)
-void CHakSensitivity::GaSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
+void CSensitivity::GaSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
 				isoMat *inMat, int Gcount, double *gSens, int numCase, int numDual, double *wgt, bool sw, Coord *acc)
 {
 	int i,j,k,n,p,temp,temp2,ind,ind2;	// incrementors etc
@@ -490,7 +490,7 @@ void CHakSensitivity::GaSens_Q4(int *tnodes, double **prim, double **dual, doubl
 
 // Function to calculate additional sensitivity part for eigenvalues
 // for for a plane 4-node element (Q4)
-void CHakSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
+void CSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
 					isoMat *inMat, int Gcount, double *gSens, int num_eig, double *eig)
 {
 	int i,j,k,p,temp,temp2,ind,ind2;	// incrementors etc
@@ -568,7 +568,7 @@ void CHakSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, do
 }
 
 // function that computes bar senstivites for compliance (possible multi-load case)
-void CHakSensitivity::barSens(mesh *inMesh, double *bar_sens, double **prim, int numCase, double *wgt)
+void CSensitivity::barSens(mesh *inMesh, double *bar_sens, double **prim, int numCase, double *wgt)
 {
 	// read data
 	int numBars = inMesh->NumBars;
@@ -597,7 +597,7 @@ void CHakSensitivity::barSens(mesh *inMesh, double *bar_sens, double **prim, int
 }
 
 // function to compute designable bc sensitvities for compliance (possible multi-load case)
-void CHakSensitivity::bcSens(mesh *inMesh, double *bc_sens, double **prim, int numCase, double *wgt)
+void CSensitivity::bcSens(mesh *inMesh, double *bc_sens, double **prim, int numCase, double *wgt)
 {
 	int n,m,o,c,i,j,temp,ind;
 	int elemX = inMesh->elemX;
@@ -643,7 +643,7 @@ void CHakSensitivity::bcSens(mesh *inMesh, double *bc_sens, double **prim, int n
 }
 
 // function to compute designable material design varibles for compliance
-void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, double *mat_sens, int numCase, double *wgt,
+void CSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, double *mat_sens, int numCase, double *wgt,
                     double **prim, double **dual, double *alpha, double aMin, bool sw, Coord *acc)
 {
     int i,j,n,m,ind,ind2,temp,temp2;
@@ -742,7 +742,7 @@ void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, doub
 }
 
 // function to compute designable material design varibles for eigenvalues
-void CHakSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
+void CSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
 					int numEig, double *eig_vals, double **eig_vecs, double *alpha, double aMin)
 {
 	int i,j,n,m,ind,ind2,temp,temp2;
@@ -828,7 +828,7 @@ void CHakSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 }
 
 // function to compute designable material design H-S varibles for eigenvalues
-void CHakSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
+void CSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
                  int numEig, double *eig_vals, double **eig_vecs, double *alpha, double aMin)
 {
 	int i,j,n,m,ind,ind2,temp,temp2;
@@ -919,7 +919,7 @@ void CHakSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 }
 
 // derivative of E for H-S bound material model
-double CHakSensitivity::dE_dalpha(double alpha, double hs_int, isoMat *mat1, isoMat *mat2)
+double CSensitivity::dE_dalpha(double alpha, double hs_int, isoMat *mat1, isoMat *mat2)
 {
     double dKmax, dKmin, dK, dGmax, dGmin, dG;
     double kmax, kmin, gmax, gmin, khs, ghs;

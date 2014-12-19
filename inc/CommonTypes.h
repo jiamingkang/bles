@@ -43,42 +43,6 @@ typedef struct
 	int e;  // associated element
 }	Bseg;
 
-// sparse matrix in triplet form
-typedef struct
-{
-	int ne; // number of entries (in arrays)
-	int *irn, *jcn; // row and column indicators
-	double *A; // matrix entry value
-} sp_mat;
-
-// structure containing optimization controls
-typedef struct
-{
-	int maxItt; // max number of iterations (>0)
-	int pinfo;  // amount of output (1->3, less->more)
-	double gm;  // convergence criterion (gamma)
-	double lband; // narrow band width (2h -> large)
-	double aMin;  // minimum area ratio (i.e. small or zero) - stiffness
-	double mMin;  // minimum area ratio for mass
-} ctrl;
-
-// structure to hold constraint info
-typedef struct
-{
-	int type; // constraint type identifier (vol, freq, etc..)
-	int sign; // < , > or = (-ve, +ve, 0) constraint
-	double data[4]; // data for constraint (first value is value)
-} cnst;
-
-// structure to hold optimization problem defintion
-typedef struct
-{
-	int obj; // objective type identifier
-	int num; // number of constraints
-	cnst *con; // pointer to array of constraint structs
-} prob;
-
-// jeehanglee@gmail.com --> moved to CHakMaterial
 // isotropic material structure
 typedef struct
 {
@@ -87,7 +51,6 @@ typedef struct
 	double mat[9];  // material property matrix
 } isoMat;
 
-// jeehanglee@gmail.com --> moved to CHakMesh
 // mesh information structure
 typedef struct
 {
@@ -124,7 +87,6 @@ typedef struct
     bool mat_lin;       // linear (true) or H-S bound (false) material model
 } mesh;
 
-// jeehanglee@gmail.com --> moved to CHakBoundary
 // boundary discretization info
 typedef struct
 {
@@ -137,7 +99,41 @@ typedef struct
 	double *BsegLen, *Bwgt; // boundary segment lengths & weights
 } boundary;
 
-// jeehanglee@gmail.com --> moved to CHasLevelSet
+// sparse matrix in triplet form
+typedef struct
+{
+	int ne; // number of entries (in arrays)
+	int *irn, *jcn; // row and column indicators
+	double *A; // matrix entry value
+} sp_mat;
+
+// structure containing optimization controls
+typedef struct
+{
+	int maxItt; // max number of iterations (>0)
+	int pinfo;  // amount of output (1->3, less->more)
+	double gm;  // convergence criterion (gamma)
+	double lband; // narrow band width (2h -> large)
+	double aMin;  // minimum area ratio (i.e. small or zero) - stiffness
+	double mMin;  // minimum area ratio for mass
+} ctrl;
+
+// structure to hold constraint info
+typedef struct
+{
+	int type; // constraint type identifier (vol, freq, etc..)
+	int sign; // < , > or = (-ve, +ve, 0) constraint
+	double data[4]; // data for constraint (first value is value)
+} cnst;
+
+// structure to hold optimization problem defintion
+typedef struct
+{
+	int obj; // objective type identifier
+	int num; // number of constraints
+	cnst *con; // pointer to array of constraint structs
+} prob;
+
 // structure for the level set function
 typedef struct
 {
@@ -149,5 +145,5 @@ typedef struct
 	int numMine;  // number of mines on edge of narrow band
 	int *mine;    // mine node numbers
 } levSet;
-
+	
 #endif // __COMMON_TYPES_H

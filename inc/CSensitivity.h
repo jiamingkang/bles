@@ -1,5 +1,5 @@
 /*
-	CHakSensitivity.h
+	CSensitivity.h
 
 	Created on: Nov 24, 2014
 	Author: jeehang
@@ -25,12 +25,12 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CHakSensitivity_H_
-#define CHakSensitivity_H_
+#ifndef CSENSITIVITY_H_
+#define CSENSITIVITY_H_
 
 // include
 #include "CommonTypes.h"
-#include "CHakMaterial.h"
+#include "CMaterial.h"
 
 // pre-processors
 #define GP 1.577350269189626 // 1 + 1/sqrt(3)
@@ -62,14 +62,14 @@ const static double Q4_inter[4][4] = {
 	{GP*GN*0.25, GN*GN*0.25, GP*GN*0.25, GP*GP*0.25} };
 
 //
-// class CHakSensitivity
+// class CSensitivity
 // 		Description: This class is originated from Sens.h and ABFG.h
 //
-class CHakSensitivity {
+class CSensitivity {
 
 public:
-	CHakSensitivity();
-	virtual ~CHakSensitivity();
+	CSensitivity();
+	virtual ~CSensitivity();
 
 public:
 	// calculate sensitivies using least squares of integration points for AFG method
@@ -121,4 +121,4 @@ private:
 
 };
 
-#endif /* CHakSensitivity_H_ */
+#endif /* CSENSITIVITY_H_ */

@@ -1,5 +1,5 @@
 /*
-	CHakBoundary.cpp
+	CBoundary.cpp
 
  	Created on: Nov 24, 2014
 	Author: Peter Dunning, JeeHang Lee
@@ -30,24 +30,24 @@
 #include <math.h>
 
 
-#include "CHakBoundary.h"
-#include "CHakSolver.h"
+#include "CBoundary.h"
+#include "CSolver.h"
 
 //
 // Constructor / Destructor
 //
 
-CHakBoundary::CHakBoundary() {
+CBoundary::CBoundary() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CHakBoundary::~CHakBoundary() {
+CBoundary::~CBoundary() {
 	// TODO Auto-generated destructor stub
 }
 
 // function to weight boundary segments so that lengths are more even
-void CHakBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
+void CBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
 {
 	// read in data
 	int NumNodes = inMesh->NumNodes;
@@ -131,7 +131,7 @@ void CHakBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
 }
 
 // Function to perfrom boundary intergration of objective and constraint shape sens
-void CHakBoundary::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
+void CBoundary::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
 				int *Lbound_nums, int *numLbound,  double *Lbound)
 {
 	// read in data

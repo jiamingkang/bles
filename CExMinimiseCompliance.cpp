@@ -5,18 +5,16 @@
  *      Author: jeehang
  */
 
-#include <stdlib.h>
-
 #include "CommonTypes.h"
-#include "CHakFiniteElement.h"
-#include "CHakMathUtility.h"
-#include "CHakSolver.h"
-#include "CHakSensitivity.h"
-#include "CHakLevelSet.h"
-#include "CHakInput.h"
-#include "CHakOutput.h"
-#include "CHakMesh.h"
-#include "CHakBoundary.h"
+#include "CFiniteElement.h"
+#include "CMathUtility.h"
+#include "CSolver.h"
+#include "CSensitivity.h"
+#include "CLevelSet.h"
+#include "CInput.h"
+#include "COutput.h"
+#include "CMesh.h"
+#include "CBoundary.h"
 
 #include "CExMinimiseCompliance.h"
 
@@ -55,7 +53,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	sp_mat lump_mass; // lumped mass matrix
 
 	// read the input file
-	CHakInput cinput;
+	CInput cinput;
 	temp = cinput.read_input(arg, &inMesh, &numMat, inMat, &levelset, &lsprob, &control, &fixDof,
 			&numCase, &load, &freeDof, &lump_mass, &sw, &acc);
 	if(temp==-1)//{return -1;} // exit on error
@@ -64,7 +62,7 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 		return;
 	}
 
-	CHakOutput coutput;
+	COutput coutput;
 	if(control.pinfo==3)
 	{
 		coutput.OutNumber(&inMesh, filename);
@@ -72,14 +70,14 @@ void CExMinimiseCompliance::Solve(char* arg, char* filename)
 	}
 
 	// compute gauss point coords (used in sensitivity smoothing)
-	CHakMathUtility cmu;
-	CHakFiniteElement fem;
+	CMathUtility cmu;
+	CFiniteElement fem;
 	Coord *gCoord = (Coord *) malloc(4 * inMesh.NumElem * sizeof(Coord));
 	cmu.Gauss_Coord(&inMesh, gCoord);
 
 	// calculate IN element stiffness matrix (& mass matrix)
 	double AreaElem = inMesh.h * inMesh.h; // Area of an element
-	double **KE = (double **)malloc(numMat * sizeof(double*));
+	double **KE = (double **)malloc(numMat*sizeof(double*));
 	double **ME = (double **)malloc(numMat*sizeof(double*));
 	for(i=0;i<numMat;i++)
 	{

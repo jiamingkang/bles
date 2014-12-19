@@ -1,5 +1,5 @@
 /*
-   CHakFiniteElement.h
+   CFiniteElement.h
 
     Created on: 24 Nov 2014
     Author: Peter Dunning, Khalid Ismail
@@ -25,15 +25,15 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CHakFiniteElement_H_
-#define CHakFiniteElement_H_
+#ifndef CFINITEELEMENT_H_
+#define CFINITEELEMENT_H_
 
 #include "CommonTypes.h"
 
-class CHakFiniteElement {
+class CFiniteElement {
 public:
-	CHakFiniteElement();
-	virtual ~CHakFiniteElement();
+	CFiniteElement();
+	virtual ~CFiniteElement();
 
 public:
 	// Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
@@ -73,4 +73,4 @@ public:
 
 };
 
-#endif /* CHakFiniteElement_H_ */
+#endif /* CFINITEELEMENT_H_ */

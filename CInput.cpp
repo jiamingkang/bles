@@ -1,5 +1,5 @@
 /*
- * CHakInput.cpp
+ * CInput.cpp
  *
  *  Created on: Nov 24, 2014
  *      Author: jeehang
@@ -10,43 +10,43 @@
 #include <string.h>
 #include <math.h>
 
-#include "CHakMesh.h"			// originally Numbering.h
-#include "CHakLevelSet.h"		// originally Levels.h --> should be changed to COptimisation.h (jeehanglee@gmail.com)
-#include "CHakMathUtility.h"	// originally ABFG.h
-#include "CHakInput.h"
-#include "CHakFiniteElement.h"
+#include "CMesh.h"			// originally Numbering.h
+#include "CLevelSet.h"	// originally Levels.h --> should be changed to COptimisation.h (jeehanglee@gmail.com)
+#include "CMathUtility.h"	// originally ABFG.h
+#include "CInput.h"
+#include "CFiniteElement.h"
 
 //
 // Constructur / Destructor
 //
-CHakInput::CHakInput() {
+CInput::CInput() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CHakInput::~CHakInput() {
+CInput::~CInput() {
 	// TODO Auto-generated destructor stub
 }
 
 //
 // Implementation - Interfaces
-int CHakInput::icmpfunc (const void * p1, const void * p2)
+int CInput::icmpfunc (const void * p1, const void * p2)
 {
-	int c = ( *(int *)p1 > *(int *)p2 ) ? 1 : -1;
+	int c = ( *(int*)p1 > *(int*)p2 ) ? 1 : -1;
 	return c;
 }
 
 // function to read new-style input file
-int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,
+int CInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,
 			   ctrl *control, int **map, int *numCase, double **load_in, int *freeDof, sp_mat *lump_mass, bool *sw, Coord **acc)
 {
 	int i,j,nd,nd2,ind,end;
 	const char* const DELIMITER = " ,\t";
 
 	// jeehanglee@gmail.com: temp code. Refactoring required.
-	CHakMesh cmesh;
-	CHakLevelSet cLevelSet;
-	CHakFiniteElement fem;
+	CMesh cmesh;
+	CLevelSet cLevelSet;
+	CFiniteElement fem;
 
 	// set default obj & const
 	lsprob->obj = 0;

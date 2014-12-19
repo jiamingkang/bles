@@ -1,14 +1,14 @@
 /*
-	CHakIsoMaterial.h
+   CMaterial.h
 
- 	Created on: Dec 17, 2014
-	Author: JeeHang Lee
+    Created on: 24 Nov 2014
+    Author: Peter Dunning, Khalid Ismail
 
- 	-- This file is part of Topology Optimisation Opensource Project,
+	-- This file is part of Topology Optimisation Opensource Project,
  	owned by MSO (Multidisciplinary and Structural Optimisation) Research Group
  	(http://people.bath.ac.uk/ens/MSORG/index.html) at University of Bath.
 
- 	The project is led by Dr. Hyunsun Alicia Kim
+ 	The project is led by Dr. Alicia Kim
  	(http://www.bath.ac.uk/mech-eng/people/kim/).
 
 	-- This is free software: you can redistribute it and/or modify
@@ -25,31 +25,24 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CHAKISOMATERIAL_H_
-#define CHAKISOMATERIAL_H_
+#ifndef CMATERIAL_H_
+#define CMATERIAL_H_
 
-// isotropic material
-class CHakIsoMaterial
-{
+#include "CommonTypes.h"
+
+class CMaterial {
 public:
-	CHakIsoMaterial() {};
-	virtual ~CHakisoMaterial() {};
+	CMaterial();
+	virtual ~CMaterial();
 
-// properties
 public:
-	// todo: add get/set properties
+	// function to compute elastic modulus from two materials
+	double HS_mat(double alpha, double hs_int, isoMat *mat1, isoMat *mat2);
 
-// private:
-	double m_e;		// modulus?
-	double m_v;		// Poisson's ratio?
-	double m_rho;	// density?
-	double m_k;		// bulk?
-	double m_g;		// shear?
-	double m_mat[9];	// material property matrix
+	// function to compute self-weight load vector
+	void self_weight(mesh *inMesh, isoMat *inMat, double aMin, double mMin, double *alpha,
+	                    int freeDof, int *dofMap, int numCase, double *load_in, double *load_out, Coord *acc);
 
-// private:
-	// number of materials 
-	int m_cntMat;
-}
+};
 
-#endif // CHAKISOMATERIAL_H_
+#endif /* CMATERIAL_H_ */

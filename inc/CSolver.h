@@ -1,5 +1,5 @@
 /*
-	CHakSolver.h
+	CSolver.h
 
 	Created on: Nov 24, 2014
 	Author: jeehang
@@ -25,8 +25,8 @@
     along with this. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CHakSolver_H_
-#define CHakSolver_H_
+#ifndef CSOLVER_H_
+#define CSOLVER_H_
 
 //
 // Includes
@@ -61,10 +61,10 @@ void la01bd_(int*,int*,int*,double*,double*,double*,double*,double*,int*,int*,in
 }
 #endif
 
-class CHakSolver {
+class CSolver {
 public:
-	CHakSolver();
-	virtual ~CHakSolver();
+	CSolver();
+	virtual ~CSolver();
 
 public:
 	// Function that sets up and calls the MA57 to solve Ku = f
@@ -106,4 +106,4 @@ private:
 	CMathUtility m_cMathUtil;
 };
 
-#endif /* CHakSolver_H_ */
+#endif /* CSOLVER_H_ */
