@@ -112,6 +112,27 @@ public:
 
 private:
 	CHakSolver m_solver;
+
+private:
+	// number of nodes for level set discretization
+	int m_numNode;	 
+
+	// pointer to array containing nodal lsf values
+	double *m_pNodalLsf; 
+	
+	//bool *bound; // nodes that are on fixed boundaries (not currently used)
+	
+	// array for fixed lsf values (NULL if none fixed)
+	bool *m_pFixedLsf; 
+
+	// array for nodes within narrow band (and not fixed)
+	bool *m_pActive; 
+
+	// number of mines on edge of narrow band
+	int m_numMine;
+
+	// mine node numbers
+	int *m_pMine;    
 };
 
 #endif /* CHakLevelSet_H_ */

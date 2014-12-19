@@ -43,6 +43,17 @@ public:
 	void self_weight(mesh *inMesh, isoMat *inMat, double aMin, double mMin, double *alpha,
 	                    int freeDof, int *dofMap, int numCase, double *load_in, double *load_out, Coord *acc);
 
+// private:
+	double m_e;		// modulus?
+	double m_v;		// Poisson's ratio?
+	double m_rho;	// density?
+	double m_k;		// bulk?
+	double m_g;		// shear?
+	double m_mat[9];	// material property matrix
+
+// private:
+	// number of materials 
+	int m_cntMat;
 };
 
 #endif /* CHakMaterial_H_ */
