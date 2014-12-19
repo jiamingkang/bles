@@ -1,0 +1,8 @@
+1. Release New Version 
+
+-- Usage: 
+svn copy [-r ${revision-number}
+
+-- Example: 
+svn copy (-r ${RevisionNumber}) \ 
+https://bles.googlecode.com/svn/trunk \
