@@ -2,7 +2,7 @@
 	main.cpp
 
  	Created on: Dec 01, 2014
-	Author: Peter Dunning, JeeHang Lee
+	Author: Peter Dunning, JeeHang Lee, Khalid Ismail
 
 	-- This file is part of Topology Optimisation Opensource Project,
 	owned by MSO (Multidisciplinary and Structural Optimisation) Research Group
@@ -37,8 +37,8 @@ int main(int argc, char *argv[])
 {
 	printf("\n\n------*---Start of BLES Version 5.4 Program---*------\n");
 
-	int i,j,i2,j2,k,temp,temp2;	// incrementors
-	double ftemp;
+	//int i,j,i2,j2,k,temp,temp2;	// incrementors
+	//double ftemp;
 
 	/*----------------------------------------------------------------------------------/
 	/																					/
@@ -47,16 +47,35 @@ int main(int argc, char *argv[])
 	/																					/
 	/----------------------------------------------------------------------------------*/
 
-	char filename[100];
-	for(i=0;i<100;i++)
-	{
-		if(argv[1][i] == '.') {break;} // chop off file extension (if found)
-		else if(argv[1][i] == '\0'){break;}
-		else {filename[i] = argv[1][i];}
-	}
-	filename[i] = '\0';
+
 
 	CExMinimiseCompliance cMC;
-	cMC.Solve(argv[1], filename);
+	//cMC.Solve(argv[1], filename);
+    
+    //================== Code for New trial ===========================
+    
+    int maxIteration = 0, itt = 0, convergence =0, i=0;
+    
+    maxIteration = cMC.Initialise(i,argv[1]);
+    
+    // return control.maxItt from initialise
+    
+    do {
+        
+        cMC.Analyse(itt);
+        
+        convergence = cMC.Sensitivity();
+        
+        if(convergence == 1) {break;}
+        
+        cMC.Optimise();
+        
+        itt++;
+        
+    }while (itt < maxIteration); // automatically stop after max iterations
+    
+    cMC.Output();
+    
+    return 0;
 
 }

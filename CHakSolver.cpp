@@ -630,7 +630,7 @@ int CHakSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, d
 			//printf("\nReporting v - update");
 			if(pinfo==3)
 			{
-				COutput cOutput;
+				CHakOutput cOutput;
 				cOutput.report(n, m, nu, v);
 			}
 			count = 200;

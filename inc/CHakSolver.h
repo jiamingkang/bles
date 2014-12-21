@@ -32,7 +32,7 @@
 // Includes
 //
 #include "CommonTypes.h"
-#include "CMathUtility.h"
+#include "CHakMathUtility.h"
 //
 // Pre-Definitions
 //
@@ -99,11 +99,11 @@ public:
 	void Msp_Vec(int n, sp_mat *mat, double *vin, double *vout);
 
 public:
-	CMathUtility GetMathUtility() {return m_cMathUtil;}
-	void SetMathUtility(CMathUtility cMathUtil) { m_cMathUtil = cMathUtil; }
+	CHakMathUtility GetMathUtility() {return m_cMathUtil;}
+	void SetMathUtility(CHakMathUtility cMathUtil) { m_cMathUtil = cMathUtil; }
 
 private:
-	CMathUtility m_cMathUtil;
+	CHakMathUtility m_cMathUtil;
 };
 
 #endif /* CHakSolver_H_ */

@@ -349,7 +349,7 @@ int CHakSensitivity::Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, do
 
 	// solve least squares problem using LAPACK routine
 	// jeehang.lee@gmail.com -- located in solve.c, resolving required.
-	CSolver cSolver;
+	CHakSolver cSolver;
 	cSolver.d_lsLPK(6, count, numDual, A, B);
 
 	// Finally evaluate sensitivity at the node using the co-efficients
