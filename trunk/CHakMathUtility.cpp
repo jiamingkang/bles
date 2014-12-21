@@ -709,7 +709,7 @@ int CHakMathUtility::predictor(int n,  int m, int nu, double **v, double **delP,
 				At[ind++] = ADA[count+j];
 			}
 		}
-		CSolver slv;
+		CHakSolver slv;
 		// solve using MA57
 		slv.solve(m, len, irn, jcn, At, 1, y_rhs, 0);
 

@@ -29,7 +29,8 @@
 #define CINPUT_H_
 
 #include "CommonTypes.h"
-#include "CHakIsoMaterial.h"
+#include "CHakMesh.h"
+//#include "CHakIsoMaterial.h"
 #include <string>
 
 #define MAX_CHARS_PER_LINE 512
@@ -64,7 +65,7 @@ private:
 	CHakMesh m_mesh;
 
 	// isotropic material including material data and its count
-	CHakIsoMaterial m_isoMat;
+	//CHakIsoMaterial m_isoMat;
 
 private:
 	// input file name

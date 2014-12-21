@@ -113,11 +113,11 @@ public:
 	double dE_dalpha(double alpha, double hs_int, isoMat *mat1, isoMat *mat2);
 
 public:
-	CMaterial GetMaterial() { return m_cMaterial; }
-	void SetMaterial(CMaterial cMat) { m_cMaterial = cMat; }
+	CHakMaterial GetMaterial() { return m_cMaterial; }
+	void SetMaterial(CHakMaterial cMat) { m_cMaterial = cMat; }
 
 private:
-	CMaterial m_cMaterial;
+	CHakMaterial m_cMaterial;
 
 };
 

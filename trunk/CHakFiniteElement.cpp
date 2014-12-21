@@ -118,7 +118,7 @@ void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, sp_mat *K
                         else
                         {
                         	// jeehanglee@gmail.com: temp code. Should be refactored....
-                        	CMaterial material;
+                        	CHakMaterial material;
                         	e_fac = material.HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]) / inMat[inMesh->mat1].e;
                         }
                         e_fac *= atemp;
@@ -235,7 +235,7 @@ double CHakFiniteElement::InArea(int eStat, int eNum, int *Lnodes, short *NodeSt
 	short nLook = (eStat==5) ? 0:1; // compute area outside structure if ElemStat is 5
 
 	// jeehanglee@gmail.com: temp code. Refactoring required.
-	CMathUtility mathUtil;
+	CHakMathUtility mathUtil;
 
 	// first look at all elemet nodes
 	for(i=0;i<4;i++)

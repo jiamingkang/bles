@@ -26,7 +26,7 @@
  */
 
 #include "CHakMesh.h"
-#include "CFiniteElement.h"
+#include "CHakFiniteElement.h"
 
 //
 // Constructor & Destructor
@@ -514,7 +514,7 @@ void CHakMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *Ele
 	Elem **Number = inMesh->Number;
 	int NumNodes = inMesh->NumNodes;
 	Coord *NodeCoord = inMesh->NodeCoord;
-	CFiniteElement fem;
+	CHakFiniteElement fem;
 
 	// For all elements
 	for(m=0;m<elemY;m++)
