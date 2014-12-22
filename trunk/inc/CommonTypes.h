@@ -43,6 +43,15 @@ typedef struct
 	int e;  // associated element
 }	Bseg;
 
+// structure to hold constraint info
+typedef struct
+{
+	int type; // constraint type identifier (vol, freq, etc..)
+	int sign; // < , > or = (-ve, +ve, 0) constraint
+	double data[4]; // data for constraint (first value is value)
+} cnst;
+
+// jeehanglee@gmail.com --> moved to CHakSparseMatrix
 // sparse matrix in triplet form
 typedef struct
 {
@@ -51,6 +60,7 @@ typedef struct
 	double *A; // matrix entry value
 } sp_mat;
 
+// jeehanglee@gmail.com --> moved to CHakOptControl
 // structure containing optimization controls
 typedef struct
 {
@@ -62,14 +72,7 @@ typedef struct
 	double mMin;  // minimum area ratio for mass
 } ctrl;
 
-// structure to hold constraint info
-typedef struct
-{
-	int type; // constraint type identifier (vol, freq, etc..)
-	int sign; // < , > or = (-ve, +ve, 0) constraint
-	double data[4]; // data for constraint (first value is value)
-} cnst;
-
+// jeehanglee@gmail.com --> moved to CHakOptProblem
 // structure to hold optimization problem defintion
 typedef struct
 {
@@ -137,7 +140,7 @@ typedef struct
 	double *BsegLen, *Bwgt; // boundary segment lengths & weights
 } boundary;
 
-// jeehanglee@gmail.com --> moved to CHasLevelSet
+// jeehanglee@gmail.com --> moved to CHaKLevelSet
 // structure for the level set function
 typedef struct
 {
