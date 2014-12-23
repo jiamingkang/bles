@@ -30,12 +30,17 @@
 
 #include "CommonTypes.h"
 #include "CHakMesh.h"
-//#include "CHakIsoMaterial.h"
-#include <string>
+#include "CHakLevelSet.h"
+#include "CHakMaterial.h"
 
-#define MAX_CHARS_PER_LINE 512
-#define MAX_TOKENS_PER_LINE 16
-#define MAX_HOLES 500
+#include "CHakOptControl.h"
+#include "CHakOptProblem.h"
+#include "CHakSparseMatrix.h"
+
+#define MAX_CHARS_PER_LINE	512
+#define MAX_TOKENS_PER_LINE	16
+#define MAX_HOLES			500
+#define DELIMITER			" ,\t"
 
 //
 // Class CHakInput 
@@ -46,30 +51,83 @@
 class CHakInput {
 public:
 	CHakInput();
-	CHakInput(char *filename) { m_filename = filename; }
+	CHakInput(char *filename); 
+
 	virtual ~CHakInput();
+
+private:
+	void _SetDefault();
 
 public:
 	// function to read new-style input file & assign to classes
 	int ReadFile(char *datafile);
 
 	// function to read new-style input file
-	int read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,
-				   ctrl *control, int **fixDof, int *numCase, double **load, int *freeDof, sp_mat *lump_mass, bool *sw, Coord **acc);
+	int read_input(char *datafile, mesh *inMesh, 
+				int *numMat, isoMat *inMat, 
+				levSet *levelset, 
+				prob *lsprob,
+				ctrl *control, 
+				int **fixDof, 
+				int *numCase, 
+				double **load, 
+				int *freeDof, 
+				sp_mat *lump_mass, 
+				bool *sw, 
+				Coord **acc);
 
 protected:
 	static int icmpfunc(const void *p1, const void *p2);
 
-private:
-	// Mesh 
+	void _SetInputFile(char *filename)
+	{
+		if (filename != NULL)
+			m_pfilename = filename;
+	}
+
+public:
+// private:
+
+	// Mesh - to hold mesh data
 	CHakMesh m_mesh;
 
-	// isotropic material including material data and its count
-	//CHakIsoMaterial m_isoMat;
+	// Material = numMat + inMat 
+	CHakMaterial m_material[5]; 
+
+	// Level Set - hold level set info
+	CHakLevelSet m_levelset;
+
+	// Problem Definition
+	CHakOptProblem m_problem;
+
+	// Control data
+	CHakOptControl m_control;
+
+
+	// number of load cases
+	int m_numCase;
+
+	// load vector (rhs)
+	double *m_pLoad;
+
+	// self-weight loading flag
+	bool m_bSelfWgt;
+
+	// Acceleration vector for self-weight loading
+	Coord *m_accVector;
+
+	// fixed Degree-Of-Freedom (turn into map)
+	int *m_pFixDof;
+
+	// number of free DOF
+	int m_freeDof;
+
+	// Sparse Matrix
+	CHakSparseMatrix m_lumpMassMat;
 
 private:
 	// input file name
-	std::string m_filename;
+	char *m_pfilename;
 };
 
 #endif /* CINPUT_H_ */

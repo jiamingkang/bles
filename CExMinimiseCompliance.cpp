@@ -6,49 +6,97 @@
  */
 
 #include <stdlib.h>
-
-
-
 #include "CExMinimiseCompliance.h"
+
+//
+// Constructor / Destructor
+//
 
 CExMinimiseCompliance::CExMinimiseCompliance() {
 	// TODO Auto-generated constructor stub
-
+	m_pFileIn = NULL;
+	memset(m_fileOut, 0x00, 128 * sizeof(char));
 }
 
 CExMinimiseCompliance::~CExMinimiseCompliance() {
 	// TODO Auto-generated destructor stub
 }
 
+//
+// Utilities
+//
+
+void CExMinimiseCompliance::_SetFilePath(char *path)
+{
+	int i = 0;
+	int lenPath = strlen(path);
+
+	if (path == NULL || lenPath < 1)
+	{
+		printf("File path is not specified. Process failed...\n\n");
+		return;
+	}
+
+	// set input file path
+	m_pFileIn = path;
+
+	// set output file path
+	for (i = 0; i < lenPath; i++)
+    {
+        if (path[i] == '.') 
+		{
+			// chop off file extension (if found)
+			break;
+		} 
+        else if (path[i] == '\0')
+		{
+			break;
+		}
+        else 
+		{
+			m_fileOut[i] = path[i];
+		}
+    }
+    m_fileOut[i] = '\0';
+}
 
 //
 // implementation
 //
 
+
 //void CExMinimiseCompliance::Initialise(char* arg, char* filename)
-int CExMinimiseCompliance::Initialise(int argc, char *argv)
+int CExMinimiseCompliance::Initialise(char *path)
 {
-    
-    for(i=0;i<100;i++)
-    {
-        if(argv[1][i] == '.') {break;} // chop off file extension (if found)
-        else if(argv[1][i] == '\0'){break;}
-        else {filename[i] = argv[1][i];}
-    }
-    filename[i] = '\0';
-    
-    char* arg = argv;
+	int res = -1;
+
+	// jeehanglee@gmail.com: Set file path - both input and output 
+	_SetFilePath(path);
+	    
+	// filename --> m_fileOut;
+	// arg --> m_pFileIn;
 
 	// read the input file
-	CHakInput cinput;
-	temp = cinput.read_input(arg, &inMesh, &numMat, inMat, &levelset, &lsprob, &control, &fixDof,
-			&numCase, &load, &freeDof, &lump_mass, &sw, &acc);
-	if(temp==-1)//{return -1;} // exit on error
+	res = m_input.read_input(m_pFileIn, 
+							&inMesh, 
+							&numMat, 
+							inMat, 
+							&levelset, 
+							&lsprob, 
+							&control, 
+							&fixDof,
+							&numCase, 
+							&load, 
+							&freeDof, 
+							&lump_mass, 
+							&sw, 
+							&acc);
+	
+	if (res == -1) // exit on error
 	{
 		printf("Failure in reading input file....\n");
 		return;
 	}
-
 	
 	if(control.pinfo==3)
 	{
@@ -57,18 +105,18 @@ int CExMinimiseCompliance::Initialise(int argc, char *argv)
 	}
 
 	// compute gauss point coords (used in sensitivity smoothing)
-
 	gCoord = (Coord *) malloc(4 * inMesh.NumElem * sizeof(Coord));
 	cmu.Gauss_Coord(&inMesh, gCoord);
 
 	// calculate IN element stiffness matrix (& mass matrix)
 	AreaElem = inMesh.h * inMesh.h; // Area of an element
-	KE = (double **)malloc(numMat * sizeof(double*));
-	ME = (double **)malloc(numMat*sizeof(double*));
-	for(i=0;i<numMat;i++)
+	KE = (double **) malloc(numMat * sizeof(double*));
+	ME = (double **) malloc(numMat * sizeof(double*));
+	for (i = 0; i < numMat; i++)
 	{
 		KE[i] = (double *) malloc(KE_SIZE*sizeof(double));
 		ME[i] = (double *) malloc(KE_SIZE*sizeof(double));
+		
 		// use 1.0 for thickness, as E & rho already multipled by thickness
 		fem.KEMatrix(KE[i], &inMat[i], inMesh.t);	// Element Stiffness Matrix for an IN element
 		fem.MEMatrix(ME[i], inMat[i].rho, AreaElem, inMesh.t); // Element Mass Matrix for an IN element
@@ -80,11 +128,8 @@ int CExMinimiseCompliance::Initialise(int argc, char *argv)
 	/																	/
 	/------------------------------------------------------------------*/
 
-
-
 	alpha = (double *) malloc(inMesh.NumElem * sizeof(double)); // Array to store element areas
-
-
+	
 	sens_ptr = (double **) malloc( (1+lsprob.num) * sizeof(double *) ); // pointer to senstivity arrays for each fucntion (obj + constraints)
 
 	active = (int *) malloc(lsprob.num * sizeof(int)); // array for active constraints
