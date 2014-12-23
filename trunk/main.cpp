@@ -35,47 +35,46 @@
 
 int main(int argc, char *argv[])
 {
-	printf("\n\n------*---Start of BLES Version 5.4 Program---*------\n");
-
-	//int i,j,i2,j2,k,temp,temp2;	// incrementors
-	//double ftemp;
-
-	/*----------------------------------------------------------------------------------/
-	/																					/
-	/		Read input file.															/
-	/		Define: mesh, loads & BCs, level set, problem, controls, element matrices	/
-	/																					/
-	/----------------------------------------------------------------------------------*/
-
-
+	printf("\n\n------*---Start of BLES Version 5.4 Program---*------\n\n");
 
 	CExMinimiseCompliance cMC;
-	//cMC.Solve(argv[1], filename);
-    
-    //================== Code for New trial ===========================
-    
-    int maxIteration = 0, itt = 0, convergence =0, i=0;
-    
-    maxIteration = cMC.Initialise(i,argv[1]);
-    
-    // return control.maxItt from initialise
-    
-    do {
+	int maxIter = 0;
+	int iter = 0;
+	int convergence = 0;
+	    
+	// jeehanglee@gmail.com: with Exception handling...
+	if (argc > 1)
+	{
+		// return control.maxIter from initialise
+		maxIter = cMC.Initialise(argv[1]);
+	}
+	else
+	{
+		printf("Failure in Reading Input File... Application Terminated... \n\n");
+		return 0;
+	}
+
+	// automatically stop after max iterations
+	// otherwise continue the interation(s)
+    while (iter < maxIter) 
+	{
+		// do analysis including FEA...
+        cMC.Analyse(iter);
         
-        cMC.Analyse(itt);
-        
+		// adjusting sensitivities
         convergence = cMC.Sensitivity();
         
-        if(convergence == 1) {break;}
+		// terminate the process if converged...
+		if (convergence == 1) 
+			break;
         
+		// do optimisation at this iteration step
         cMC.Optimise();
         
-        itt++;
-        
-    }while (itt < maxIteration); // automatically stop after max iterations
+        iter++;
+    } 
     
     cMC.Output();
     
     return 0;
-
 }

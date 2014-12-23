@@ -31,6 +31,38 @@ public:
 	CExMinimiseCompliance();
 	virtual ~CExMinimiseCompliance();
 
+ 
+//
+// Interfaces
+//
+public:
+	// Read the input file & assign initial values
+	// returns -1 when starting process fails.
+	int StartProcess(std::string inputfile);
+    
+    int Initialise(char *path);
+
+	// Finite Element Anaysis
+	// returns -1 when exceptions occurs thus process fails.
+	int Analyse(int itt);
+
+	// Sensitivity 
+	int Sensitivity();
+
+	// Optimisation
+	int Optimise();
+    
+    void Output();
+	
+	// main, dummy function for the compatibility
+	void Solve(char* arg, char* filename);
+
+//
+// Utilities
+//
+protected:
+	void _SetFilePath(char *path);
+
 //
 // Attributes
 //
@@ -142,41 +174,14 @@ public:
     double *relax; // relaxation factor
     double *pred; // predicted obj & constraint change
     double *pred_temp; // temp to feed SLPsubSol
-    
-    
-//
-// Interfaces
-//
-public:
-	// Read the input file & assign initial values
-	// returns -1 when starting process fails.
-	int StartProcess(std::string inputfile);
-    
-    int Initialise(int argc, char *argv);
-
-	// Finite Element Anaysis
-	// returns -1 when exceptions occurs thus process fails.
-	int Analyse(int itt);
-
-	// Sensitivity 
-	int Sensitivity();
-
-	// Optimisation
-	int Optimise();
-    
-    void Output();
-	
-	// main, dummy function for the compatibility
-	void Solve(char* arg, char* filename);
-
-//
-// Utilities
-//
-protected:
 
 
 private:
-	std::string m_filename;	// input file name
+	// Input file path
+	char *m_pFileIn;
+
+	// Output file path
+	char m_fileOut[128];
 
 	// Read input file and assign initial values specified in the file 
 	CHakInput m_input;

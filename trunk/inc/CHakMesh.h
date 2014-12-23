@@ -62,7 +62,8 @@ public:
 	// function to number bars elements
 	void Bar_numbering(mesh *inMesh);
 
-private:
+public:
+//private:
 	// num elements in x & y
 	int m_elemX, m_elemY;
 
@@ -94,7 +95,7 @@ private:
 	// indicates which material each element is made from
 	int *mat_type;
 
-private:
+//private:
 	//
 	// additional variables for bar reinforcements
 	// --> may be a separated class (e.g. design variable for bar-reinforcement)
@@ -118,7 +119,7 @@ private:
 	// bar material type
 	isoMat *bar_mat;
 
-private:
+//private:
 	//
 	// additional variables for designable boundary conditions
 	// --> may be a separated class (e.g. design variable for boundary conditions), jeehanglee@gmail.com
@@ -139,7 +140,7 @@ private:
 	// maximum stiffness of bc springs
 	double K0_bc;
 
-private:
+//private:
 	//
 	// additional variables for elemental material design variables
 	// 	--> may be a separated class (e.g. design variable), jeehanglee@gmail.com
