@@ -710,4 +710,167 @@ void CHakMesh::Bar_numbering(mesh *inMesh)
 	// that is all!!
 }
 
+//
+// Interfaces - OOD versions (jeehanglee@gmail.com)
+//
 
+// Function that numbers all elements and nodes in the FG domain
+void CHakMesh::Numbering()
+{
+	int i, j;
+	int num = 0; // first element number is zero
+
+	// read data
+	Elem **Number = this->m_pNumber; // pointer to Numbering array
+	int elemX = this->m_elemX;
+	int elemY = this->m_elemY;
+
+	// Element Numbering loop
+	for (j = 0; j < elemY; j++)
+	{
+		for (i = 0; i <elemX; i++)
+		{
+			Number[i][j].n = num++;
+		}
+	}
+
+	// State first element node numbers
+	num = 0; // first node number is zero
+	Number[0][0].a = num;
+	Number[0][0].b = ++num;
+	Number[0][0].c = ++num;
+	Number[0][0].d = ++num;
+
+	// Number first X row (Y = 0)
+	if (elemX > 1) // if there is more than one element in the x direction number first row
+	{
+		for (i = 1; i <elemX; i++)
+		{
+			Number[i][0].a = Number[i-1][0].b;
+			Number[i][0].b = ++num;
+			Number[i][0].c = ++num;
+			Number[i][0].d = Number[i-1][0].c;
+		}
+	}
+
+	// Number rest of FG mesh
+	if (elemY > 1)
+	{
+		for (j = 1; j < elemY; j++)
+		{
+			for (i = 0; i < elemX; i++)
+			{
+				Number[i][j].a = Number[i][j-1].d;
+				Number[i][j].b = Number[i][j-1].c;
+
+				if (i == 0)
+				{
+					Number[i][j].c = ++num;
+					Number[i][j].d = ++num;
+				}
+				else
+				{
+					Number[i][j].c = ++num;
+					Number[i][j].d = Number[i-1][j].c;
+				}
+			}
+		}
+	}
+}
+
+// Node Co-ordinate calculation function
+void CHakMesh::Coordinates()
+{
+	// data from inMesh
+	int elemX = this->m_elemX;
+	int elemY = this->m_elemY;
+	double hx = this->m_lenEdge; 
+	double hy = this->m_lenEdge;
+	double tol = this->m_tolerance;
+	Elem **Number = this->m_pNumber; // pointer to Numbering array
+	Coord *NodeCoord = this->m_pNodeCoord; // pointer to node coords
+
+	int i, j, num;
+
+	for (j = 0; j < elemY; j++)
+	{
+		for (i = 0; i < elemX; i++)
+		{
+			num = Number[i][j].a;			
+			if((NodeCoord[num].x + NodeCoord[num].y) < tol)
+			{
+				// If node co-ordinate hasn't been calculated already
+				NodeCoord[num].x = i * hx;
+				NodeCoord[num].y = j * hy;
+			}
+			
+			num = Number[i][j].b;
+			if((NodeCoord[num].x + NodeCoord[num].y) < tol)
+			{
+				NodeCoord[num].x = (i * hx) + hx;
+				NodeCoord[num].y = j * hy;
+			}
+
+			num = Number[i][j].c;
+			if((NodeCoord[num].x + NodeCoord[num].y) < tol)
+			{
+				NodeCoord[num].x = (i * hx) + hx;
+				NodeCoord[num].y = (j * hy) + hy;
+			}
+			
+			num = Number[i][j].d;
+			if((NodeCoord[num].x + NodeCoord[num].y) < tol)
+			{
+				NodeCoord[num].x = i * hx;
+				NodeCoord[num].y = (j * hy) + hy;
+			}
+		}
+	}
+}
+
+// function that orders node numbers into a 2D based on their relative positions
+void CHakMesh::NodeNums2D()
+{
+	// data from inMesh
+	int NodeX = this->NodeX;
+	int NodeY = this->NodeY;
+	int NumNodes = this->m_numNodes;
+	double h = this->m_lenEdge;
+	double tol = this->m_tolerance;
+	int **Nodes2 = this->Nodes2; // pointer to Node numbering array
+	Coord *NodeCoord = this->m_pNodeCoord; // pointer to node coords
+
+	int i; // incrementor
+	int X, Y; // node position variables
+
+	// for all grid node determine position in ordered 2D array
+	//  by their co-ordinates and element edge length
+	for (i = 0; i < NumNodes; i++)
+	{
+		X = (int)(floor((NodeCoord[i].x / h)+tol) + 1);
+		Y = (int)(floor((NodeCoord[i].y / h)+tol) + 1); // +1 for layer of ghost nodes
+		Nodes2[X][Y] = i;
+	}
+
+	// now copy node numbers to create a layer of ghost nodes around the grid
+
+	// fill in the four corners
+	Nodes2[0][0] = Nodes2[1][1];
+	Nodes2[0][NodeY-1] = Nodes2[1][NodeY-2];
+	Nodes2[NodeX-1][0] = Nodes2[NodeX-2][1];
+	Nodes2[NodeX-1][NodeY-1] = Nodes2[NodeX-2][NodeY-2];
+
+	// now fill in top and bottom rows
+	for (i = 1; i < NodeX - 1; i++)
+	{
+		Nodes2[i][0] = Nodes2[i][1];
+		Nodes2[i][NodeY-1] = Nodes2[i][NodeY-2];
+	}
+
+	// Finally fill in left and right columns
+	for (i = 1; i < NodeY - 1; i++)
+	{
+		Nodes2[0][i] = Nodes2[1][i];
+		Nodes2[NodeX-1][i] = Nodes2[NodeX-2][i];
+	}
+}

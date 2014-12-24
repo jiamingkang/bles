@@ -113,7 +113,8 @@ public:
 private:
 	CHakSolver m_solver;
 
-private:
+public:
+//private:
 	// number of nodes for level set discretization
 	int m_numNode;	 
 
