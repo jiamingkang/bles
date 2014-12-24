@@ -84,6 +84,16 @@ protected:
 		if (filename != NULL)
 			m_pfilename = filename;
 	}
+	
+	// Future works...
+	int _ReadMeshInfo(FILE *pFile);				// Get Basic Mesh Info
+	int _ReadBarsInfo(FILE *pFile);				// Get Bars Info associated with Mesh
+	int _ReadMaterialInfo(FILE *pFile);			// Basic material info/definition/designables
+	int _ReadMaterialDefinition(FILE *pFile);	
+	int _ReadDesignableMaterial(FILE *pFile);
+	int _ReadLumpedMassAtNodes(FILE *pFile);
+	int _ReadBoundaryInfo(FILE *pFile);
+	int _ReadLoad(FILE *pFile);
 
 public:
 // private:
@@ -102,7 +112,6 @@ public:
 
 	// Control data
 	CHakOptControl m_control;
-
 
 	// number of load cases
 	int m_numCase;

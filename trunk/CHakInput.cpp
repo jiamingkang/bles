@@ -145,7 +145,7 @@ int CHakInput::ReadFile(char *datafile)
 
 				while (end == 0 && !feof(infile))
 				{
-					fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
+					fgets(buf, MAX_CHARS_PER_LINE, infile); // get next line
 
 					if(buf[0]!='*' && buf[1]!='*') // check for commented out line
 					{
@@ -177,65 +177,67 @@ int CHakInput::ReadFile(char *datafile)
 						}
 						
 						if (i > 3)	{
-							sscanf(token[3],"%lf",&inMesh->t);
+							sscanf(token[3], "%lf", &m_mesh.m_thinkness);
 						}
 						else {
-							inMesh->t = 1.0; // default to 1.0
+							m_mesh.m_thinkness = 1.0; // default to 1.0
 						}
 
 						// check data
-						if(inMesh->elemX < 1 || inMesh->elemY < 1)
+						if(m_mesh.m_elemX < 1 || m_mesh.m_elemY < 1)
 						{
-							printf("\nError in input: elems %i x %i! - Abort\n",inMesh->elemX,inMesh->elemY);
+							printf("\nError in input: elems %i x %i! - Abort\n", m_mesh.m_elemX, m_mesh.m_elemY);
 							return -1;
 						}
-						if(inMesh->h <= 0.0)
+						if(m_mesh.m_lenEdge <= 0.0)
 						{
-							printf("\nError in input: h = %lf! - Abort\n",inMesh->h);
+							printf("\nError in input: h = %lf! - Abort\n", m_mesh.m_lenEdge);
 							return -1;
 						}
-						if(inMesh->t <= 0.0)
+						if(m_mesh.m_thinkness <= 0.0)
 						{
-							printf("\nError in input: t = %lf! - Abort\n",inMesh->t);
+							printf("\nError in input: t = %lf! - Abort\n", m_mesh.m_thinkness);
 							return -1;
 						}
 
-						// define all other data in inMesh
-						inMesh->NumElem = inMesh->elemX*inMesh->elemY;
-						inMesh->NodeX = 3+inMesh->elemX;
-						inMesh->NodeY = 3+inMesh->elemY; // one extra node is each direction
-						inMesh->NumNodes = (1+inMesh->elemX)*(1+inMesh->elemY);
-						inMesh->maxX = inMesh->elemX * inMesh->h;
-						inMesh->maxY = inMesh->elemY * inMesh->h;
-						inMesh->NodeCoord = (Coord *) calloc(inMesh->NumNodes, sizeof(Coord));
-						inMesh->tol = inMesh->h * 1.0E-6; // rounding tollerance
-						inMesh->mat_type = (int *) calloc(inMesh->NumElem, sizeof(int)); // default to first material
-						inMesh->bars = false; // no bars (yet)
-						inMesh->des_bc = false; // no designable bsc (yet)
-						inMesh->des_mat = false; // no designable material (yet)
+						// define all other data in CHakMesh
+						m_mesh.m_numElem = m_mesh.m_elemX * m_mesh.m_elemY;
+						m_mesh.NodeX = 3 + m_mesh.m_elemX;
+						m_mesh.NodeY = 3 + m_mesh.m_elemY;	// one extra node is each direction
+						m_mesh.m_numNodes = (1 + m_mesh.m_elemX) * (1 + m_mesh.m_elemY);
+						m_mesh.m_maxX = m_mesh.m_elemX * m_mesh.m_lenEdge;
+						m_mesh.m_maxY = m_mesh.m_elemY * m_mesh.m_lenEdge;
+						m_mesh.m_pNodeCoord = (Coord *) calloc(m_mesh.m_numNodes, sizeof(Coord));
+						m_mesh.m_tolerance = m_mesh.m_lenEdge * 1.0E-6; // rounding tollerance
+						m_mesh.mat_type = (int *) calloc(m_mesh.m_numElem, sizeof(int)); // default to first material
+						m_mesh.bars = false; // no bars (yet)
+						m_mesh.des_bc = false; // no designable bsc (yet)
+						m_mesh.des_mat = false; // no designable material (yet)
 
 						// 2d array memory allocation (array of pointers to pointers)
-						inMesh->Number = (Elem**) malloc(inMesh->elemX * sizeof(Elem*));
-						for(i=0;i<inMesh->elemX;i++) {
-							inMesh->Number[i] = (Elem*) malloc(inMesh->elemY * sizeof(Elem));
+						m_mesh.m_pNumber = (Elem **) malloc(m_mesh.m_elemX *sizeof(Elem *));
+						for (i = 0; i< m_mesh.m_elemX; i++) 
+						{
+							m_mesh.m_pNumber[i] = (Elem *) malloc(m_mesh.m_elemY * sizeof(Elem));
 						}
 
-						inMesh->Nodes2 = (int**) malloc(inMesh->NodeX * sizeof(int*));
-						for(i=0;i<inMesh->NodeX;i++) {
-							inMesh->Nodes2[i] = (int*) malloc(inMesh->NodeY * sizeof(int));
+						m_mesh.Nodes2 = (int **) malloc(m_mesh.NodeX * sizeof(int *));
+						for (i = 0;i < m_mesh.NodeX; i++) 
+						{
+							m_mesh.Nodes2[i] = (int *) malloc(m_mesh.NodeY * sizeof(int));
 						}
 
-						// call fucntions to compute data arrays in inMesh
-						cmesh.Numbering(inMesh);
-						cmesh.Coordinates(inMesh);
-						cmesh.NodeNums2(inMesh);
+						// call fucntions to compute data arrays in inMesh (jeehanglee@gmail.com)
+						m_mesh.Numbering();
+						m_mesh.Coordinates();
+						m_mesh.NodeNums2();
 
 						// now mesh has been defined - set some memory
-						fixdof_temp = (bool *) calloc(2*inMesh->NumNodes, sizeof(bool));
-						levelset->fixed = (bool *) calloc(inMesh->NumNodes, sizeof(bool));
+						fixdof_temp = (bool *) calloc(2 * m_mesh.m_numNodes, sizeof(bool));
+						m_levelset.m_pFixedLsf = (bool *) calloc(m_mesh.m_numNodes, sizeof(bool));
 
 						meshFound = 1;
-						end=1; // found data line
+						end = 1; // found data line
 					}
 					else if(buf[0]=='*'&& buf[1]!='*')
 					{
@@ -244,6 +246,9 @@ int CHakInput::ReadFile(char *datafile)
 					}
 				}
 			}
+			//
+			// jeehanglee@gmail.com: applying OOD till here... (20141223)
+			//
 
 			// if keyword is bars
 			else if(strncasecmp(lead, "*bars", 5)==0)

@@ -62,6 +62,19 @@ public:
 	// function to number bars elements
 	void Bar_numbering(mesh *inMesh);
 
+//
+// OOD version (jeehanglee@gmail.com)
+//
+public:
+	// Function that numbers all elements and nodes in the FG domain
+	void Numbering();
+
+	// Node Co-ordinate calculation function
+	void Coordinates();
+
+	// function that orders node numbers into a 2D based on their relative positions
+	void NodeNums2D();
+
 public:
 //private:
 	// num elements in x & y
