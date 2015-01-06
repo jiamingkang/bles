@@ -57,6 +57,7 @@ svn add CHakBetterCode.cpp
 'svn add' does not mean the commitment of the new item into the server. To complete the commitment, it should be followed by 'svn ci'. Please see below
 
 svn add CHakBetterCode.cpp
+
 svn ci -m "added the CHakBetterCode.cpp"
 
 After that, the addition of the code is completed in the server repository.
@@ -75,6 +76,7 @@ svn rm CHakLegacyCode.cpp
 'svn rm' does not mean the deletion of the item from the server. To complete the deletion, it should be followed by 'svn ci'. Please see below
 
 svn rm CHakLegacyCode.cpp
+
 svn ci -m "delete CHakLegacyCode.cpp"
 
 After that, the deletion of the code is completed in the server repository.
