@@ -27,6 +27,7 @@
 
 #include "CHakMesh.h"
 #include "CHakFiniteElement.h"
+#include "CommonTypes.h"
 
 //
 // Constructor & Destructor
@@ -873,4 +874,98 @@ void CHakMesh::NodeNums2D()
 		Nodes2[0][i] = Nodes2[1][i];
 		Nodes2[NodeX-1][i] = Nodes2[NodeX-2][i];
 	}
+}
+
+// function to number bars elements
+void CHakMesh::NumberingBarElements()
+{
+	// read data
+	Elem **pNumber = this->m_pNumber; // pointer to Numbering array
+	int elemX = this->m_elemX;
+	int elemY = this->m_elemY;
+
+	int i,j;
+	int xend = elemX - 1;
+	int yend = elemY - 1;
+	int count = 0;
+
+	// loop through all elements
+	for (j = 0; j < elemY; j++)
+	{
+		for (i = 0; i < elemX; i++)
+		{
+			// use bottom edge as x-bars
+			this->bar_nums[count].e = count; // element number (bar elems only)
+			this->bar_nums[count].n1 = pNumber[i][j].a * 2; // x-dof of node 1
+			this->bar_nums[count++].n2 = pNumber[i][j].b * 2; // x-dof of node 2
+
+			// also use top edge for top row of elements
+			if (j == yend)
+			{
+				this->bar_nums[count].e = count; // element number (bar elems only)
+				this->bar_nums[count].n1 = pNumber[i][j].d * 2; // x-dof of node 1
+				this->bar_nums[count++].n2 = pNumber[i][j].c * 2; // x-dof of node 2
+			}
+		}
+	}
+
+	// loop through all elements
+	for (i = 0;i < elemX; i++)
+	{
+		for (j = 0;j < elemY; j++)
+		{
+			// use left edge as y-bars
+			this->bar_nums[count].e = count; // element number (bar elems only)
+			this->bar_nums[count].n1 = (pNumber[i][j].a * 2) +1; // y-dof of node 1
+			this->bar_nums[count++].n2 = (pNumber[i][j].d * 2) +1; // y-dof of node 2
+
+			// also use right edge for last column of elements
+			if(i == xend)
+			{
+				this->bar_nums[count].e = count; // element number (bar elems only)
+				this->bar_nums[count].n1 = (pNumber[i][j].b * 2) +1; // y-dof of node 1
+				this->bar_nums[count++].n2 = (pNumber[i][j].c * 2) +1; // y-dof of node 2
+			}
+		}
+	}
+
+	// that is all!!
+}
+
+// function to find the nearest grid node number to a set of co-ordinates
+int CHakMesh::CloseNode(double xp, double yp)
+{
+	// read data
+	int NumNodes = this->m_numNodes;
+	Coord *NodeCoord = this->m_pNodeCoord;
+	double tol = this->m_tolerance;
+
+	int n;
+	int nodenum=-1;
+	double dtemp, d2, dx, dy;	// variables to keep track of distnace closest node
+	double xn, yn1;				// variables for current node co-ordinates
+	dtemp =  (2.0 * this->m_lenEdge);
+	dtemp *= dtemp;			// set initial distance to twice an elements edge length squared
+
+	for (n = 0; n < NumNodes; n++) // For all nodes
+	{
+		xn = NodeCoord[n].x;
+		yn1 = NodeCoord[n].y; // read in node co-ords
+
+		dx = xp - xn;
+		dy = yp - yn1; // find difference between node and target co-ords
+		d2 = (dx * dx) + (dy * dy);	// Squared distance between node and point
+
+		if (fabs(d2) < tol)
+		{	// if co-ordinates are same as current node, that that is closest
+			return(n);
+		}
+		if (d2 < dtemp)
+		{	// if distance of current node is less than previous, then update
+			nodenum = n;
+			dtemp = d2;
+		}
+	}
+
+	return(nodenum);
 }

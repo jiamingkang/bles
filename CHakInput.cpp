@@ -230,7 +230,7 @@ int CHakInput::ReadFile(char *datafile)
 						// call fucntions to compute data arrays in inMesh (jeehanglee@gmail.com)
 						m_mesh.Numbering();
 						m_mesh.Coordinates();
-						m_mesh.NodeNums2();
+						m_mesh.NodeNums2D();
 
 						// now mesh has been defined - set some memory
 						fixdof_temp = (bool *) calloc(2 * m_mesh.m_numNodes, sizeof(bool));
@@ -251,36 +251,38 @@ int CHakInput::ReadFile(char *datafile)
 			//
 
 			// if keyword is bars
-			else if(strncasecmp(lead, "*bars", 5)==0)
+			// jeehanglee@gmail.com: may go to _ReadBarsInfo() ?
+			else if (strncasecmp(lead, "*bars", 5)==0)
 			{
 				// check that mesh has defined
-				if(meshFound==0)
+				if(meshFound == 0)
 				{
 					printf("\nError in input: *bars before *mesh! - Abort\n");
 					return -1;
 				}
 
 				// set variables and memory for bar elements
-				inMesh->bars = true; // problem contains bars
-				nd = (inMesh->elemX * (1+inMesh->elemY)) + (inMesh->elemY * (1+inMesh->elemX));
-				inMesh->NumBars = nd; // total number of bars
-				inMesh->bar_nums = (Bseg *) malloc(nd * sizeof(Bseg));
-				inMesh->bar_areas = (double *) malloc(nd * sizeof(double));
+				m_mesh.bars = true;	// problem contains bars
+				nd = (m_mesh.m_elemX * (1 + m_mesh.m_elemY) + m_mesh.m_elemY * (1 + m_mesh.m_elemY));
+				m_mesh.NumBars = nd;	// total number of bars.
+				m_mesh.bar_nums = (Bseg *) malloc(nd * sizeof(Bseg));
+				m_mesh.bar_areas = (double *) malloc(nd * sizeof(double));
 
 				// read in remaining data from the dataline
-				end=0;
-				while(end==0 && !feof(infile))
+				end = 0;
+				while (end == 0 && !feof(infile))
 				{
-					fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
+					fgets(buf, MAX_CHARS_PER_LINE, infile); // get next line
 
-					if(buf[0]!='*' && buf[1]!='*') // check for commented out line
+					if (buf[0] != '*' && buf[1] != '*') // check for commented out line
 					{
 						// split line into tokens
 						token[0] = strtok(buf, DELIMITER); // first token
-						for(i=1;i<3;i++)
+						for (i = 1;i < 3; i++)
 						{
 							token[i] = strtok(NULL, DELIMITER); // subsequent tokens
-							if (!token[i]) break; // no more tokens
+							if (!token[i])
+								break; // no more tokens
 						}
 
 						if(i < 3)
@@ -290,24 +292,25 @@ int CHakInput::ReadFile(char *datafile)
 						}
 
 						// read data into the inMesh structure
-						sscanf(token[0],"%lf",&inMesh->bar_min);
-						sscanf(token[1],"%lf",&inMesh->bar_max);
-						sscanf(token[2],"%i",&j);
-						inMesh->bar_mat = &inMat[j];
+						sscanf(token[0], "%lf", &m_mesh.bar_min);
+						sscanf(token[1], "%lf", &m_mesh.bar_max);
+						sscanf(token[2], "%i", &j);
+						m_mesh.bar_mat = &m_material[j];
 
 						// check data
-						if(inMesh->bar_min < 1.0e-20)
+						if (m_mesh.bar_min < 1.0e-20)
 						{
 							printf("\nWarning: Minimum bar area too small or -ve = using default (1e-3)\n");
-							inMesh->bar_min = 1.0e-3;
+							m_mesh.bar_min = 1.0e-3;
 						}
 
 						// call bar numbering function
-						cmesh.Bar_numbering(inMesh);
+						// cmesh.Bar_numbering(inMesh);
+						m_mesh.NumberingBarElements();
 
-						end=1; // found data line
+						end = 1; // found data line
 					}
-					else if(buf[0]=='*'&& buf[1]!='*')
+					else if (buf[0] == '*' && buf[1] != '*')
 					{
 						printf("\nError in input: No data line for *mat! - Abort\n");
 						return -1;
@@ -316,88 +319,99 @@ int CHakInput::ReadFile(char *datafile)
 			}
 
 			// if keyword is material
-			else if(strncasecmp(lead, "*mat", 4)==0)
+			// jeehanglee@gmail.com -> may go to _ReadMaterialInfo() ?
+			else if (strncasecmp(lead, "*mat", 4)==0)
 			{
-				end=0;
+				end = 0;
 
-				if(matCnt == 5)
+				if (matCnt == 5)
 				{
 					printf("\nError! Too many materials defined (max = 5) - Abort!");
 					return -1;
 				}
 
 				// check that mesh has defined
-				if(meshFound==0)
+				if (meshFound == 0)
 				{
 					printf("\nError in input: *mat before *mesh! - Abort\n");
 					return -1;
 				}
 
-				while(end==0 && !feof(infile))
+				while (end == 0 && !feof(infile))
 				{
-					fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
+					fgets(buf, MAX_CHARS_PER_LINE, infile); // get next line
 
 					if(buf[0]!='*' && buf[1]!='*') // check for commented out line
 					{
 						// split line into tokens
 						token[0] = strtok(buf, DELIMITER); // first token
-						for(i=1;i<3;i++)
+						for (i = 1; i < 3; i++)
 						{
 							token[i] = strtok(NULL, DELIMITER); // subsequent tokens
-							if (!token[i]) break; // no more tokens
+							if (!token[i])
+								break; // no more tokens
 						}
 
-						if(i < 2)
+						if (i < 2)
 						{
 							printf("\nError in input: Not enough data for *mat! - Abort\n");
 							return -1;
 						}
 
-						// read data into the inMat structure
-						sscanf(token[0],"%lf",&inMat[matCnt].e);
-						sscanf(token[1],"%lf",&inMat[matCnt].v);
-						if(i>2){
-							sscanf(token[2],"%lf",&inMat[matCnt].rho);
+						// read data into the m_material structure
+						sscanf(token[0],"%lf",&m_material[matCnt].m_e);
+						sscanf(token[1],"%lf",&m_material[matCnt].m_v);
+						if (i > 2)
+						{
+							sscanf(token[2],"%lf",&m_material[matCnt].m_rho);
 						}
-						else {
-							inMat[matCnt].rho = 1.0; // default to 1.0
+						else
+						{
+							m_material[matCnt].m_rho = 1.0; // default to 1.0
 						}
 
 						// check data
-						if(inMat[matCnt].e < 1.0e-20)
+						if (m_material[matCnt].m_e < 1.0e-20)
 						{
-							printf("\nError in input: Young's modulus = %12.4e! - Abort\n",inMat[matCnt].e);
+							printf("\nError in input: Young's modulus = %12.4e! - Abort\n",m_material[matCnt].m_e);
 							return -1;
 						}
-						else if(inMat[matCnt].v < 0.5001 && inMat[matCnt].v > 0.4999)
+						else if (m_material[matCnt].m_v < 0.5001 && m_material[matCnt].m_v > 0.4999)
 						{
-							printf("\nError in input: Poisson's ratio = %12.4e! - Abort\n",inMat[matCnt].v);
+							printf("\nError in input: Poisson's ratio = %12.4e! - Abort\n",m_material[matCnt].m_v);
 							return -1;
 						}
-						else if(inMat[matCnt].rho < 1.0e-20)
+						else if(m_material[matCnt].m_rho < 1.0e-20)
 						{
-							printf("\nError in input: density = %12.4e! - Abort\n",inMat[matCnt].rho);
+							printf("\nError in input: density = %12.4e! - Abort\n",m_material[matCnt].m_rho);
 							return -1;
 						}
 
 						// compute plane stress constants
-						double e11 = inMat[matCnt].e / ( 1.0-(inMat[matCnt].v * inMat[matCnt].v) );
-						double v12 = e11 * inMat[matCnt].v;
-						double g33 = 0.5 * e11 * (1.0 - inMat[matCnt].v);
+						double e11 = m_material[matCnt].m_e / ( 1.0-(m_material[matCnt].m_v * m_material[matCnt].m_v) );
+						double v12 = e11 * m_material[matCnt].m_v;
+						double g33 = 0.5 * e11 * (1.0 - m_material[matCnt].m_v);
+
 						// compute the material matrix
-						inMat[matCnt].mat[0] = e11; inMat[matCnt].mat[1] = v12; inMat[matCnt].mat[2] = 0.0;
-						inMat[matCnt].mat[3] = v12; inMat[matCnt].mat[4] = e11; inMat[matCnt].mat[5] = 0.0;
-						inMat[matCnt].mat[6] = 0.0; inMat[matCnt].mat[7] = 0.0; inMat[matCnt].mat[8] = g33;
+						m_material[matCnt].m_mat[0] = e11;
+						m_material[matCnt].m_mat[1] = v12;
+						m_material[matCnt].m_mat[2] = 0.0;
+						m_material[matCnt].m_mat[3] = v12;
+						m_material[matCnt].m_mat[4] = e11;
+						m_material[matCnt].m_mat[5] = 0.0;
+						m_material[matCnt].m_mat[6] = 0.0;
+						m_material[matCnt].m_mat[7] = 0.0;
+						m_material[matCnt].m_mat[8] = g33;
 
                         // compute bulk and shear moduli
-                        inMat[matCnt].k = inMat[matCnt].e / (3.0*(1.0-2.0*inMat[matCnt].v));
-                        inMat[matCnt].g = inMat[matCnt].e / (2.0*(1.0+inMat[matCnt].v));
+                        m_material[matCnt].m_k = m_material[matCnt].m_e / (3.0 * (1.0 - 2.0 * m_material[matCnt].m_v));
+                        m_material[matCnt].m_g = m_material[matCnt].m_e / (2.0 * (1.0 + m_material[matCnt].m_v));
 
 						matCnt++; // increase material count
 
-						end=1; // found data line
+						end = 1; // found data line
 					}
-					else if(buf[0]=='*'&& buf[1]!='*')
+					else if (buf[0] == '*' && buf[1] != '*')
 					{
 						printf("\nError in input: No data line for *mat! - Abort\n");
 						return -1;
@@ -406,36 +420,38 @@ int CHakInput::ReadFile(char *datafile)
 			}
 
 			// if keyword is mat_def (material definition)
-			else if(strncasecmp(lead, "*def_mat", 8)==0)
+			// 	jeehanglee@gmail.com: _ReadMaterialDefinition()
+			else if(strncasecmp(lead, "*def_mat", 8) == 0)
 			{
 				// check that mesh has defined
-				if(meshFound==0)
+				if (meshFound == 0)
 				{
 					printf("\nError in input: *def_mat before *mesh! - Abort\n");
 					return -1;
 				}
 
-				end=0;
-				while(end==0 && !feof(infile))
+				end = 0;
+				while (end == 0 && !feof(infile))
 				{
-					fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
+					fgets(buf, MAX_CHARS_PER_LINE, infile); // get next line
 
-					double h = inMesh->h;
-					double tol = inMesh->tol;
+					double h = m_mesh.m_lenEdge;
+					double tol = m_mesh.m_tolerance;
 					double xmin,xmax,ymin,ymax;
 					int mtype;
 
-					if(buf[0]!='*' && buf[1]!='*') // check for commented out line
+					if (buf[0] != '*' && buf[1] != '*') // check for commented out line
 					{
 						// split line into tokens
 						token[0] = strtok(buf, DELIMITER); // first token
-						for(i=1;i<5;i++)
+						for (i = 1 ;i < 5 ; i++)
 						{
 							token[i] = strtok(NULL, DELIMITER); // subsequent tokens
-							if (!token[i]) break; // no more tokens
+							if (!token[i])
+								break; // no more tokens
 						}
 
-						if(i<5)
+						if (i < 5)
 						{
 							printf("\nError in input: not enough data for *def_mat! - Abort\n");
 							return -1;
@@ -450,36 +466,41 @@ int CHakInput::ReadFile(char *datafile)
 						// find all elements completely enclosed in area
 
 						// use coords to work out range of elements effected
-						xmin -= tol; ymin -= tol; xmax += tol; ymax += tol;
+						xmin -= tol;
+						ymin -= tol;
+						xmax += tol;
+						ymax += tol;
+
 						int ex_min = (int)ceil(xmin/h);
 						int ex_max = (int)floor(xmax/h);
 						int ey_min = (int)ceil(ymin/h);
 						int ey_max = (int)floor(ymax/h);
 
 						int n,m,num;
-						for(m=ey_min;m<ey_max;m++)
+						for (m = ey_min; m < ey_max; m++)
 						{
-							for(n=ex_min;n<ex_max;n++)
+							for (n = ex_min; n < ex_max; n++)
 							{
-								num = inMesh->Number[n][m].n; // Element number
-								inMesh->mat_type[num] = mtype; // material type
+								num = m_mesh.m_pNumber[n][m].n; // Element number
+								m_mesh.mat_type[num] = mtype; // material type
 							}
 						}
 					}
 
-					else if(buf[0]=='*' && buf[1]!='*')
+					else if (buf[0] == '*' && buf[1] != '*')
 					{
-						end=1; // stop when next keyword is found
-						reread=1; // nned to reread the keyword
+						end = 1; // stop when next keyword is found
+						reread = 1; // nned to reread the keyword
 					}
 				}
 			}
 
-			// if keyword is designable materail
-			else if(strncasecmp(lead, "*des_mat", 8)==0)
+			// if keyword is designable material
+			// jeehanglee@gmail.com: _ReadDesignableMaterial()
+			else if (strncasecmp(lead, "*des_mat", 8) == 0)
 			{
 				// check that mesh has defined
-				if(meshFound==0)
+				if (meshFound == 0)
 				{
 					printf("\nError in input: *des_mat before *mesh! - Abort\n");
 					return -1;
@@ -491,9 +512,18 @@ int CHakInput::ReadFile(char *datafile)
 				sscanf(token[2],"%i",&m2); // material 2
 
                 // check for simultaneous or sequential opt of materials
-                if(i<4){ inMesh->dm_sim = true; } // default is simultaneous
-                else if(strncasecmp(token[3], "sim", 3)==0) { inMesh->dm_sim = true; }
-                else if(strncasecmp(token[3], "seq", 3)==0) { inMesh->dm_sim = false; }
+                if (i < 4)
+                {
+                	m_mesh.dm_sim = true;
+                } // default is simultaneous
+                else if (strncasecmp(token[3], "sim", 3) == 0)
+                {
+                	m_mesh.dm_sim = true;
+                }
+                else if (strncasecmp(token[3], "seq", 3) == 0)
+                {
+                	m_mesh.dm_sim = false;
+                }
                 else
                 {
 					printf("\nCannot determine sim or seq in *des_mat! - Abort\n");
@@ -501,9 +531,18 @@ int CHakInput::ReadFile(char *datafile)
 				}
 
                 // check for linear or H-S bound material model
-                if(i<5){ inMesh->mat_lin = true; } // default is linear model
-                else if(strncasecmp(token[4], "lin", 3)==0) { inMesh->mat_lin = true; }
-                else if(strncasecmp(token[4], "h-s", 3)==0) { inMesh->mat_lin = false; }
+                if (i < 5)
+                {
+                	m_mesh.mat_lin = true;
+                } // default is linear model
+                else if (strncasecmp(token[4], "lin", 3) == 0)
+                {
+                	m_mesh.mat_lin = true;
+                }
+                else if (strncasecmp(token[4], "h-s", 3) == 0)
+                {
+                	m_mesh.mat_lin = false;
+                }
                 else
                 {
 					printf("\nCannot determine linear of H-s bound material model in *des_mat! - Abort\n");
@@ -511,70 +550,71 @@ int CHakInput::ReadFile(char *datafile)
 				}
 
 				// check these materail exist
-				if(m1>matCnt || m2>matCnt)
+				if (m1 > matCnt || m2 > matCnt)
 				{
 					printf("\nMaterial not defined in *des_mat! - Abort\n");
 					return -1;
 				}
 
 				// set materials
-				inMesh->mat1 = m1;
-				inMesh->mat2 = m2;
+				m_mesh.mat1 = m1;
+				m_mesh.mat2 = m2;
 
-				int numElem = inMesh->NumElem;
-				double h = inMesh->h;
-				double tol = inMesh->tol;
+				int numElem = m_mesh.m_numElem;
+				double h = m_mesh.m_lenEdge;
+				double tol = m_mesh.m_tolerance;
 				double xmin,xmax,ymin,ymax;
-				bool *exclude = (bool *) calloc(numElem,sizeof(bool));
+				bool *exclude = (bool *) calloc(numElem, sizeof(bool));
 
 				// now check for exclusion zones
-				end=0;
-				while(end==0 && !feof(infile))
+				end = 0;
+				while (end == 0 && !feof(infile))
 				{
-					fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
+					fgets(buf, MAX_CHARS_PER_LINE, infile); // get next line
 
-					if(buf[0]!='*' && buf[1]!='*') // check for commented out line
+					if (buf[0] != '*' && buf[1] != '*') // check for commented out line
 					{
 						// split line into tokens
 						token[0] = strtok(buf, DELIMITER); // first token
-						for(i=1;i<4;i++)
+						for (i = 1; i < 4; i++)
 						{
 							token[i] = strtok(NULL, DELIMITER); // subsequent tokens
-							if (!token[i]) break; // no more tokens
+							if (!token[i])
+								break; // no more tokens
 						}
 
-						if(i<4)
+						if (i < 4)
 						{
 							printf("\nError in input: not enough data for *des_mat exclusion zone! - Abort\n");
 							return -1;
 						}
 
-						sscanf(token[0],"%lf",&xmin); // x min coord
-						sscanf(token[1],"%lf",&xmax); // x max coord
-						sscanf(token[2],"%lf",&ymin); // y min coord
-						sscanf(token[3],"%lf",&ymax); // y max coord
+						sscanf(token[0], "%lf", &xmin); // x min coord
+						sscanf(token[1], "%lf", &xmax); // x max coord
+						sscanf(token[2], "%lf", &ymin); // y min coord
+						sscanf(token[3], "%lf", &ymax); // y max coord
 
 						// find all elements completely enclosed in area
 
 						// use coords to work out range of elements effected
 						xmin -= tol; ymin -= tol; xmax += tol; ymax += tol;
-						int ex_min = (int)ceil(xmin/h);
-						int ex_max = (int)floor(xmax/h);
-						int ey_min = (int)ceil(ymin/h);
-						int ey_max = (int)floor(ymax/h);
+						int ex_min = (int) ceil(xmin/h);
+						int ex_max = (int) floor(xmax/h);
+						int ey_min = (int) ceil(ymin/h);
+						int ey_max = (int) floor(ymax/h);
 
 						int n,m,num;
-						for(m=ey_min;m<ey_max;m++)
+						for (m = ey_min; m < ey_max; m++)
 						{
-							for(n=ex_min;n<ex_max;n++)
+							for (n = ex_min; n < ex_max; n++)
 							{
-								num = inMesh->Number[n][m].n; // Element number
+								num = m_mesh.m_pNumber[n][m].n; // Element number
 								exclude[num] = true;
 							}
 						}
 					}
 
-					else if(buf[0]=='*' && buf[1]!='*')
+					else if (buf[0] == '*' && buf[1] != '*')
 					{
 						end=1; // stop when next keyword is found
 						reread=1; // nned to reread the keyword
@@ -582,88 +622,100 @@ int CHakInput::ReadFile(char *datafile)
 				}
 
 				// set array of elements with designable material
-				int *enum_temp = (int *) malloc(numElem*sizeof(int));
+				int *enum_temp = (int *) malloc(numElem * sizeof(int));
 				nd = 0; // count number of elements
-				for(i=0;i<numElem;i++){ if(!exclude[i]){enum_temp[nd++] = i;} }
+				for (i = 0; i < numElem; i++)
+				{
+					if (!exclude[i])
+					{
+						enum_temp[nd++] = i;
+					}
+				}
 				free(exclude);
 
-				if(nd>0)
+				if (nd > 0)
 				{
-					inMesh->NumDesMat = nd; // total number of variables
-					if(nd<numElem){enum_temp = (int *) realloc(enum_temp, nd*sizeof(int));}
-					inMesh->mat_elems = enum_temp;
-					inMesh->des_mat = true;
+					m_mesh.NumDesMat = nd; // total number of variables
+					if (nd < numElem)
+					{
+						enum_temp = (int *) realloc(enum_temp, nd * sizeof(int));
+					}
+					m_mesh.mat_elems = enum_temp;
+					m_mesh.des_mat = true;
 				}
 				else
 				{
-					inMesh->NumDesMat = 0; // total number of variables
+					m_mesh.NumDesMat = 0; // total number of variables
 					free(enum_temp);
 				}
 			}
 
 			// if keyword is mass - defines lumped mass at nodes
-			else if(strncasecmp(lead, "*mass", 5)==0)
+			else if (strncasecmp(lead, "*mass", 5) == 0)
 			{
 				// check that mesh has defined
-				if(meshFound==0)
+				if (meshFound == 0)
 				{
 					printf("\nError in input: *mass before *mesh! - Abort\n");
 					return -1;
 				}
 
-				end=0;
-				int nn = inMesh->NumNodes;
-				double xtemp,ytemp,mass;
-				if(!lm_temp)
+				end = 0;
+				int nn = m_mesh.m_numNodes;
+				double xtemp, ytemp, mass;
+				if (!lm_temp)
 				{
 					// if not done already - set memory for lumped masses
-					lm_temp = (double *) calloc(nn*NUM_DOF,sizeof(double));
+					lm_temp = (double *) calloc(nn * NUM_DOF, sizeof(double));
 				}
 
-				while(end==0 && !feof(infile))
+				while (end == 0 && !feof(infile))
 				{
 					fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
 
-					if(buf[0]!='*' && buf[1]!='*') // check for commented out line
+					if (buf[0] != '*' && buf[1] != '*') // check for commented out line
 					{
 						// split line into tokens
 						token[0] = strtok(buf, DELIMITER); // first token
-						for (i=1;i<3;i++)
+						for (i = 1;i < 3;i++)
 						{
 							token[i] = strtok(NULL, DELIMITER); // subsequent tokens
-							if (!token[i]) break; // no more tokens
+							if (!token[i])
+								break; // no more tokens
 						}
 
-						if(i<3)
+						if (i < 3)
 						{
 							printf("\nError in input: not enough data for *mass! - Abort\n");
 							return -1;
 						}
 
-						sscanf(token[0],"%lf",&xtemp); // x coord
-						sscanf(token[1],"%lf",&ytemp); // y coord
-						sscanf(token[2],"%lf",&mass);  // mass
+						sscanf(token[0], "%lf", &xtemp); // x coord
+						sscanf(token[1], "%lf", &ytemp); // y coord
+						sscanf(token[2], "%lf", &mass);  // mass
 
 						// find closest node to the co-ordinates
-						nd = cmesh.closeNode(inMesh,xtemp,ytemp);
+						// nd = cmesh.closeNode(inMesh,xtemp,ytemp);
+						nd = m_mesh.CloseNode(xtemp, ytemp);
 
 						// Now add mass to specified dof
 						nd *= NUM_DOF;
-						for(i=0;i<NUM_DOF;i++)
+						for (i = 0; i < NUM_DOF; i++)
 						{
 							lm_temp[nd++] += mass;
 						}
 					}
 
-					else if(buf[0]=='*' && buf[1]!='*')
+					else if (buf[0]=='*' && buf[1]!='*')
 					{
-						end=1; // stop when next keyword is found
-						reread=1; // nned to reread the keyword
+						end = 1; // stop when next keyword is found
+						reread = 1; // nned to reread the keyword
 					}
 				}
 			}
 
 			// if keyword is boundary
+			// jeehanglee@gmail.com: _ReadBoundaryInfo()
 			else if(strncasecmp(lead, "*bound", 6)==0)
 			{
 				// check that mesh has defined
@@ -673,30 +725,31 @@ int CHakInput::ReadFile(char *datafile)
 					return -1;
 				}
 
-				int *flag = (int *) malloc(NUM_DOF*sizeof(int));
-				int nn = inMesh->NumNodes;
-				Coord *cp = inMesh->NodeCoord;
+				int *flag = (int *) malloc(NUM_DOF * sizeof(int));
+				int nn = m_mesh.m_numNodes;
+				Coord *cp = m_mesh.m_pNodeCoord;
 
 				// if type is point
-				if(strncasecmp(token[1], "point", 5)==0)
+				if(strncasecmp(token[1], "point", 5) == 0)
 				{
 					double xtemp,ytemp;
-					end=0;
-					while(end==0 && !feof(infile))
+					end = 0;
+					while (end == 0 && !feof(infile))
 					{
-						fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
+						fgets(buf, MAX_CHARS_PER_LINE, infile); // get next line
 
-						if(buf[0]!='*' && buf[1]!='*') // check for commented out line
+						if (buf[0] != '*' && buf[1] != '*') // check for commented out line
 						{
 							// split line into tokens
 							token[0] = strtok(buf, DELIMITER); // first token
-							for (i=1;i<4;i++)
+							for (i = 1; i < 4; i++)
 							{
 								token[i] = strtok(NULL, DELIMITER); // subsequent tokens
-								if (!token[i]) break; // no more tokens
+								if (!token[i])
+									break; // no more tokens
 							}
 
-							if(i<(2+NUM_DOF))
+							if (i < (2 + NUM_DOF))
 							{
 								printf("\nError in input: not enough data for *bound, point! - Abort\n");
 								return -1;
@@ -704,20 +757,21 @@ int CHakInput::ReadFile(char *datafile)
 
 							sscanf(token[0],"%lf",&xtemp); // x coord
 							sscanf(token[1],"%lf",&ytemp); // y coord
-							for(i=0;i<NUM_DOF;i++)
+							for (i = 0; i < NUM_DOF; i++)
 							{
 								sscanf(token[2+i],"%i",&flag[i]); // is dof fixed
 							}
 
 							// find closest node to zero-displacement co-ordinates
-							nd = cmesh.closeNode(inMesh,xtemp,ytemp);
+							// nd = cmesh.closeNode(inMesh,xtemp,ytemp);
+							nd = m_mesh.CloseNode(xtemp,ytemp);
 
 							// first record node - for possible fixed lsf
 							// bc_fix[nd] = true;
 
 							// Now fix the specified dof
 							nd *= NUM_DOF;
-							for(i=0;i<NUM_DOF;i++)
+							for (i = 0; i < NUM_DOF; i++)
 							{
 								fixdof_temp[nd++] = (flag[i] == 0) ? false : true;
 							}
@@ -739,7 +793,7 @@ int CHakInput::ReadFile(char *datafile)
 					{
 						fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
 
-						double tol = inMesh->tol;
+						double tol = m_mesh.m_tolerance;
 						double xmin,xmax,ymin,ymax;
 
 						if(buf[0]!='*' && buf[1]!='*') // check for commented out line
@@ -807,23 +861,24 @@ int CHakInput::ReadFile(char *datafile)
 					{
 						fgets(buf,MAX_CHARS_PER_LINE,infile); // get next line
 
-						double tol = inMesh->tol;
-						double h = inMesh->h;
-						int elemX = inMesh->elemX;
-						int elemY = inMesh->elemY;
-						double xmin,xmax,ymin,ymax;
+						double tol = m_mesh.m_tolerance;
+						double h = m_mesh.m_lenEdge;
+						int elemX = m_mesh.m_elemX;
+						int elemY = m_mesh.m_elemY;
+						double xmin, xmax, ymin, ymax;
 
-						if(buf[0]!='*' && buf[1]!='*') // check for commented out line
+						if (buf[0] != '*' && buf[1] != '*') // check for commented out line
 						{
 							// split line into tokens
 							token[0] = strtok(buf, DELIMITER); // first token
-							for(i=1;i<4;i++)
+							for (i = 1; i < 4; i++)
 							{
 								token[i] = strtok(NULL, DELIMITER); // subsequent tokens
-								if (!token[i]) break; // no more tokens
+								if (!token[i])
+									break; // no more tokens
 							}
 
-							if(i<4)
+							if (i < 4)
 							{
 								printf("\nError in input: not enough data for *bound, design! - Abort\n");
 								return -1;
@@ -843,9 +898,10 @@ int CHakInput::ReadFile(char *datafile)
 							int ey_min = (int)ceil(ymin/h);  if(ey_min < 0){ey_min=0;}
 							int ey_max = (int)floor(ymax/h); if(ey_max > elemY){ey_max=elemY;}
 
+							// till here, jeehanglee@gmail.com, 150106
 							int n,m;
 							int num=(ex_max-ex_min)*(ey_max-ey_min);
-							if(num>0)
+							if (num > 0)
 							{
 								if(!inMesh->des_bc)
 								{
@@ -1994,7 +2050,7 @@ int CHakInput::ReadFile(char *datafile)
 
 		// initialize designable bc variables
 		inMesh->K_bc = (double *) malloc(inMesh->NumBC * sizeof(double));
-		inMesh->K0_bc = inMat[0].e * 1.0e6; // max stiffness
+		inMesh->K0_bc = m_material[0].e * 1.0e6; // max stiffness
 		double ftemp = lsprob->con[i].data[0] / (double)inMesh->NumBC; // initial design is feasible
 		for(j=0;j<inMesh->NumBC;j++)
 		{
@@ -2088,7 +2144,7 @@ int CHakInput::ReadFile(char *datafile)
 }
 
 // function to read new-style input file
-int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inMat, levSet *levelset, prob *lsprob,
+int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_material, levSet *levelset, prob *lsprob,
 			   ctrl *control, int **map, int *numCase, double **load_in, int *freeDof, sp_mat *lump_mass, bool *sw, Coord **acc)
 {
 	int i,j,nd,nd2,ind,end;
@@ -2136,7 +2192,7 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inM
 
 	int reread = 0;
 	int meshFound = 0; // indicate when *mesh has been found
-	inMat[0].e = -1.0;   // used to indicate when *mat has been found
+	m_material[0].e = -1.0;   // used to indicate when *mat has been found
 
 	// read each line of the file
 	while (!feof(infile))
@@ -2320,7 +2376,7 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inM
 						sscanf(token[0],"%lf",&inMesh->bar_min);
 						sscanf(token[1],"%lf",&inMesh->bar_max);
 						sscanf(token[2],"%i",&j);
-						inMesh->bar_mat = &inMat[j];
+						inMesh->bar_mat = &m_material[j];
 
 						// check data
 						if(inMesh->bar_min < 1.0e-20)
@@ -2380,45 +2436,45 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inM
 							return -1;
 						}
 
-						// read data into the inMat structure
-						sscanf(token[0],"%lf",&inMat[matCnt].e);
-						sscanf(token[1],"%lf",&inMat[matCnt].v);
+						// read data into the m_material structure
+						sscanf(token[0],"%lf",&m_material[matCnt].e);
+						sscanf(token[1],"%lf",&m_material[matCnt].v);
 						if(i>2){
-							sscanf(token[2],"%lf",&inMat[matCnt].rho);
+							sscanf(token[2],"%lf",&m_material[matCnt].rho);
 						}
 						else {
-							inMat[matCnt].rho = 1.0; // default to 1.0
+							m_material[matCnt].rho = 1.0; // default to 1.0
 						}
 
 						// check data
-						if(inMat[matCnt].e < 1.0e-20)
+						if(m_material[matCnt].e < 1.0e-20)
 						{
-							printf("\nError in input: Young's modulus = %12.4e! - Abort\n",inMat[matCnt].e);
+							printf("\nError in input: Young's modulus = %12.4e! - Abort\n",m_material[matCnt].e);
 							return -1;
 						}
-						else if(inMat[matCnt].v < 0.5001 && inMat[matCnt].v > 0.4999)
+						else if(m_material[matCnt].v < 0.5001 && m_material[matCnt].v > 0.4999)
 						{
-							printf("\nError in input: Poisson's ratio = %12.4e! - Abort\n",inMat[matCnt].v);
+							printf("\nError in input: Poisson's ratio = %12.4e! - Abort\n",m_material[matCnt].v);
 							return -1;
 						}
-						else if(inMat[matCnt].rho < 1.0e-20)
+						else if(m_material[matCnt].rho < 1.0e-20)
 						{
-							printf("\nError in input: density = %12.4e! - Abort\n",inMat[matCnt].rho);
+							printf("\nError in input: density = %12.4e! - Abort\n",m_material[matCnt].rho);
 							return -1;
 						}
 
 						// compute plane stress constants
-						double e11 = inMat[matCnt].e / ( 1.0-(inMat[matCnt].v * inMat[matCnt].v) );
-						double v12 = e11 * inMat[matCnt].v;
-						double g33 = 0.5 * e11 * (1.0 - inMat[matCnt].v);
+						double e11 = m_material[matCnt].e / ( 1.0-(m_material[matCnt].v * m_material[matCnt].v) );
+						double v12 = e11 * m_material[matCnt].v;
+						double g33 = 0.5 * e11 * (1.0 - m_material[matCnt].v);
 						// compute the material matrix
-						inMat[matCnt].mat[0] = e11; inMat[matCnt].mat[1] = v12; inMat[matCnt].mat[2] = 0.0;
-						inMat[matCnt].mat[3] = v12; inMat[matCnt].mat[4] = e11; inMat[matCnt].mat[5] = 0.0;
-						inMat[matCnt].mat[6] = 0.0; inMat[matCnt].mat[7] = 0.0; inMat[matCnt].mat[8] = g33;
+						m_material[matCnt].mat[0] = e11; m_material[matCnt].mat[1] = v12; m_material[matCnt].mat[2] = 0.0;
+						m_material[matCnt].mat[3] = v12; m_material[matCnt].mat[4] = e11; m_material[matCnt].mat[5] = 0.0;
+						m_material[matCnt].mat[6] = 0.0; m_material[matCnt].mat[7] = 0.0; m_material[matCnt].mat[8] = g33;
 
                         // compute bulk and shear moduli
-                        inMat[matCnt].k = inMat[matCnt].e / (3.0*(1.0-2.0*inMat[matCnt].v));
-                        inMat[matCnt].g = inMat[matCnt].e / (2.0*(1.0+inMat[matCnt].v));
+                        m_material[matCnt].k = m_material[matCnt].e / (3.0*(1.0-2.0*m_material[matCnt].v));
+                        m_material[matCnt].g = m_material[matCnt].e / (2.0*(1.0+m_material[matCnt].v));
 
 						matCnt++; // increase material count
 
@@ -4021,7 +4077,7 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *inM
 
 		// initialize designable bc variables
 		inMesh->K_bc = (double *) malloc(inMesh->NumBC * sizeof(double));
-		inMesh->K0_bc = inMat[0].e * 1.0e6; // max stiffness
+		inMesh->K0_bc = m_material[0].e * 1.0e6; // max stiffness
 		double ftemp = lsprob->con[i].data[0] / (double)inMesh->NumBC; // initial design is feasible
 		for(j=0;j<inMesh->NumBC;j++)
 		{
