@@ -50,8 +50,7 @@ public:
 	void Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, double *alpha, double aMin);
 
 	// function to compute area ratio for all elements
-	void AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes,
-					int NumBound, Bseg *Boundary, double aMin);
+	void AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes, int NumBound, Bseg *Boundary, double aMin);
 
 	// Node Co-ordinate calculation function
 	void Coordinates(mesh *inMesh);
@@ -74,6 +73,12 @@ public:
 
 	// function that orders node numbers into a 2D based on their relative positions
 	void NodeNums2D();
+
+	// function to number bars elements
+	void NumberingBarElements();
+
+	// Function to find the nearest grid node number to a set of co-ordinates
+	int CloseNode(double xp, double yp);
 
 public:
 //private:
@@ -111,7 +116,8 @@ public:
 //private:
 	//
 	// additional variables for bar reinforcements
-	// --> may be a separated class (e.g. design variable for bar-reinforcement)
+	// --> may be a separated class (e.g. design variable for bar-reinforcement) or structure
+	// (jeehanglee@gmail.com)
 	//
 
 	// flag to indicate if bar elements are in the mesh
