@@ -35,13 +35,29 @@ public:
 //
 // Interfaces
 //
+//knai20@bath.ac.uk: OOD implementations
+public:
+    int InitialiseOOP(char *path);
+	// Finite Element Anaysis
+	// returns -1 when exceptions occurs thus process fails.
+	int AnalyseOOP(int itt);
+
+	// Sensitivity
+	int SensitivityOOP();
+
+	// Optimisation
+	int OptimiseOOP();
+
+    void OutputOOP();
+
+//knai20@bath.ac.uk: Non OOD implementations
 public:
 	// Read the input file & assign initial values
 	// returns -1 when starting process fails.
 	int StartProcess(std::string inputfile);
     
     int Initialise(char *path);
-
+    
 	// Finite Element Anaysis
 	// returns -1 when exceptions occurs thus process fails.
 	int Analyse(int itt);
@@ -72,26 +88,27 @@ public:
     char filename[100];
     
     // inital data arrays & structs
-    mesh inMesh;  // struct to hold mesh data
+
+    // Structures
+    //mesh inMesh;  // struct to hold mesh data //Khalid: remove when OOD
+    //levSet levelset; // struct to hold level set info
+    //prob lsprob;  // struct to hold problem defintion
+    //ctrl control; // struct to hold control data
+    //isoMat inMat[5]; // isotropic material - maximum of 5 different materials
+    //sp_mat lump_mass; // lumped mass matrix
+    //boundary Bndry;	// boundry discretization
+    //sp_mat Kg, Mg; // global stiffness and mass matrices
+    
+    Coord *gCoord;
+    Coord *acc;   // acceleration vector for self-weight loading
+
     int numMat; // numberof materials
-    isoMat inMat[5]; // isotropic material - maximum of 5 different materials
-    levSet levelset; // struct to hold level set info
-    prob lsprob;  // struct to hold problem defintion
-    ctrl control; // struct to hold control data
     int numCase;  // number load cases
     double *load; // load vector (rhs)
     bool sw = false;      // self-weight loading flag
-    Coord *acc;   // acceleration vector for self-weight loading
     int *fixDof;  // fixed dof (turn into map)
     int freeDof;  // number of free dof
-    sp_mat lump_mass; // lumped mass matrix
-    
-    Coord *gCoord;
-    
-    CHakOutput coutput;
-    CHakMathUtility cmu;
-    CHakFiniteElement fem;
-    
+
     double AreaElem;
     
     double **KE;
@@ -107,7 +124,7 @@ public:
     
     // Variables and arrays to store additional mesh data
     int Ntot;		 // total nodes, including auxillary ones
-    double *alpha;
+    double *alpha;  // Array to store element areas
     
     // Arrays to store node data related to the optimisation
     double *Nsens;  // pointer for node (+ aux node) sensitivity array
@@ -117,17 +134,15 @@ public:
     double **sens_ptr; // pointer to senstivity arrays for each fucntion (obj + constraints)
     double *Vnorm;	// pointer for node (+ aux node) normal velocity array
     double *Grad;   // pointer for lsf gradient info (using upwind scheme)
-    int *activ;  //array for active constraints
+    int *active;  //array for active constraints
     
     // boundary integral variables
-    boundary Bndry;	// boundry discretization
     double *Lbound;   // array to store boundary intergral coefficents
     int *Lbound_nums; // global node nums corresponding to Lbound entries
     int num_Lbound;   // length of Lbound & Lbound_nums
     double *lambda;
     
     // stuff for Ku = f solve using MA57 solver (& eigenvalue solver)
-    sp_mat Kg, Mg; // global stiffness and mass matrices
     int num_eig; // number of eigenvalues to compute
     int comp_eig; // flag to decide if eigenvalues are to be computed
     double *eig_vals, *eig_vecs; // arrays for eigenvalues and vectors
@@ -175,7 +190,7 @@ public:
     double *pred; // predicted obj & constraint change
     double *pred_temp; // temp to feed SLPsubSol
 
-
+    //OOD implementation knai20@bath.ac.uk
 private:
 	// Input file path
 	char *m_pFileIn;
@@ -188,6 +203,22 @@ private:
 
 	// handle output files
 	CHakOutput m_output;
+
+    CHakMesh m_mesh;
+
+    CHakMathUtility m_mathUtility;
+
+    CHakFiniteElement m_fem;
+
+    CHakLevelSet m_levelset;
+
+    CHakMaterial m_material;
+
+    CHakSolver m_solver;
+
+    CHakSensitivity m_sensitivity;
+
+    CHakBoundary m_boundary;
 };
 
 #endif /* CEXMINIMISECOMPLIANCE_H_ */
