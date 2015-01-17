@@ -39,6 +39,51 @@ public:
 	CHakOutput();
 	virtual ~CHakOutput();
 
+
+// knai20@bath.ac.uk: OOD version
+    
+public:
+    // function to write element and node numbering info
+    void OutNumber(CHakMesh& m_mesh, char *datafile);
+    
+    // function to write node co-ordinate information file
+    void OutNodeCoord(CHakMesh& m_mesh, char *datafile);
+    
+    // function to output lsf (& maybe alpha) in vtk format
+    void OutPLotShapeVTK2(CHakMesh& m_mesh, double *lsf, double *alpha, int pinfo, int itt, char *datafile);
+    
+    // function to output boundary as a mesh for Paraview (with shape sensitivities)
+    void OutBoundVTK(CHakMesh& m_mesh, boundary *bound_in, int num_sens, double **Sens, int itt, char *datafile);
+    
+    // function to output boundary integration data
+    void OutBoundInt(int numFunc, int numLbound, int *Lbound_nums, double *Lbound, int itt, char *datafile);
+    
+    // function to output Vext & Grad in vtk format for Paraview
+    void OutHJVTK(CHakMesh& m_mesh, double *Vnorm, double *Grad, int itt, char *datafile);
+    
+    // function to output displacements (and mode shapes) in vtk format for Paraview
+    void OutDispVTK(CHakMesh& m_mesh, int numCase, double *disp, int num_eig, double *vec, int itt, char *datafile);
+    
+    // function to output object & constraint convergence data
+    void OutConv(int itt, prob *lsprob, double *Obj, double *constr, char *datafile);
+    
+    // function to output covergence history of frequencies
+    void OutFreq(int itt, int num_eig, double *freq, char *datafile);
+    
+    // function to output bar areas
+    void OutBars(CHakMesh& m_mesh, int numFunc, double *sens, int pinfo, int itt, char *datafile);
+    
+    // function to output designable bc varibles
+    void OutDesBC(CHakMesh& m_mesh, double *sens, int pinfo, int itt, char *datafile);
+    
+    // function to output designable material varibles
+    void OutDesMat(CHakMesh& m_mesh, double *alpha, double aMin, int num_sens, double *sens, int pinfo, int itt, char *datafile);
+    
+    // function to print solution to screen
+    void report(int n,  int m, int nu, double **v);
+
+ // knai20@bath.ac.uk: Non OOD version
+
 public:
 	// function to write element and node numbering info
 	void OutNumber(mesh *inMesh, char *datafile);

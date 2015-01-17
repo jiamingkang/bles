@@ -96,6 +96,11 @@ protected:
 	int _ReadLoad(FILE *pFile);
 
 public:
+	CHakMesh GetMesh() { return m_mesh; }
+	CHakMaterial* GetMaterial() { return m_material; }
+	CHakLevelSet GetLevelSet() { return m_levelset; }
+
+public:
 // private:
 
 	// Mesh - to hold mesh data

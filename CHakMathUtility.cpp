@@ -45,7 +45,54 @@ CHakMathUtility::~CHakMathUtility() {
 
 //
 // Implementation - Interfaces
+// knai20@bath.ac.uk OOD Implementations
+
+// function to compute gauss point coords
+void CHakMathUtility::Gauss_Coord(CHakMesh& m_mesh, Coord *gCoord)
+{
+	// read in mesh data
+	double h =m_mesh.m_lenEdge;
+	int elemX = m_mesh.m_elemX;
+	int elemY = m_mesh.m_elemY;
+	Elem **Number = m_mesh.m_pNumber;
+	Coord *NodeCoord = m_mesh.m_pNodeCoord;
+	double h2 = 0.5 * h;
+
+	int n,m,i,num,node1;
+	double cx,cy;
+
+	// Array storing data for location of the 4 nodes in the square element
+	static Coord Po[4] = {{-1.,-1.},{1.,-1.},{1.,1.},{-1.,1.}};
+	double ga = 0.57735026919;
+
+	// For All Elements
+	for(m=0;m<elemY;m++)
+	{
+		for(n=0;n<elemX;n++)
+		{
+			num = Number[n][m].n * 4;
+			node1 = Number[n][m].a;
+
+			// work out global co-ordinates of element center
+			// from co-ords of node 1 and element edge length
+			cx = NodeCoord[node1].x + h2;
+			cy = NodeCoord[node1].y + h2;
+
+			// compute global gauss point co-ordinates and store
+			for(i=0;i<4;i++)
+			{
+				gCoord[num + i].x = cx + (ga * Po[i].x * h2);
+				gCoord[num + i].y = cy + (ga * Po[i].y * h2);
+			}
+		}
+	}
+}
+
+
+
 //
+// Implementation - Interfaces
+// knai20@bath.ac.uk Non OOD Implementations
 
 // Function that calculates the area of any Polygon
 // NB: vertices have to be numbered anti-clockwise

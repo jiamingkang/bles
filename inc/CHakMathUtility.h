@@ -45,6 +45,13 @@ public:
 	CHakMathUtility();
 	virtual ~CHakMathUtility();
 
+
+// knai20@bath.ac.uk: OOD version
+public:
+	// function to compute gauss point coords
+	void Gauss_Coord(CHakMesh& m_mesh, Coord *gCoord);
+
+// knai20@bath.ac.uk: Non OOD version
 public:
 	// function to compute gauss point coords
 	void Gauss_Coord(mesh *inMesh, Coord *gCoord);
