@@ -2,7 +2,7 @@
  * CHakSparseMatrix.h
  *
  *  Created on: Dec 19, 2014
- *      Author: jeehang
+ *      Author: Khalid Ismail, jeehang
  */
 
 #ifndef CHAKSPARSEMATRIX_H_

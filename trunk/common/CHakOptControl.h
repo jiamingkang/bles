@@ -2,7 +2,7 @@
  * CHakOptControl.h
  *
  *  Created on: Dec 19, 2014
- *      Author: jeehang
+ *      Author: jeehang , Khalid Ismail
  */
 
 #ifndef CHAKOPTCONTROL_H_

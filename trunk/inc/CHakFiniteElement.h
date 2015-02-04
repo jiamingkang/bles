@@ -35,7 +35,15 @@ public:
 	CHakFiniteElement();
 	virtual ~CHakFiniteElement();
 
+	// knai20@bath.ac.uk: OOD version
 public:
+	// Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
+	void AFG_Matrix(int mass, double **KE, double **ME, CHakSparseMatrix& Kg, CHakSparseMatrix& Mg, CHakSparseMatrix& lump_mass, double *alpha,
+						mesh *inMesh, isoMat *inMat, double aMin, double mMin);
+
+
+	// knai20@bath.ac.uk: Non OOD version
+public:s
 	// Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
 	void AFG_Matrix(int mass, double **KE, double **ME, sp_mat *Kg, sp_mat *Mg, sp_mat *lump_mass, double *alpha,
 						mesh *inMesh, isoMat *inMat, double aMin, double mMin);

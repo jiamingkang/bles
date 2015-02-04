@@ -105,7 +105,7 @@ public:
 	void get_lam0(int n, int m, int numCon, double *lam,  double *s, double *cA, double *b,
 				  double *lam_min, double *lam_max);
 
-// jeehanglee@gmail.com: temp code. Refactoring required.
+//  temp code. Refactoring required.
 public:
 	CHakSolver getSolver() { return m_solver; }
 	void setSolver(CHakSolver solver) { m_solver = solver; }

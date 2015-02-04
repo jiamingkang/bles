@@ -2,7 +2,7 @@
 	CInput.h
 
  	Created on: Nov 24, 2014
-	Author: Peter Dunning, JeeHang Lee
+	Author:  Peter Dunning, Khalid Ismail, JeeHang Lee
 
  	-- This file is part of Topology Optimisation Opensource Project,
  	owned by MSO (Multidisciplinary and Structural Optimisation) Research Group
