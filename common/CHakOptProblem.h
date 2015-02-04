@@ -2,7 +2,7 @@
  * CHakOptProblem.h
  *
  *  Created on: Dec 19, 2014
- *      Author: jeehang
+ *      Author: jeehang , Khalid Ismail
  */
 
 #ifndef CHAKOPTPROBLEM_H_

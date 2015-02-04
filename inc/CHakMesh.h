@@ -62,7 +62,7 @@ public:
 	void Bar_numbering(mesh *inMesh);
 
 //
-// OOD version (jeehanglee@gmail.com)
+// OOD version
 //
 public:
 	// Function that numbers all elements and nodes in the FG domain
@@ -141,7 +141,7 @@ public:
 //private:
 	//
 	// additional variables for designable boundary conditions
-	// --> may be a separated class (e.g. design variable for boundary conditions), jeehanglee@gmail.com
+	// --> may be a separated class (e.g. design variable for boundary conditions)
 	//
 
 	// flag to indicate designable bcs are present
@@ -162,7 +162,7 @@ public:
 //private:
 	//
 	// additional variables for elemental material design variables
-	// 	--> may be a separated class (e.g. design variable), jeehanglee@gmail.com
+	// 	--> may be a separated class (e.g. design variable),
 	//
 
 	// flag to indicate designable material is present

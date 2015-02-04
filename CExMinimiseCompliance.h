@@ -99,6 +99,8 @@ public:
     //boundary Bndry;	// boundry discretization
     //sp_mat Kg, Mg; // global stiffness and mass matrices
     
+
+
     Coord *gCoord;
     Coord *acc;   // acceleration vector for self-weight loading
 
@@ -212,13 +214,24 @@ private:
 
     CHakLevelSet m_levelset;
 
-    CHakMaterial m_material;
+    CHakMaterial m_material[5];
 
     CHakSolver m_solver;
 
     CHakSensitivity m_sensitivity;
 
     CHakBoundary m_boundary;
+
+    CHakOptControl m_control;
+
+    CHakSparseMatrix m_lumpMass;
+
+    CHakOptProblem m_lsProblem;
+
+    CHakSparseMatrix Kg;
+
+    CHakSparseMatrix Mg;
+
 };
 
 #endif /* CEXMINIMISECOMPLIANCE_H_ */

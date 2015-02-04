@@ -2,7 +2,7 @@
  * CHakInput.cpp
  *
  *  Created on: Nov 24, 2014
- *      Author: jeehang
+ *      Author: Khalid Ismail, jeehang
  */
 
 #include <stdlib.h>
