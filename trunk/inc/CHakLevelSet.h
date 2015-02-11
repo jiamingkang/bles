@@ -38,36 +38,36 @@ public:
 
 public:
 	// function to create the initial signed distance function - inc holes
-	void initialLsf(mesh *inMesh, levSet *levelset, int NumHole, CirH *holes, int NumRect, Coord *Rect, double lBand);
+	void initialLsf(CHakMesh *inMesh, int NumHole, CirH *holes, int NumRect, Coord *Rect, double lBand);
 
 	// Function to calcualte lsf around a rectangular hole
 	void RectHole(int NumNodes, Coord *NodeCoord, int NumRect, Coord *Rect, double *lsf);
 
 	// Function to calculate active and mine nodes for the narrow band method
-	void NarBand(mesh *inMesh, levSet *levelset, double lBand);
+	void NarBand(CHakMesh *inMesh, double lBand);
 
 	// function to weight boundary segments so that lengths are more even
-	void BsegWgt(boundary *bound_in, mesh *inMesh);
+	void BsegWgt(CHakBoundary *bound_in, CHakMesh *inMesh);
 
 	// Function to perfrom boundary intergration of objective and constraint shape sens
-	void BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
+	void BoundInt(CHakMesh *inMesh, CHakBoundary *bound_in, int numFunc, double **Nsens,
 					int *Lbound_nums, int *numLbound,  double *Lbound);
 
 	// Function to calculate extension velocities using the fast marching method
-	void Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, double *Vnorm);
+	void Vext(CHakMesh *inMesh, CHakBoundary *bound_in, double *Vnorm);
 
 	// function that works out Velocity for nodes close to the boundary
 	void LocalVext2(int NodeX, int NodeY, int **Nodes, double *Vnorm, double *Vtemp, double *lsf, double *lsf_temp, double tol,
-					bool *known, bool *trial, boundary *bound_in, double h, int NumNodes, Coord *NodeCoord, int sign);
+					bool *known, bool *trial, CHakBoundary *bound_in, double h, int NumNodes, Coord *NodeCoord, int sign);
 
 	// Function to calcualte gradient using WENO scheme
-	double GradWENO(int Xi, int Yj, int num, double *lsf, mesh *inMesh, int sign, double Vn, double dt);
+	double GradWENO(int Xi, int Yj, int num, double *lsf, CHakMesh *inMesh, int sign, double Vn, double dt);
 
 	// sub-function for GradWENO
 	double GWsub(double v1,double v2,double v3,double v4,double v5);
 
 	// Function to re-initalise the lsf as a signed distance function - similar to Vext above
-	void ReInt(mesh *inMesh, levSet *levelset);
+	void ReInt(CHakMesh *inMesh);
 
 	// Function to reinitalise lsf for inital set of trial nodes - similar to LocalVext above
 	void LocalInt(int NodeX, int NodeY, int **Nodes, double *lsf, double *lsf_temp,
@@ -90,7 +90,7 @@ public:
 						double *up_lim, double *low_lim, int pinfo);
 
 	// function to set velocity (or move dist) using SLP - filter method
-	int SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, double alt, double *delCon, int numCon,
+	int SLPsubSol4(CHakMesh *inMesh, CHakBoundary *bound_in, double alt, double *delCon, int numCon,
 	                double **sens, double *cA, int n, int *bound, double *lam_in, int *active, double *Vnorm, double *pred,
 					int numAdd, double *add_sens, double *add_min, double *add_max, double *add_change, int pinfo);
 
@@ -116,24 +116,24 @@ private:
 public:
 //private:
 	// number of nodes for level set discretization
-	int m_numNode;	 
+	int m_numNode;	 //num
 
 	// pointer to array containing nodal lsf values
-	double *m_pNodalLsf; 
+	double *m_pNodalLsf;  //*lsf
 	
 	//bool *bound; // nodes that are on fixed boundaries (not currently used)
 	
 	// array for fixed lsf values (NULL if none fixed)
-	bool *m_pFixedLsf; 
+	bool *m_pFixedLsf; //*fixed
 
 	// array for nodes within narrow band (and not fixed)
-	bool *m_pActive; 
+	bool *m_pActive; //*active
 
 	// number of mines on edge of narrow band
-	int m_numMine;
+	int m_numMine; //numMine
 
 	// mine node numbers
-	int *m_pMine;    
+	int *m_pMine;    //*mine
 };
 
 #endif /* CHakLevelSet_H_ */

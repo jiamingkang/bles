@@ -42,18 +42,18 @@ CHakLevelSet::~CHakLevelSet() {
 //
 
 // function to create the initial signed distance function - inc holes
-void CHakLevelSet::initialLsf(mesh *inMesh, levSet *levelset, int NumHole, CirH *holes, int NumRect, Coord *Rect, double lBand)
+void CHakLevelSet::initialLsf(CHakMesh *inMesh, int NumHole, CirH *holes, int NumRect, Coord *Rect, double lBand)
 {
 	int i,j;
 	double ftemp,dist,minX,minY;
 
 	// read in data
-	int NumNodes = inMesh->NumNodes;
-	Coord *NodeCoord = inMesh->NodeCoord;
-	double maxX = inMesh->maxX;
-	double maxY = inMesh->maxY;
-	double tol = inMesh->tol;
-	double *lsf = levelset->lsf;
+	int NumNodes = inMesh->m_numNodes;
+	Coord *NodeCoord = inMesh->m_pNodeCoord;
+	double maxX = inMesh->m_maxX;
+	double maxY = inMesh->m_maxY;
+	double tol = inMesh->m_tolerance;
+	double *lsf = this->m_pNodalLsf;
 
 	//For all nodes find the closest edge of the outer domain (initial lsf)
 	for(i=0;i<NumNodes;i++)
@@ -97,10 +97,10 @@ void CHakLevelSet::initialLsf(mesh *inMesh, levSet *levelset, int NumHole, CirH 
 	}
 
 	//re-initialize signed distance funciton after initial hole insetion
-	ReInt(inMesh, levelset);
+	ReInt(inMesh);
 
 	// create the inital narrow band region
-	NarBand(inMesh, levelset, lBand);
+	NarBand(inMesh, lBand);
 }
 
 // Function to calcualte lsf around a rectangular hole
@@ -194,17 +194,17 @@ void CHakLevelSet::RectHole(int NumNodes, Coord *NodeCoord, int NumRect, Coord *
 }
 
 // Function to calculate active and mine nodes for the narrow band method
-void CHakLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
+void CHakLevelSet::NarBand(CHakMesh *inMesh, double lBand)
 {
-	int NumNodes = inMesh->NumNodes;
-	double h = inMesh->h;
-	double tol = inMesh->tol;
-	double *lsf = levelset->lsf;
-	bool *active = levelset->active;
-	bool *fixed = levelset->fixed;
+	int NumNodes = inMesh->m_numNodes;
+	double h = inMesh->m_lenEdge;
+	double tol = inMesh->m_tolerance;
+	double *lsf = this->m_pNodalLsf;
+	bool *active = this->m_pActive;
+	bool *fixed = this->m_pFixedLsf;
 
 	// reset mine array memory
-	levelset->mine = (int *) realloc(levelset->mine,NumNodes * sizeof(int));
+	this->m_pMine = (int *) realloc(this->m_pMine,NumNodes * sizeof(int));
 	int mineCnt = 0; // count number of mine nodes
 
 	int i;
@@ -221,7 +221,7 @@ void CHakLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
 			// If node is also outdie lMine then define it as a mine
 			if((ftemp - lMine) > -tol)
 			{
-				levelset->mine[mineCnt++] = i; // add node num to mine array
+				this->m_pMine[mineCnt++] = i; // add node num to mine array
 			}
 		}
 		else { active[i] = false; }
@@ -230,31 +230,31 @@ void CHakLevelSet::NarBand(mesh *inMesh, levSet *levelset, double lBand)
 	// reallocate memory for mine array
     if(mineCnt>0)
     {
-        levelset->mine = (int *) realloc(levelset->mine,mineCnt * sizeof(int));
-        levelset->numMine = mineCnt;
+        this->m_pMine = (int *) realloc(this->m_pMine,mineCnt * sizeof(int));
+        this->m_numMine = mineCnt;
     }
     else
     {
-        levelset->mine = (int *) realloc(levelset->mine,sizeof(int));
-        levelset->numMine = 0;
+        this->m_pMine = (int *) realloc(this->m_pMine,sizeof(int));
+        this->m_numMine = 0;
     }
 }
 
 // Function to perfrom boundary intergration of objective and constraint shape sens
-void CHakLevelSet::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
+void CHakLevelSet::BoundInt(CHakMesh *inMesh, CHakBoundary *bound_in, int numFunc, double **Nsens,
 				int *Lbound_nums, int *numLbound,  double *Lbound)
 {
 	// read in data
-	bool *fixed = levelset->fixed;
-	double *lsf = levelset->lsf;
-	int NumNodes = inMesh->NumNodes;
-	double tol = inMesh->tol;
+	bool *fixed = this->m_pFixedLsf;
+	double *lsf = this->m_pNodalLsf;
+	int NumNodes = inMesh->m_numNodes;
+	double tol = inMesh->m_tolerance;
 
-	int NumBound = bound_in->NumBound;
+	int NumBound = bound_in->m_numBound;
 	Bseg *bptr = bound_in->Bound;
-	double *Bseglen = bound_in->BsegLen;
-	double *wgt = bound_in->Bwgt;
-	int Ntot = NumNodes + bound_in->NumAux;
+	double *Bseglen = bound_in->m_pLenBseg;
+	double *wgt = bound_in->m_pWeightBseg;
+	int Ntot = NumNodes + bound_in->m_numAux;
 
 	int i,j,count; // incrementors
 	int n1,n2,p1,p2; // boundary point node numbers
@@ -322,17 +322,17 @@ void CHakLevelSet::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, 
 }
 
 // Function to calculate extension velocities using the fast marching method
-void CHakLevelSet::Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, double *Vnorm)
+void CHakLevelSet::Vext(CHakMesh *inMesh, CHakBoundary *bound_in, double *Vnorm)
 {
 	// read in data
-	int NodeX = inMesh->NodeX - 1;
-	int NodeY = inMesh->NodeY - 1;
-	int **Nodes2 = inMesh->Nodes2;
-	int NumNodes = inMesh->NumNodes;
-	double tol = inMesh->tol;
-	double *lsf = levelset->lsf;
-	double h = inMesh->h;
-	bool *active = levelset->active;
+	int NodeX = inMesh->m_nodeX - 1;
+	int NodeY = inMesh->m_nodeY - 1;
+	int **Nodes2 = inMesh->m_pNodes2D;
+	int NumNodes = inMesh->m_numNodes;
+	double tol = inMesh->m_tolerance;
+	double *lsf = this->m_pNodalLsf;
+	double h = inMesh->m_lenEdge;
+	bool *active = this->m_pActive;
 
 	int i,j,sign; // incrementors
 	int Nnum,Nnum2,Nnum3; // node numbers
@@ -404,7 +404,7 @@ void CHakLevelSet::Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, doub
 		}
 
 		// calculate lsf_temp and Vnorm for all current trial functions
-		LocalVext2(NodeX, NodeY, Nodes2, Vnorm, Vtemp, lsf, lsf_temp, tol, known, trial, bound_in, h, NumNodes, inMesh->NodeCoord, sign);
+		LocalVext2(NodeX, NodeY, Nodes2, Vnorm, Vtemp, lsf, lsf_temp, tol, known, trial, bound_in, h, NumNodes, inMesh->m_pNodeCoord, sign);
 
 		// update trial set by considering neighbours of nodes in known set
 		for(j=1;j<NodeY;j++)
@@ -726,12 +726,12 @@ void CHakLevelSet::Vext(mesh *inMesh, levSet *levelset, boundary *bound_in, doub
 
 // function that works out Velocity for nodes close to the boundary
 void CHakLevelSet::LocalVext2(int NodeX, int NodeY, int **Nodes, double *Vnorm, double *Vtemp, double *lsf, double *lsf_temp, double tol,
-				bool *known, bool *trial, boundary *bound_in, double h, int NumNodes, Coord *NodeCoord, int sign)
+				bool *known, bool *trial, CHakBoundary *bound_in, double h, int NumNodes, Coord *NodeCoord, int sign)
 {
 	// read data
-	Coord *AuxNodes = bound_in->AuxNodes;
-	int *na_conn = bound_in->na_conn;
-	int *na_conn_ind = bound_in->na_conn_ind;
+	Coord *AuxNodes = bound_in->m_pAuxNodes;
+	int *na_conn = bound_in->m_pConnAuxNode;
+	int *na_conn_ind = bound_in->m_pIndConnAuxNode;
 
 	double s,s1,s2,t,t1,t2; // distance variables
 	double vs,vs1,vs2,vt,vt1,vt2; // velocity variables
@@ -992,14 +992,14 @@ void CHakLevelSet::LocalVext2(int NodeX, int NodeY, int **Nodes, double *Vnorm, 
 }
 
 // Function to calcualte gradient using WENO scheme
-double CHakLevelSet::GradWENO(int Xi, int Yj, int num, double *lsf, mesh *inMesh, int sign, double Vn, double dt)
+double CHakLevelSet::GradWENO(int Xi, int Yj, int num, double *lsf, CHakMesh *inMesh, int sign, double Vn, double dt)
 {
 	// read data
-	int NodeX = inMesh->NodeX;
-	int NodeY = inMesh->NodeY;
-	int **Nodes2 = inMesh->Nodes2;
-	double h = inMesh->h;
-	double tol = inMesh->tol;
+	int NodeX = inMesh->m_nodeX;
+	int NodeY = inMesh->m_nodeY;
+	int **Nodes2 = inMesh->m_pNodes2D;
+	double h = inMesh->m_lenEdge;
+	double tol = inMesh->m_tolerance;
 
 	double v1,v2,v3,v4,v5; // varibales for finite differences used
 	double grad, ftemp;
@@ -1366,16 +1366,16 @@ double CHakLevelSet::GWsub(double v1,double v2,double v3,double v4,double v5)
 }
 
 // Function to re-initalise the lsf as a signed distance function - similar to Vext above
-void CHakLevelSet::ReInt(mesh *inMesh, levSet *levelset)
+void CHakLevelSet::ReInt(CHakMesh *inMesh)
 {
 	// read in data
-	int NodeX = inMesh->NodeX - 1;
-	int NodeY = inMesh->NodeY - 1;
-	int **Nodes2 = inMesh->Nodes2;
-	int NumNodes = inMesh->NumNodes;
-	double tol = inMesh->tol;
-	double *lsf = levelset->lsf;
-	double h = inMesh->h;
+	int NodeX = inMesh->m_nodeX - 1;
+	int NodeY = inMesh->m_nodeY - 1;
+	int **Nodes2 = inMesh->m_pNodes2D;
+	int NumNodes = inMesh->m_numNodes;
+	double tol = inMesh->m_tolerance;
+	double *lsf = this->m_pNodalLsf;
+	double h = inMesh->m_lenEdge;
 
 	//array to temp store lsf function during re-initalisation calcs
 	double *lsf_temp = (double *) malloc(NumNodes * sizeof(double));
@@ -2117,17 +2117,17 @@ void CHakLevelSet::getLamLim(int n, int m, double *inmax, double *inmin, double 
 }
 
 // function to set velocity (or move dist) using SLP - filter method
-int CHakLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in, double alt, double *delCon, int numCon,
+int CHakLevelSet::SLPsubSol4(CHakMesh *inMesh, CHakBoundary *bound_in, double alt, double *delCon, int numCon,
                 double **sens, double *cA, int n, int *bound, double *lam_in, int *active, double *Vnorm, double *pred,
 				int numAdd, double *add_sens, double *add_min, double *add_max, double *add_change, int pinfo)
 {
 	// read data
-	double h = inMesh->h;
-	double maxX = inMesh->maxX;
-	double maxY = inMesh->maxY;
-	int NumNodes = inMesh->NumNodes;
-	Coord *NodeCoord = inMesh->NodeCoord;
-    Coord *AuxNodes = bound_in->AuxNodes;
+	double h = inMesh->m_lenEdge;
+	double maxX = inMesh->m_maxX;
+	double maxY = inMesh->m_maxY;
+	int NumNodes = inMesh->m_numNodes;
+	Coord *NodeCoord = inMesh->m_pNodeCoord;
+    Coord *AuxNodes = bound_in->m_pAuxNodes;
 
 	int m = 1+numCon; // number of shape sensitivities (+1 for the objective)
 	int numVar = m + numAdd; // total number of variables
@@ -2244,18 +2244,18 @@ int CHakLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in,
 	}
 
     // modify for aux nodes near fixed nodes
-    if(levelset->fixed)
+    if(this->m_pFixedLsf)
     {
         for(i=0;i<NumNodes;i++)
         {
             // if fixed, check for neighbouring aux nodes
-            if(levelset->fixed[i])
+            if(this->m_pFixedLsf[i])
             {
-                nd = bound_in->na_conn_ind[i+1];
-                for(j=bound_in->na_conn_ind[i+1];j<nd;j++)
+                nd = bound_in->m_pIndConnAuxNode[i+1];
+                for(j=bound_in->m_pIndConnAuxNode[i+1];j<nd;j++)
                 {
                     // compute dist from aux node to fixed node
-                    k = bound_in->na_conn[j]; // aux node number
+                    k = bound_in->m_pConnAuxNode[j]; // aux node number
                     Crd.x = NodeCoord[j].x - AuxNodes[k].x; // x dist
                     Crd.y = NodeCoord[j].y - AuxNodes[k].y; // y dist
                     a1 = (Crd.x * Crd.x) + (Crd.y * Crd.y); // sqrd dist
@@ -2266,7 +2266,7 @@ int CHakLevelSet::SLPsubSol4(mesh *inMesh, levSet *levelset, boundary *bound_in,
                     for(k=0;k<n;k++){ if(bound[k] == count){break;} }
 
                     // if fixed node is in - modify upper limit
-                    if(levelset->lsf[i] > 0.0)
+                    if(this->m_pNodalLsf[i] > 0.0)
                     {
                         u_up[k] = (a1 < u_up[k]) ? a1 : u_up[k];
                     }

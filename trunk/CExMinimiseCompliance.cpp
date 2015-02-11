@@ -121,7 +121,7 @@ int CExMinimiseCompliance::InitialiseOOP(char *path)
 		ME[i] = (double *) malloc(KE_SIZE*sizeof(double));
 		
 		// use 1.0 for thickness, as E & rho already multipled by thickness
-		m_fem.KEMatrix(KE[i], m_material[i], m_mesh.m_thinkness);	// Element Stiffness Matrix for an IN element
+		m_fem.KEMatrix(KE[i], &m_material[i], m_mesh.m_thinkness);	// Element Stiffness Matrix for an IN element
 		m_fem.MEMatrix(ME[i], m_material[i].m_rho, AreaElem, m_mesh.m_thinkness); // Element Mass Matrix for an IN element
 	}
 
@@ -154,21 +154,21 @@ int CExMinimiseCompliance::InitialiseOOP(char *path)
 	numEnt = m_mesh.m_numElem * ((NUM_DOF*4)+1)*(NUM_DOF*2); // max number of index entries (symmetry!)
 
 	// bar additonal design variables
-	if(m_mesh.bars){numEnt += m_mesh.NumBars * 4;} // additional entries for bar elements
-	if(m_mesh.bars){j=m_mesh.NumBars; bar_max= (double *) malloc(j*sizeof(double));
+	if(m_mesh.m_bars){numEnt += m_mesh.m_numBars * 4;} // additional entries for bar elements
+	if(m_mesh.m_bars){j=m_mesh.m_numBars; bar_max= (double *) malloc(j*sizeof(double));
 		bar_min= (double *) malloc(j*sizeof(double)); bar_step=(double *) malloc(j*sizeof(double));
 		bar_sens = (double *) malloc(j * (1+m_lsProblem.m_numConstraint) * sizeof(double));}
 
 	// designable bc addtional variables
-	if(m_mesh.des_bc){numEnt += m_mesh.NumBC * 4 * NUM_DOF;} // additional entries for designable bcs
-	if(m_mesh.des_bc){j=m_mesh.NumBC; bc_max= (double *) malloc(j*sizeof(double));
+	if(m_mesh.m_bDesignableBc){numEnt += m_mesh.m_numBc * 4 * NUM_DOF;} // additional entries for designable bcs
+	if(m_mesh.m_bDesignableBc){j=m_mesh.m_numBc; bc_max= (double *) malloc(j*sizeof(double));
 		bc_min=(double *) malloc(j*sizeof(double)); bc_step=(double *) malloc(j*sizeof(double));
 		bc_sens =(double *) malloc(j * (1+m_lsProblem.m_numConstraint) * sizeof(double));}
 
 
 	// designable material varibles
-    mat_opt = m_mesh.dm_sim; // flag to switch between seq & sim opt
-		if(m_mesh.des_mat){j=m_mesh.NumDesMat; mat_max=(double *) malloc(j*sizeof(double));
+    mat_opt = m_mesh.m_bDmSim; // flag to switch between seq & sim opt
+		if(m_mesh.m_bDesignableMaterial){j=m_mesh.m_numDesignableMaterialt; mat_max=(double *) malloc(j*sizeof(double));
 			mat_min=(double *) malloc(j*sizeof(double)); mat_step=(double *) malloc(j*sizeof(double));
 			mat_sens = (double *) malloc(j * (1+m_lsProblem.m_numConstraint) * sizeof(double));}
 
@@ -250,7 +250,7 @@ int CExMinimiseCompliance::AnalyseOOP(int itt)
 		/--------------------------------------------------------------*/
 
 		// Discretize the boundary & compute area ratios for AFG method
-		m_mesh.Find_struct(&m_mesh, &m_levelset, &m_boundary, alpha, m_control.m_minArea);
+		m_mesh.FindStruct(&m_levelset, &m_boundary, alpha, m_control.m_minArea);
 		Ntot = m_mesh.m_numNodes + m_boundary.m_numAux; // total number of nodes
 
 		if(m_control.m_outInfo > 1 || itt==0)	{
@@ -301,12 +301,12 @@ int CExMinimiseCompliance::AnalyseOOP(int itt)
 			if(m_lsProblem.m_pConstraint[i].type==2)
 			{
 				ftemp = 0.0;
-				if(m_mesh.des_mat){temp=0; oMin = m_material[m_mesh.mat2].m_rho / m_material[m_mesh.mat1].m_rho;}
+				if(m_mesh.m_bDesignableMaterial){temp=0; oMin = m_material[m_mesh.m_materialTwo].m_rho / m_material[m_mesh.m_materialOne].m_rho;}
 				for(j=0;j<m_mesh.m_numElem;j++) {
-					oMax = alpha[j] * m_material[m_mesh.mat_type[j]].m_rho * m_mesh.m_thinkness; // area ratio x density
-					if(m_mesh.des_mat && m_mesh.mat_elems[temp]==j) {
-						//oMax *= m_mesh.mat_vars[temp] + (1.0-m_mesh.mat_vars[temp])*oMin; // modify for current variable
-	                    oMax *= m_mesh.mat_vars[temp]*oMin + (1.0-m_mesh.mat_vars[temp]); // modify for current variable
+					oMax = alpha[j] * m_material[m_mesh.m_pMaterialType[j]].m_rho * m_mesh.m_thinkness; // area ratio x density
+					if(m_mesh.m_bDesignableMaterial && m_mesh.m_pMaterialElems[temp]==j) {
+						//oMax *= m_mesh.m_pMaterialVars[temp] + (1.0-m_mesh.m_pMaterialVars[temp])*oMin; // modify for current variable
+	                    oMax *= m_mesh.m_pMaterialVars[temp]*oMin + (1.0-m_mesh.m_pMaterialVars[temp]); // modify for current variable
 						temp++; // next variable
 					}
 					ftemp += oMax;
@@ -315,12 +315,12 @@ int CExMinimiseCompliance::AnalyseOOP(int itt)
 				printf("\nTotal mass (plane) = %12.4e",ftemp);
 
 				// add bar mass (if there are some)
-				if(m_mesh.bars)
+				if(m_mesh.m_bars)
 				{
 					oMax = 0.0;
-					oMin = m_mesh.bar_mat->rho * m_mesh.m_lenEdge; // density x length
-					for(j=0;j<m_mesh.NumBars;j++) {
-						oMax += m_mesh.bar_areas[j] * oMin; // bar mass
+					oMin = m_mesh.m_pBarMaterialType->m_rho * m_mesh.m_lenEdge; // density x length
+					for(j=0;j<m_mesh.m_numBars;j++) {
+						oMax += m_mesh.m_pBarAreas[j] * oMin; // bar mass
 					}
 					printf("\nTotal mass (bar) = %12.4e",oMax);
 					ftemp += oMax;
@@ -333,17 +333,17 @@ int CExMinimiseCompliance::AnalyseOOP(int itt)
 		}
 
 	    // compute % of each material if using designable materials
-	    if(m_mesh.des_mat)
+	    if(m_mesh.m_bDesignableMaterial)
 	    {
 	        temp = 0;
 	        oMax = 0.0; // % material 2
 	        oMin = 0.0; // sum alpha
 	        for(j=0;j<m_mesh.m_numElem;j++)
 	        {
-	            if(m_mesh.des_mat && m_mesh.mat_elems[temp]==j)
+	            if(m_mesh.m_bDesignableMaterial && m_mesh.m_pMaterialElems[temp]==j)
 	            {
 	                oMin += alpha[j];
-	                oMax += m_mesh.mat_vars[temp]*alpha[j]; // multiply by area ratio
+	                oMax += m_mesh.m_pMaterialVars[temp]*alpha[j]; // multiply by area ratio
 	                temp++; // next variable
 	            }
 	        }
@@ -368,7 +368,7 @@ int CExMinimiseCompliance::AnalyseOOP(int itt)
 	        if(sw)
 	        {
 	            load_sw = (double *) malloc(dispLen * sizeof(double));
-	            cmat.self_weight(&m_mesh, m_material, m_control.m_minArea, m_control.m_minMass, alpha, freeDof, fixDof, numCase, load, load_sw, acc);
+	            m_fem.SelfWeight(&m_mesh, m_material, m_control.m_minArea, m_control.m_minMass, alpha, freeDof, fixDof, numCase, load, load_sw, acc);
 	            cblas_dcopy(loadLen, load_sw, 1, disp, 1); // copy in load to send to FE_solve
 	        }
 	        else
@@ -577,16 +577,16 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 			{
 				mass_sens = (double *) calloc(Ntot,sizeof(double));
 
-				if(m_mesh.des_mat)
+				if(m_mesh.m_bDesignableMaterial)
 				{
 					i2=0; j2=0; // i2 = material element, j2 = boundary segment
 					for(k=0;k<m_mesh.m_numElem;k++)
 					{
 						if(k==m_boundary.Bound[j2].e)
 						{
-							ftemp = m_mesh.mat_vars[i2];
-							//ftemp = ftemp*m_material[m_mesh.mat1].rho + (1.0-ftemp)*m_material[m_mesh.mat2].rho;
-	                        ftemp = (1.0-ftemp)*m_material[m_mesh.mat1].rho + ftemp*m_material[m_mesh.mat2].rho;
+							ftemp = m_mesh.m_pMaterialVars[i2];
+							//ftemp = ftemp*m_material[m_mesh.m_materialOne].m_rho + (1.0-ftemp)*m_material[m_mesh.m_materialTwo].m_rho;
+	                        ftemp = (1.0-ftemp)*m_material[m_mesh.m_materialOne].m_rho + ftemp*m_material[m_mesh.m_materialTwo].m_rho;
 							ftemp *= -0.5 * m_mesh.m_thinkness;
 							mass_sens[m_boundary.Bound[j2].n1] += ftemp;
 							mass_sens[m_boundary.Bound[j2].n2] += ftemp;
@@ -602,13 +602,13 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 							}
 						}
 
-						if(k==m_mesh.mat_elems[temp]){i2++;} // update count of material element
+						if(k==m_mesh.m_pMaterialElems[temp]){i2++;} // update count of material element
 					}
 				}
 
 				else
 				{
-					ftemp = -m_material[0].rho * m_mesh.m_thinkness; // mass senstivity (assumed) density x thickness
+					ftemp = -m_material[0].m_rho * m_mesh.m_thinkness; // mass senstivity (assumed) density x thickness
 					for(k=0;k<Ntot;k++){ mass_sens[k] = ftemp; }
 				}
 
@@ -721,11 +721,11 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 		}
 
 		// bar senstivities
-		if(m_mesh.bars && m_lsProblem.m_idObjType == 1)
+		if(m_mesh.m_bars && m_lsProblem.m_idObjType == 1)
 		{
 			// call routine for computing bar compliance senstivites
 			// inlcuding multi-load cases
-			for(j=0;j<m_mesh.NumBars;j++) {
+			for(j=0;j<m_mesh.m_numBars;j++) {
 				bar_sens[j] = 0.0; // zero initial
 			}
 
@@ -736,22 +736,22 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 			{
 				if(m_lsProblem.m_pConstraint[i].type==2)
 				{
-					ftemp = m_mesh.bar_mat->rho * m_mesh.m_lenEdge; // bar mass senstivity (wrt area)
-					k = m_mesh.NumBars * (i+1);
-					for(j=0;j<m_mesh.NumBars;j++) {
+					ftemp = m_mesh.m_pBarMaterialType->m_rho * m_mesh.m_lenEdge; // bar mass senstivity (wrt area)
+					k = m_mesh.m_numBars * (i+1);
+					for(j=0;j<m_mesh.m_numBars;j++) {
 						bar_sens[k++] = ftemp; // mass constraint
 					}
 				}
 			}
 
 			// also set move limits on bar areas here
-			ftemp = 0.05 * (m_mesh.bar_max - m_mesh.bar_min);
-			for(j=0;j<m_mesh.NumBars;j++)
+			ftemp = 0.05 * (m_mesh.m_barMax - m_mesh.m_barMin);
+			for(j=0;j<m_mesh.m_numBars;j++)
 			{
-				oMax = m_mesh.bar_areas[j] + ftemp;
-				oMin = m_mesh.bar_areas[j] - ftemp;
-				bar_max[j] = (oMax < m_mesh.bar_max) ? ftemp : m_mesh.bar_max - m_mesh.bar_areas[j];
-				bar_min[j] = (oMin > m_mesh.bar_min) ? -ftemp : m_mesh.bar_min - m_mesh.bar_areas[j];
+				oMax = m_mesh.m_pBarAreas[j] + ftemp;
+				oMin = m_mesh.m_pBarAreas[j] - ftemp;
+				bar_max[j] = (oMax < m_mesh.m_barMax) ? ftemp : m_mesh.m_barMax - m_mesh.m_pBarAreas[j];
+				bar_min[j] = (oMin > m_mesh.m_barMin) ? -ftemp : m_mesh.m_barMin - m_mesh.m_pBarAreas[j];
 			}
 
 			// output bar info
@@ -759,9 +759,9 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 		}
 
 		// additional bc sensitivities
-		if(m_mesh.des_bc && m_lsProblem.m_idObjType == 1)
+		if(m_mesh.m_bDesignableBc && m_lsProblem.m_idObjType == 1)
 		{
-			for(j=0;j<m_mesh.NumBC;j++) {
+			for(j=0;j<m_mesh.m_numBc;j++) {
 				bc_sens[j] = 0.0; // zero initial
 			}
 
@@ -773,7 +773,7 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 			{
 				// analyse connectivity of des bc elements
 				int xMin, xMax, yMin, yMax, n, m;
-				temp = m_mesh.NumBC;
+				temp = m_mesh.m_numBc;
 				bc_con = (int *) malloc(8*temp*sizeof(int));
 				bc_dist = (double *) malloc(8*temp*sizeof(double));
 				bc_con_ind = (int *) malloc((temp+1)*sizeof(int));
@@ -781,9 +781,9 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 				for(i=0;i<temp;i++)
 				{
 					// compute element indices
-					ftemp = (double)m_mesh.BC_nums[i] / (double)m_mesh.m_elemX;
+					ftemp = (double)m_mesh.m_pBcNums[i] / (double)m_mesh.m_elemX;
 					m = floor(ftemp);
-					n = m_mesh.BC_nums[i] - m*m_mesh.m_elemX;
+					n = m_mesh.m_pBcNums[i] - m*m_mesh.m_elemX;
 					bc_con_ind[i] = count;
 
 					// search for neighbouring elements with designable bc
@@ -801,7 +801,7 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 							temp2 = j2*m_mesh.m_elemX + i2; // elem number
 							for(j=0;j<temp;j++)
 							{
-								if(temp2 == m_mesh.BC_nums[j] && j != i)
+								if(temp2 == m_mesh.m_pBcNums[j] && j != i)
 								{
 									// add to conn array
 									if(m==j2 || n==i2) { ftemp = 0.5; }
@@ -820,23 +820,23 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 
 			// Filter!
 			{
-				temp = m_mesh.NumBC;
+				temp = m_mesh.m_numBc;
 				double *bc_temp = (double *) malloc(temp*sizeof(double));
 				cblas_dcopy(temp, bc_sens, 1, bc_temp, 1); // copy original
 
 				for(i=0;i<temp;i++) // for all des bcs
 				{
 					temp2 = bc_con_ind[i+1];
-					oMax = 1.5*m_mesh.K_bc[i]*bc_temp[i];
+					oMax = 1.5*m_mesh.m_K_bc[i]*bc_temp[i];
 					oMin = 1.5;
 					for(j=bc_con_ind[i];j<temp2;j++) // for all connected elems
 					{
 						k = bc_con[j]; // connectd bc number
-						oMax += bc_dist[j] * m_mesh.K_bc[k] * bc_temp[k];
+						oMax += bc_dist[j] * m_mesh.m_K_bc[k] * bc_temp[k];
 						oMin += ftemp;
 					}
 
-					bc_sens[i] = oMax / (oMin * m_mesh.K_bc[i]); // filtered sensitivity
+					bc_sens[i] = oMax / (oMin * m_mesh.m_K_bc[i]); // filtered sensitivity
 				}
 
 				free(bc_temp);
@@ -844,11 +844,11 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 
 			// scale maximum sensitiviy to 1
 			oMax = 0.0;
-			for(j=0;j<m_mesh.NumBC;j++) {
+			for(j=0;j<m_mesh.m_numBc;j++) {
 				ftemp = fabs(bc_sens[j]);
 				oMax = (ftemp > oMax) ? ftemp : oMax;
 			}
-			for(j=0;j<m_mesh.NumBC;j++) {
+			for(j=0;j<m_mesh.m_numBc;j++) {
 				bc_sens[j] /= oMax;
 			}
 
@@ -860,10 +860,10 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 				if(m_lsProblem.m_pConstraint[i].type==10)
 				{
 					ftemp = 0.0;
-					k = m_mesh.NumBC;
-					for(j=0;j<m_mesh.NumBC;j++) {
+					k = m_mesh.m_numBc;
+					for(j=0;j<m_mesh.m_numBc;j++) {
 						bc_sens[k++] = 1.0;
-						ftemp += m_mesh.K_bc[j];
+						ftemp += m_mesh.m_K_bc[j];
 					}
 
 					j = (m_lsProblem.m_numConstraint * itt) + i; // point to place in cnstr
@@ -872,12 +872,12 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 			}
 
 			// also set move limits on bc variables here
-			for(j=0;j<m_mesh.NumBC;j++)
+			for(j=0;j<m_mesh.m_numBc;j++)
 			{
-				oMax = m_mesh.K_bc[j] + 0.05;
-				oMin = m_mesh.K_bc[j] - 0.05;
-				bc_max[j] = (oMax < 1.0) ? 0.05 : 1.0 - m_mesh.K_bc[j];
-				bc_min[j] = (oMin > 1.0e-4) ? -0.05 : 1.0e-4 - m_mesh.K_bc[j];
+				oMax = m_mesh.m_K_bc[j] + 0.05;
+				oMin = m_mesh.m_K_bc[j] - 0.05;
+				bc_max[j] = (oMax < 1.0) ? 0.05 : 1.0 - m_mesh.m_K_bc[j];
+				bc_min[j] = (oMin > 1.0e-4) ? -0.05 : 1.0e-4 - m_mesh.m_K_bc[j];
 			}
 
 			// output designable BC info
@@ -885,26 +885,26 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 		}
 
 		// material sensitvities
-		if(m_mesh.des_mat)
+		if(m_mesh.m_bDesignableMaterial)
 		{
-	        double *mat_sens_temp = (double *) calloc(numCase * m_mesh.NumDesMat, sizeof(double));
+	        double *mat_sens_temp = (double *) calloc(numCase * m_mesh.m_numDesignableMaterialt, sizeof(double));
 
 	        // call routine for computing material complinace senstivites
 	        if(m_lsProblem.m_idObjType == 1)
 	        {
 	            // compliance objective sensitivity
-	            if(m_mesh.mat_lin){ m_sensitivity.matSens_comp(&m_mesh, m_material, KE[0], mat_sens_temp, numCase, wgt, prim_ptr, dual_ptr, alpha, m_control.m_minArea, sw, acc); }
+	            if(m_mesh.m_bMaterialLin){ m_sensitivity.matSens_comp(&m_mesh, m_material, KE[0], mat_sens_temp, numCase, wgt, prim_ptr, dual_ptr, alpha, m_control.m_minArea, sw, acc); }
 	            //else{ HS_Sens_eig(&m_mesh, m_material, KE[0], ME[0], mat_sens_temp, num_eig, eig_vals, prim_ptr, alpha, m_control.m_minArea); }
-	            cblas_dcopy(m_mesh.NumDesMat, mat_sens_temp, 1, mat_sens, 1); // copy objective sensitivities
+	            cblas_dcopy(m_mesh.m_numDesignableMaterialt, mat_sens_temp, 1, mat_sens, 1); // copy objective sensitivities
 	        }
 
 			// call routine for computing material eig senstivites
 	        if(m_lsProblem.m_idObjType == 3)
 	        {
 	            // eigenvalue objective sensitivity
-	            if(m_mesh.mat_lin){ m_sensitivity.matSens_eig(&m_mesh, m_material, KE[0], ME[0], mat_sens_temp, num_eig, eig_vals, prim_ptr, alpha, m_control.m_minArea); }
+	            if(m_mesh.m_bMaterialLin){ m_sensitivity.matSens_eig(&m_mesh, m_material, KE[0], ME[0], mat_sens_temp, num_eig, eig_vals, prim_ptr, alpha, m_control.m_minArea); }
 	            else{ m_sensitivity.HS_Sens_eig(&m_mesh, m_material, KE[0], ME[0], mat_sens_temp, num_eig, eig_vals, prim_ptr, alpha, m_control.m_minArea); }
-	            cblas_dcopy(m_mesh.NumDesMat, mat_sens_temp, 1, mat_sens, 1); // copy objective sensitivities
+	            cblas_dcopy(m_mesh.m_numDesignableMaterialt, mat_sens_temp, 1, mat_sens, 1); // copy objective sensitivities
 	        }
 
 	        // constraint senstivites
@@ -913,8 +913,8 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 	            // volume constraint sensitivities
 	            if(m_lsProblem.m_pConstraint[i].type==1)
 	            {
-	                k = m_mesh.NumDesMat * (i+1);
-	                for(j=0;j<m_mesh.NumDesMat;j++) {
+	                k = m_mesh.m_numDesignableMaterialt * (i+1);
+	                for(j=0;j<m_mesh.m_numDesignableMaterialt;j++) {
 	                    mat_sens[k++] = 0.0; // material choice does not effect volume
 	                }
 	            }
@@ -922,10 +922,10 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 	            else if(m_lsProblem.m_pConstraint[i].type==2)
 	            {
 	                // material mass senstivity
-	                ftemp = (m_material[m_mesh.mat2].rho - m_material[m_mesh.mat1].rho) * m_mesh.m_lenEdge * m_mesh.m_lenEdge * m_mesh.m_thinkness;
-	                k = m_mesh.NumDesMat * (i+1);
-	                for(j=0;j<m_mesh.NumDesMat;j++) {
-	                    mat_sens[k++] = alpha[m_mesh.mat_elems[j]] * ftemp; // mass sensitivity
+	                ftemp = (m_material[m_mesh.m_materialTwo].m_rho - m_material[m_mesh.m_materialOne].m_rho) * m_mesh.m_lenEdge * m_mesh.m_lenEdge * m_mesh.m_thinkness;
+	                k = m_mesh.m_numDesignableMaterialt * (i+1);
+	                for(j=0;j<m_mesh.m_numDesignableMaterialt;j++) {
+	                    mat_sens[k++] = alpha[m_mesh.m_pMaterialElems[j]] * ftemp; // mass sensitivity
 	                }
 	            }
 
@@ -936,9 +936,9 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 	                ftemp = cnstr[m_lsProblem.m_numConstraint * itt + i] / (2.0*eig_vals[0]);
 	                oMax = 1.0 / (2.0*sqrt(eig_vals[0]*eig_vals[1]));
 	                //oMin = 1.0 / (2.0*sqrt(eig_vals[0]));  // factors
-	                k = m_mesh.NumDesMat * (i+1); // place in mat_sens for freq ratio sens
-	                temp = m_mesh.NumDesMat; // start of 2nd eigenvalue sens
-	                for(j=0;j<m_mesh.NumDesMat;j++)
+	                k = m_mesh.m_numDesignableMaterialt * (i+1); // place in mat_sens for freq ratio sens
+	                temp = m_mesh.m_numDesignableMaterialt; // start of 2nd eigenvalue sens
+	                for(j=0;j<m_mesh.m_numDesignableMaterialt;j++)
 	                {
 	                    mat_sens[k++] = oMax*mat_sens_temp[temp++] - ftemp*mat_sens_temp[j]; // swap sign for reduction
 	                    //Nsens[j] *= oMin; // do not scale 1st eigenvalue senstivity
@@ -949,7 +949,7 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 	        // find max for FD check
 	        /*oMax=0.0;
 	        j=-1;
-	        for(i=0;i<m_mesh.NumDesMat;i++)
+	        for(i=0;i<m_mesh.m_numDesignableMaterialt;i++)
 	        {
 	            ftemp = fabs(mat_sens[i]);
 	            if(ftemp > oMax){ oMax=ftemp; j=i;}
@@ -958,7 +958,7 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 	        printf("\nMax obj sens %i = %12.12e",j,mat_sens[j]);
 	        for(i=0;i<m_lsProblem.m_numConstraint;i++)
 	        {
-	            k = m_mesh.NumDesMat * (i+1);
+	            k = m_mesh.m_numDesignableMaterialt * (i+1);
 	            printf("\nConst sens %i = %12.12e",i,mat_sens[k+j]);
 	        }*/
 
@@ -966,12 +966,12 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 
 			// also set move limits on material variables
 			ftemp = 0.02;
-			for(j=0;j<m_mesh.NumDesMat;j++)
+			for(j=0;j<m_mesh.m_numDesignableMaterialt;j++)
 			{
-				oMax = m_mesh.mat_vars[j] + ftemp;
-				oMin = m_mesh.mat_vars[j] - ftemp;
-				mat_max[j] = (oMax < 1.0) ? ftemp : 1.0 - m_mesh.mat_vars[j];
-				mat_min[j] = (oMin > 0.0) ? -ftemp : 0.0 - m_mesh.mat_vars[j];
+				oMax = m_mesh.m_pMaterialVars[j] + ftemp;
+				oMin = m_mesh.m_pMaterialVars[j] - ftemp;
+				mat_max[j] = (oMax < 1.0) ? ftemp : 1.0 - m_mesh.m_pMaterialVars[j];
+				mat_min[j] = (oMin > 0.0) ? -ftemp : 0.0 - m_mesh.m_pMaterialVars[j];
 			}
 
 			// output material info
@@ -999,13 +999,13 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 			{
 				delcon[i] = m_lsProblem.m_pConstraint[i].data[0] - ftemp;
 				printf("\nVolume constraint violated by %12.4e\n",delcon[i]);
-				if(delcon[i]/m_lsProblem.m_pConstraint[i].data[0] < -m_control.gm){temp=0;}
+				if(delcon[i]/m_lsProblem.m_pConstraint[i].data[0] < -m_control.m_gmConv){temp=0;}
 			}
 			else if(m_lsProblem.m_pConstraint[i].type==2)
 			{
 				delcon[i] = m_lsProblem.m_pConstraint[i].data[0] - ftemp;
 				printf("\nMass constraint violated by %12.4e\n",delcon[i]);
-				if(delcon[i]/m_lsProblem.m_pConstraint[i].data[0] < -m_control.gm){temp=0;}
+				if(delcon[i]/m_lsProblem.m_pConstraint[i].data[0] < -m_control.m_gmConv){temp=0;}
 			}
 			else if(m_lsProblem.m_pConstraint[i].type==3)
 			{
@@ -1058,8 +1058,8 @@ int CExMinimiseCompliance::SensitivityOOP(void)
 			printf("Max obj = %12.4e, Min obj = %12.4e\n",oMax,oMin);
 			ftemp = (oMax - oMin) / (oMax + oMin); // normalized max change
 			// if max average over last 10 itteration is < gamma then stop!!
-			if(ftemp < m_control.gm) {
-	            if(m_mesh.des_mat && !m_mesh.dm_sim && !mat_opt)
+			if(ftemp < m_control.m_gmConv) {
+	            if(m_mesh.m_bDesignableMaterial && !m_mesh.m_bDmSim && !mat_opt)
 	            {
 	                printf("Level-set Converged! Now optimizing material ...");
 	                mat_opt = true; // now start optimizing material
@@ -1116,10 +1116,10 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 		Lbound_nums = (int *) malloc(Ntot*sizeof(int)); // global boundary point numbers
 
 		// compute variabe weights for boundary intergral
-		cboundary.BsegWgt(&m_boundary, &m_mesh);
+		m_boundary.BsegWgt(&m_boundary, &m_mesh);
 
 		// compute coefficients for discretized boundary integral
-		cboundary.BoundInt(&m_mesh, &m_levelset, &m_boundary, temp, sens_ptr, Lbound_nums, &num_Lbound, Lbound);
+		m_boundary.BoundInt(&m_mesh, &m_levelset, &m_boundary, temp, sens_ptr, Lbound_nums, &num_Lbound, Lbound);
 
 		if(m_control.m_outInfo == 3)	{
 			// Write boundary integration information file
@@ -1131,14 +1131,14 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 		Lbound_nums = (int *) realloc(Lbound_nums, num_Lbound*sizeof(int));
 
 		// obtian Vnorm using SLP subproblem
-		if(m_mesh.bars)
+		if(m_mesh.m_bars)
 		{
-			temp = m_levelset.SLPsubSol4(&m_mesh, &m_levelset, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, m_mesh.NumBars, bar_sens, bar_min, bar_max, bar_step, m_control.m_outInfo);
+			temp = m_levelset.SLPsubSol4(&m_mesh, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, m_mesh.m_numBars, bar_sens, bar_min, bar_max, bar_step, m_control.m_outInfo);
 		}
-		else if(m_mesh.des_bc)
+		else if(m_mesh.m_bDesignableBc)
 		{
 			// solve for level set velocity
-			temp = m_levelset.SLPsubSol4(&m_mesh, &m_levelset, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, 0, 0, 0, 0, 0, m_control.m_outInfo);
+			temp = m_levelset.SLPsubSol4(&m_mesh, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, 0, 0, 0, 0, 0, m_control.m_outInfo);
 
 			// designable boundary condition cost constraint
 			// shift for LP sub-solve
@@ -1148,34 +1148,34 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 				{
 					j = (m_lsProblem.m_numConstraint * itt) + i; // point to place in cnstr
 					ftemp = m_lsProblem.m_pConstraint[i].data[0] - cnstr[j];
-					ftemp -= cblas_ddot(m_mesh.NumBC, &bc_sens[m_mesh.NumBC], 1, bc_min, 1);
+					ftemp -= cblas_ddot(m_mesh.m_numBc, &bc_sens[m_mesh.m_numBc], 1, bc_min, 1);
 					break;
 				}
 			}
 
-			for(i=0;i<m_mesh.NumBC;i++)
+			for(i=0;i<m_mesh.m_numBc;i++)
 			{
 				bc_max[i] -= bc_min[i]; // adjust so min is zero
 			}
 
 			// Can directly solve using LP sub-problem
-			m_solver.LPsolve(m_mesh.NumBC, 1, m_mesh.NumBC, bc_step, bc_sens, &bc_sens[m_mesh.NumBC], &ftemp, bc_max, m_control.m_outInfo);
+			m_solver.LPsolve(m_mesh.m_numBc, 1, m_mesh.m_numBc, bc_step, bc_sens, &bc_sens[m_mesh.m_numBc], &ftemp, bc_max, m_control.m_outInfo);
 
-			for(i=0;i<m_mesh.NumBC;i++)
+			for(i=0;i<m_mesh.m_numBc;i++)
 			{
 				bc_step[i] += bc_min[i]; // re-adjust
 			}
 		}
-		else if(m_mesh.des_mat)
+		else if(m_mesh.m_bDesignableMaterial)
 		{
-	        if(m_mesh.dm_sim || mat_opt)
+	        if(m_mesh.m_bDmSim || mat_opt)
 	        {
 	            // reduce number of mat vars using a map
-	            bool *inc_mv = (bool *) malloc(m_mesh.NumDesMat*sizeof(bool));
+	            bool *inc_mv = (bool *) malloc(m_mesh.m_numDesignableMaterialt*sizeof(bool));
 	            int num_reduced=0;
-	            for(i=0;i<m_mesh.NumDesMat;i++)
+	            for(i=0;i<m_mesh.m_numDesignableMaterialt;i++)
 	            {
-	                j = m_mesh.mat_elems[i]; // elem number
+	                j = m_mesh.m_pMaterialElems[i]; // elem number
 	                if(alpha[j] > m_control.m_minArea){inc_mv[i] = 1; num_reduced++;}
 	                else{inc_mv[i]=0;}
 	            }
@@ -1183,7 +1183,7 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 	            double *mat_sens_red = (double *) malloc(num_reduced*(1+m_lsProblem.m_numConstraint)*sizeof(double));
 	            double *mat_step_red = (double *) malloc(num_reduced*sizeof(double));
 	            j=0;
-	            for(i=0;i<m_mesh.NumDesMat;i++)
+	            for(i=0;i<m_mesh.m_numDesignableMaterialt;i++)
 	            {
 	                // now copy sensitivity & limit data
 	                if(inc_mv[i])
@@ -1193,7 +1193,7 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 
 	                    for(k=0;k<=m_lsProblem.m_numConstraint;k++)
 	                    {
-	                        j2 = k*m_mesh.NumDesMat + i; // original
+	                        j2 = k*m_mesh.m_numDesignableMaterialt + i; // original
 	                        i2 = k*num_reduced + j; // reduced
 	                        mat_sens_red[i2] = mat_sens[j2]; // copy
 	                    }
@@ -1203,24 +1203,24 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 
 	            j = num_reduced * (m_lsProblem.m_numConstraint+1);
 
-	            //temp = SLPsubSol4(&m_mesh, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, m_boundary.AuxNodes, Vnorm, pred_temp, m_mesh.NumDesMat, mat_sens, mat_min, mat_max, mat_step, m_control.m_outInfo);
+	            //temp = SLPsubSol4(&m_mesh, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, m_boundary.AuxNodes, Vnorm, pred_temp, m_mesh.m_numDesignableMaterialt, mat_sens, mat_min, mat_max, mat_step, m_control.m_outInfo);
 
-	            if(m_mesh.dm_sim)
+	            if(m_mesh.m_bDmSim)
 	            {
 	                // solve for simultaneous update
-	                temp = m_levelset.SLPsubSol4(&m_mesh, &m_levelset, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, num_reduced, mat_sens_red, mat_min, mat_max, mat_step_red, m_control.m_outInfo);
+	                temp = m_levelset.SLPsubSol4(&m_mesh, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, num_reduced, mat_sens_red, mat_min, mat_max, mat_step_red, m_control.m_outInfo);
 
 	                // also ensure smooth transition for materials in elems just out from boundary
 	                int n, m;
-	                for(i=0;i<m_mesh.NumDesMat;i++)
+	                for(i=0;i<m_mesh.m_numDesignableMaterialt;i++)
 	                {
 	                    // if not included
 	                    if(!inc_mv[i])
 	                    {
 	                        // compute element indices
-	                        ftemp = (double)m_mesh.mat_elems[i] / (double)m_mesh.m_elemX;
+	                        ftemp = (double)m_mesh.m_pMaterialElems[i] / (double)m_mesh.m_elemX;
 	                        m = floor(ftemp);
-	                        n = m_mesh.mat_elems[i] - m*m_mesh.m_elemX;
+	                        n = m_mesh.m_pMaterialElems[i] - m*m_mesh.m_elemX;
 
 	                        // average neighbours that are part of structure
 	                        k=0;
@@ -1234,13 +1234,13 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 	                                    temp2 = j2*m_mesh.m_elemX + i2; // neighbouring elem number
 	                                    if(alpha[temp2] > m_control.m_minArea)
 	                                    {
-	                                        ftemp += m_mesh.mat_vars[m_mesh.mat_elems[temp2]];
+	                                        ftemp += m_mesh.m_pMaterialVars[m_mesh.m_pMaterialElems[temp2]];
 	                                        k++;
 	                                    }
 	                                }
 	                            }
 	                        }
-	                        if(k>0){ftemp /= (double)k; m_mesh.mat_vars[i] = ftemp;}
+	                        if(k>0){ftemp /= (double)k; m_mesh.m_pMaterialVars[i] = ftemp;}
 	                    }
 	                }
 	            }
@@ -1322,7 +1322,7 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 
 	            // un-map reduced mat vars
 	            j=0;
-	            for(i=0;i<m_mesh.NumDesMat;i++)
+	            for(i=0;i<m_mesh.m_numDesignableMaterialt;i++)
 	            {
 	                if(inc_mv[i]){ mat_step[i] = mat_step_red[j++]; }
 	                else{ mat_step[i] = 0.0; }
@@ -1335,12 +1335,12 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 	        else
 	        {
 	            // just solve for level-set Vnorm
-	            temp = m_levelset.SLPsubSol4(&m_mesh, &m_levelset, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, 0, 0, 0, 0, 0, m_control.m_outInfo);
+	            temp = m_levelset.SLPsubSol4(&m_mesh, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, 0, 0, 0, 0, 0, m_control.m_outInfo);
 	        }
 		}
 		else
 		{
-			temp = m_levelset.SLPsubSol4(&m_mesh, &m_levelset, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, 0, 0, 0, 0, 0, m_control.m_outInfo);
+			temp = m_levelset.SLPsubSol4(&m_mesh, &m_boundary, cfl, delcon, m_lsProblem.m_numConstraint, sens_ptr, Lbound, num_Lbound, Lbound_nums, lambda, active, Vnorm, pred_temp, 0, 0, 0, 0, 0, m_control.m_outInfo);
 		}
 
 		// copy predicted obj & constraint changes
@@ -1365,19 +1365,19 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 		/--------------------------------------------------------------------------------------*/
 
 		// Fast marching method to determine Extension Velocities
-		m_levelset.Vext(&m_mesh, &m_levelset, &m_boundary, Vnorm);
+		m_levelset.Vext(&m_mesh, &m_boundary, Vnorm);
 
 		Grad = (double *) calloc(m_mesh.m_numNodes, sizeof(double)); // array for gradinet info
 
 		// Calculate lsf gradients & update
-		j2=m_mesh.NodeY-1;
-		i2=m_mesh.NodeX-1;
+		j2=m_mesh.m_nodeY-1;
+		i2=m_mesh.m_nodeX-1;
 		for(j=1;j<j2;j++)
 		{
 			for(i=1;i<i2;i++)
 			{
-				k = m_mesh.Nodes2[i][j]; // read in node number
-				if(m_levelset.active[k]) // If node is active (not fixed and within narrow band)
+				k = m_mesh.m_pNodes2D[i][j]; // read in node number
+				if(m_levelset.m_pActive[k]) // If node is active (not fixed and within narrow band)
 				{
 					if(fabs(Vnorm[k]) > 1.0e-6) // If normal velocity not zero
 					{
@@ -1392,7 +1392,7 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 		j = m_mesh.m_numNodes;
 		for(k=0;k<j;k++)
 		{
-			if(m_levelset.active[k])
+			if(m_levelset.m_pActive[k])
 			{
 				m_levelset.m_pNodalLsf[k] -=  Grad[k] * Vnorm[k]; // calculate updated lsf value
 			}
@@ -1406,29 +1406,29 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 		free(Vnorm);
 
 		// update bar areas
-		if(m_mesh.bars)
+		if(m_mesh.m_bars)
 		{
-			for(j=0;j<m_mesh.NumBars;j++)
+			for(j=0;j<m_mesh.m_numBars;j++)
 			{
-				m_mesh.bar_areas[j] += bar_step[j];
+				m_mesh.m_pBarAreas[j] += bar_step[j];
 			}
 		}
 
 		// update bc variable
-		if(m_mesh.des_bc)
+		if(m_mesh.m_bDesignableBc)
 		{
-			for(j=0;j<m_mesh.NumBC;j++)
+			for(j=0;j<m_mesh.m_numBc;j++)
 			{
-				m_mesh.K_bc[j] += bc_step[j];
+				m_mesh.m_K_bc[j] += bc_step[j];
 			}
 		}
 
 		// update material variables
-		if(m_mesh.des_mat && mat_opt)
+		if(m_mesh.m_bDesignableMaterial && mat_opt)
 		{
-			for(j=0;j<m_mesh.NumDesMat;j++)
+			for(j=0;j<m_mesh.m_numDesignableMaterialt;j++)
 			{
-				m_mesh.mat_vars[j] += mat_step[j];
+				m_mesh.m_pMaterialVars[j] += mat_step[j];
 			}
 		}
 
@@ -1442,10 +1442,10 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 		temp = 0; // flag to see if lsf need to be re-initalised
 		if(ReCount < 19)
 		{
-			for(j=0;j<m_levelset.numMine;j++) // for all mine nodes
+			for(j=0;j<m_levelset.m_numMine;j++) // for all mine nodes
 			{
 				// if boundary is within 1 grid length of mine then re-initalise
-				if( (fabs(m_levelset.m_pNodalLsf[m_levelset.mine[j]]) -  m_mesh.m_lenEdge) < m_mesh.m_tolerance )
+				if( (fabs(m_levelset.m_pNodalLsf[m_levelset.m_pMine[j]]) -  m_mesh.m_lenEdge) < m_mesh.m_tolerance )
 				{
 					temp = 1;
 					printf("\n\nMine Hit! ..........Re-initalizing");
@@ -1465,8 +1465,8 @@ int CExMinimiseCompliance::OptimiseOOP(void)
 		{
 			ReCount = 0; // reset reinitialization count
 
-			m_levelset.ReInt(&m_mesh, &m_levelset); // reinitialize the lsf
-			m_levelset.NarBand(&m_mesh, &m_levelset, m_control.m_lband); // re-calculate the bandwidth
+			m_levelset.ReInt(&m_mesh); // reinitialize the lsf
+			m_levelset.NarBand(&m_mesh, m_control.m_lband); // re-calculate the bandwidth
 
 			printf("\nSigned distance function Re-initialized");
 		}

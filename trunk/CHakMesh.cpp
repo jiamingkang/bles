@@ -55,112 +55,13 @@ CHakMesh::~CHakMesh() {
  Example:
 */
 
-// Function that numbers all elements and nodes in the FG domain
-void CHakMesh::Numbering(mesh *inMesh)
-{
-	int i,j;
-	int num = 0; // first element number is zero
-
-	// read data
-	Elem **Number = inMesh->Number; // pointer to Numbering array
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-
-	// Element Numbering loop
-	for(j=0;j<elemY;j++)
-	{
-		for(i=0;i<elemX;i++)
-		{
-			Number[i][j].n = num++;
-		}
-	}
-
-	// State first element node numbers
-	num = 0; // first node number is zero
-	Number[0][0].a = num;
-	Number[0][0].b = ++num;
-	Number[0][0].c = ++num;
-	Number[0][0].d = ++num;
-
-	// Number first X row (Y = 0)
-	if(elemX > 1) // if there is more than one element in the x direction number first row
-	{
-		for(i=1;i<elemX;i++)
-		{
-			Number[i][0].a = Number[i-1][0].b;
-			Number[i][0].b = ++num;
-			Number[i][0].c = ++num;
-			Number[i][0].d = Number[i-1][0].c;
-		}
-	}
-
-	// Number rest of FG mesh
-	if(elemY > 1)
-	{
-		for(j=1;j<elemY;j++)
-		{
-			for(i=0;i<elemX;i++)
-			{
-				Number[i][j].a = Number[i][j-1].d;
-				Number[i][j].b = Number[i][j-1].c;
-
-				if(i==0)
-				{
-					Number[i][j].c = ++num;
-					Number[i][j].d = ++num;
-				}
-				else
-				{
-					Number[i][j].c = ++num;
-					Number[i][j].d = Number[i-1][j].c;
-				}
-			}
-		}
-	}
-}
-
-
-// function to find the nearest grid node number to a set of co-ordinates
-int CHakMesh::closeNode(mesh *inMesh, double xp, double yp)
-{
-	// read data
-	int NumNodes = inMesh->NumNodes;
-	Coord *NodeCoord = inMesh->NodeCoord;
-	double tol = inMesh->tol;
-
-	int n;
-	int nodenum=-1;
-	double dtemp, d2, dx, dy;	// variables to keep track of distnace closest node
-	double xn, yn1;				// variables for current node co-ordinates
-	dtemp =  (2.0 * inMesh->h);
-	dtemp *= dtemp;			// set initial distance to twice an elements edge length squared
-
-	for(n=0;n<NumNodes;n++) // For all nodes
-	{
-		xn = NodeCoord[n].x;
-		yn1 = NodeCoord[n].y; // read in node co-ords
-
-		dx = xp - xn;
-		dy = yp - yn1; // find difference between node and target co-ords
-		d2 = (dx * dx) + (dy * dy);	// Squared distance between node and point
-
-		if(fabs(d2) < tol)	{	// if co-ordinates are same as current node, that that is closest
-			return(n);
-		}
-		if(d2 < dtemp)	{	// if distance of current node is less than previous, then update
-			nodenum = n;
-			dtemp = d2;
-		}
-	}
-	return(nodenum);
-}
 
 
 // Function to extract the structure from the lsf
 // 1. determines the node and element status
 // 2. discretizes the boundary
 // 3. computes area ratios for AFG method
-void CHakMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, double *alpha, double aMin)
+void CHakMesh::FindStruct(CHakLevelSet *m_levelset,CHakBoundary *m_boundary, double *alpha, double aMin)
 {
 	int n,m,o; //Incrementors
 	int temp,temp2,num; // Temperary variables
@@ -170,15 +71,15 @@ void CHakMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, d
 	double Ax, Ay;
 
 	// read in data
-	double h = inMesh->h;
-	double tol = inMesh->tol;
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-	Elem **Number = inMesh->Number;
-	int NumElem = inMesh->NumElem;
-	int NumNodes = inMesh->NumNodes;
-	Coord *NodeCoord = inMesh->NodeCoord;
-	double *lsf = levelset->lsf;
+	double h = this->m_lenEdge;
+	double tol = this->m_tolerance;
+	int elemX = this->m_elemX;
+	int elemY = this->m_elemY;
+	Elem **Number = this->m_pNumber;
+	int NumElem = this->m_numElem;
+	int NumNodes = this->m_numNodes;
+	Coord *NodeCoord = this->m_pNodeCoord;
+	double *lsf = m_levelset->m_pNodalLsf;
 	Coord *AuxNodes = (Coord *) malloc(NumNodes * sizeof(Coord));
 	Bseg *bptr = (Bseg *) malloc(NumElem * sizeof(Bseg));
 
@@ -452,47 +353,47 @@ void CHakMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, d
 		}
 	}
 
-	// read back the totals for NumAux & NumBound
-	bound_in->NumAux = count;
-	bound_in->NumBound = count2;
+	// read back the totals for m_numAux & NumBound
+	m_boundary->m_numAux = count;
+	m_boundary->m_numBound = count2;
 
 	// re-size auxillary node array and boundary segment data array to min size
-    free(bound_in->AuxNodes);
+    free(m_boundary->m_pAuxNodes);
 	if(count>0){AuxNodes = (Coord *) realloc(AuxNodes, (count * sizeof(Coord)));}
     else{AuxNodes = (Coord *) realloc(AuxNodes, (sizeof(Coord)));}
-    bound_in->AuxNodes = AuxNodes;
+    m_boundary->m_pAuxNodes = AuxNodes;
 
-    free(bound_in->Bound);
+    free(m_boundary->Bound);
 	if(count2>0){bptr = (Bseg *) realloc(bptr, (count2 * sizeof(Bseg)));}
     else{bptr = (Bseg *) realloc(bptr, (sizeof(Bseg)));}
-    bound_in->Bound = bptr;
+    m_boundary->Bound = bptr;
 
 	// consolodate na_conn data
 	// each aux node between 2 grid nodes
-    free(bound_in->na_conn);
-	if(count>0){bound_in->na_conn = (int *) malloc(2*count*sizeof(int));}
-    else{bound_in->na_conn = (int *) malloc(sizeof(int));}
+    free(m_boundary->m_pConnAuxNode);
+	if(count>0){m_boundary->m_pConnAuxNode = (int *) malloc(2*count*sizeof(int));}
+    else{m_boundary->m_pConnAuxNode = (int *) malloc(sizeof(int));}
 	count = 0;
 	for(n=0;n<NumNodes;n++)
 	{
 		temp2 = na_count[n];
-		bound_in->na_conn_ind[n]=count;
+		m_boundary->m_pIndConnAuxNode[n]=count;
 		if(temp2 > 0)
 		{
 			temp = 4*n; // point ot start of connected aux nodes
 			while(temp2 > 0)
 			{
-				bound_in->na_conn[count++] = na_conn[temp++];
+				m_boundary->m_pConnAuxNode[count++] = na_conn[temp++];
 				temp2--;
 			}
 		}
 	}
-	bound_in->na_conn_ind[NumNodes] = count; // end point
+	m_boundary->m_pIndConnAuxNode[NumNodes] = count; // end point
 	free(na_count);
 	free(na_conn);
 
 	// Part 3. Compute area ratios for AFG method
-	AFG_area(inMesh, alpha, NodeStat, ElemStat, bound_in->AuxNodes, count2, bound_in->Bound, aMin);
+	ComputeAreaRatio(alpha, NodeStat, ElemStat, m_boundary->m_pAuxNodes, count2, m_boundary->Bound, aMin);
 
 	// clear memory
 	free(NodeStat);
@@ -500,22 +401,26 @@ void CHakMesh::Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, d
 }
 
 // function to compute area ratio for all elements
-void CHakMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes, int NumBound, Bseg *Boundary, double aMin)
+void CHakMesh::ComputeAreaRatio(double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes, int NumBound, Bseg *Boundary, double aMin)
 {
 	int n,m;	// incrementors
 	int temp,num; // temp variables
 	double atemp;
 	int Lnodes[4];	// Array to temp store local node data
 
+
 	// read in data
-	double h = inMesh->h;
+	double h = this->m_lenEdge;
 	double AreaElem = h * h; // element area
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-	Elem **Number = inMesh->Number;
-	int NumNodes = inMesh->NumNodes;
-	Coord *NodeCoord = inMesh->NodeCoord;
+	int elemX = this->m_elemX;
+	int elemY = this->m_elemY;
+	Elem **Number = this->m_pNumber;
+	int NumElem = this->m_numElem;
+	int NumNodes = this->m_numNodes;
+	Coord *NodeCoord = this->m_pNodeCoord;
+
 	CHakFiniteElement fem;
+
 
 	// For all elements
 	for(m=0;m<elemY;m++)
@@ -563,156 +468,8 @@ void CHakMesh::AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *Ele
 }
 
 
-// Node Co-ordinate calculation function
-void CHakMesh::Coordinates(mesh *inMesh)
-{
-	// data from inMesh
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-	double hx = inMesh->h; double hy = inMesh->h;
-	double tol = inMesh->tol;
-	Elem **Number = inMesh->Number; // pointer to Numbering array
-	Coord *NodeCoord = inMesh->NodeCoord; // pointer to node coords
-
-	int i,j,num;
-
-	for(j=0;j<elemY;j++)
-	{
-		for(i=0;i<elemX;i++)
-		{
-			num = Number[i][j].a;
-			// If node co-ordinate hasn't been calculated already
-			if((NodeCoord[num].x + NodeCoord[num].y) < tol){
-				NodeCoord[num].x = i * hx;
-				NodeCoord[num].y = j * hy;
-			}
-			num = Number[i][j].b;
-			if((NodeCoord[num].x + NodeCoord[num].y) < tol){
-				NodeCoord[num].x = (i * hx) + hx;
-				NodeCoord[num].y = j * hy;
-			}
-			num = Number[i][j].c;
-			if((NodeCoord[num].x + NodeCoord[num].y) < tol){
-				NodeCoord[num].x = (i * hx) + hx;
-				NodeCoord[num].y = (j * hy) + hy;
-			}
-			num = Number[i][j].d;
-			if((NodeCoord[num].x + NodeCoord[num].y) < tol){
-				NodeCoord[num].x = i * hx;
-				NodeCoord[num].y = (j * hy) + hy;
-			}
-		}
-	}
-}
-
-
-// function that orders node numbers into a 2D based on their relative positions
-void CHakMesh::NodeNums2(mesh *inMesh)
-{
-	// data from inMesh
-	int NodeX = inMesh->NodeX;
-	int NodeY = inMesh->NodeY;
-	int NumNodes = inMesh->NumNodes;
-	double h = inMesh->h;
-	double tol = inMesh->tol;
-	int **Nodes2 = inMesh->Nodes2; // pointer to Node numbering array
-	Coord *NodeCoord = inMesh->NodeCoord; // pointer to node coords
-
-
-	int i; // incrementor
-	int X,Y; // node position variables
-
-	// for all grid node determine position in ordered 2D array
-	//  by their co-ordinates and element edge length
-	for(i=0;i<NumNodes;i++)
-	{
-		X = (int)(floor((NodeCoord[i].x / h)+tol) + 1);
-		Y = (int)(floor((NodeCoord[i].y / h)+tol) + 1); // +1 for layer of ghost nodes
-		Nodes2[X][Y] = i;
-	}
-
-	// now copy node numbers to create a layer of ghost nodes around the grid
-
-	// fill in the four corners
-	Nodes2[0][0] = Nodes2[1][1];
-	Nodes2[0][NodeY-1] = Nodes2[1][NodeY-2];
-	Nodes2[NodeX-1][0] = Nodes2[NodeX-2][1];
-	Nodes2[NodeX-1][NodeY-1] = Nodes2[NodeX-2][NodeY-2];
-
-	// now fill in top and bottom rows
-	for(i=1;i<NodeX-1;i++)
-	{
-		Nodes2[i][0] = Nodes2[i][1];
-		Nodes2[i][NodeY-1] = Nodes2[i][NodeY-2];
-	}
-
-	// Finally fill in left and right columns
-	for(i=1;i<NodeY-1;i++)
-	{
-		Nodes2[0][i] = Nodes2[1][i];
-		Nodes2[NodeX-1][i] = Nodes2[NodeX-2][i];
-	}
-}
-
-
-// function to number bars elements
-void CHakMesh::Bar_numbering(mesh *inMesh)
-{
-	// read data
-	Elem **Number = inMesh->Number; // pointer to Numbering array
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-
-	int i,j;
-	int xend = elemX-1;
-	int yend = elemY-1;
-	int count = 0;
-
-	// loop through all elements
-	for(j=0;j<elemY;j++)
-	{
-		for(i=0;i<elemX;i++)
-		{
-			// use bottom edge as x-bars
-			inMesh->bar_nums[count].e = count; // element number (bar elems only)
-			inMesh->bar_nums[count].n1 = Number[i][j].a * 2; // x-dof of node 1
-			inMesh->bar_nums[count++].n2 = Number[i][j].b * 2; // x-dof of node 2
-
-			// also use top edge for top row of elements
-			if(j == yend)
-			{
-				inMesh->bar_nums[count].e = count; // element number (bar elems only)
-				inMesh->bar_nums[count].n1 = Number[i][j].d * 2; // x-dof of node 1
-				inMesh->bar_nums[count++].n2 = Number[i][j].c * 2; // x-dof of node 2
-			}
-		}
-	}
-
-	// loop through all elements
-	for(i=0;i<elemX;i++)
-	{
-		for(j=0;j<elemY;j++)
-		{
-			// use left edge as y-bars
-			inMesh->bar_nums[count].e = count; // element number (bar elems only)
-			inMesh->bar_nums[count].n1 = (Number[i][j].a * 2) +1; // y-dof of node 1
-			inMesh->bar_nums[count++].n2 = (Number[i][j].d * 2) +1; // y-dof of node 2
-
-			// also use right edge for last column of elements
-			if(i == xend)
-			{
-				inMesh->bar_nums[count].e = count; // element number (bar elems only)
-				inMesh->bar_nums[count].n1 = (Number[i][j].b * 2) +1; // y-dof of node 1
-				inMesh->bar_nums[count++].n2 = (Number[i][j].c * 2) +1; // y-dof of node 2
-			}
-		}
-	}
-
-	// that is all!!
-}
-
 //
-// Interfaces - OOD versions (jeehanglee@gmail.com)
+// Interfaces - OOD versions
 //
 
 // Function that numbers all elements and nodes in the FG domain
@@ -723,13 +480,13 @@ void CHakMesh::Numbering()
 
 	// read data
 	Elem **Number = this->m_pNumber; // pointer to Numbering array
-	int elemX = this->m_elemX;
+	int m_elemX = this->m_elemX;
 	int elemY = this->m_elemY;
 
 	// Element Numbering loop
 	for (j = 0; j < elemY; j++)
 	{
-		for (i = 0; i <elemX; i++)
+		for (i = 0; i <m_elemX; i++)
 		{
 			Number[i][j].n = num++;
 		}
@@ -743,9 +500,9 @@ void CHakMesh::Numbering()
 	Number[0][0].d = ++num;
 
 	// Number first X row (Y = 0)
-	if (elemX > 1) // if there is more than one element in the x direction number first row
+	if (m_elemX > 1) // if there is more than one element in the x direction number first row
 	{
-		for (i = 1; i <elemX; i++)
+		for (i = 1; i <m_elemX; i++)
 		{
 			Number[i][0].a = Number[i-1][0].b;
 			Number[i][0].b = ++num;
@@ -759,7 +516,7 @@ void CHakMesh::Numbering()
 	{
 		for (j = 1; j < elemY; j++)
 		{
-			for (i = 0; i < elemX; i++)
+			for (i = 0; i < m_elemX; i++)
 			{
 				Number[i][j].a = Number[i][j-1].d;
 				Number[i][j].b = Number[i][j-1].c;
@@ -783,7 +540,7 @@ void CHakMesh::Numbering()
 void CHakMesh::Coordinates()
 {
 	// data from inMesh
-	int elemX = this->m_elemX;
+	int m_elemX = this->m_elemX;
 	int elemY = this->m_elemY;
 	double hx = this->m_lenEdge; 
 	double hy = this->m_lenEdge;
@@ -795,7 +552,7 @@ void CHakMesh::Coordinates()
 
 	for (j = 0; j < elemY; j++)
 	{
-		for (i = 0; i < elemX; i++)
+		for (i = 0; i < m_elemX; i++)
 		{
 			num = Number[i][j].a;			
 			if((NodeCoord[num].x + NodeCoord[num].y) < tol)
@@ -833,12 +590,12 @@ void CHakMesh::Coordinates()
 void CHakMesh::NodeNums2D()
 {
 	// data from inMesh
-	int NodeX = this->NodeX;
-	int NodeY = this->NodeY;
+	int NodeX = this->m_nodeX;
+	int NodeY = this->m_nodeY;
 	int NumNodes = this->m_numNodes;
 	double h = this->m_lenEdge;
 	double tol = this->m_tolerance;
-	int **Nodes2 = this->Nodes2; // pointer to Node numbering array
+	int **Nodes2 = this->m_pNodes2D; // pointer to Node numbering array
 	Coord *NodeCoord = this->m_pNodeCoord; // pointer to node coords
 
 	int i; // incrementor
@@ -881,50 +638,50 @@ void CHakMesh::NumberingBarElements()
 {
 	// read data
 	Elem **pNumber = this->m_pNumber; // pointer to Numbering array
-	int elemX = this->m_elemX;
+	int m_elemX = this->m_elemX;
 	int elemY = this->m_elemY;
 
 	int i,j;
-	int xend = elemX - 1;
+	int xend = m_elemX - 1;
 	int yend = elemY - 1;
 	int count = 0;
 
 	// loop through all elements
 	for (j = 0; j < elemY; j++)
 	{
-		for (i = 0; i < elemX; i++)
+		for (i = 0; i < m_elemX; i++)
 		{
 			// use bottom edge as x-bars
-			this->bar_nums[count].e = count; // element number (bar elems only)
-			this->bar_nums[count].n1 = pNumber[i][j].a * 2; // x-dof of node 1
-			this->bar_nums[count++].n2 = pNumber[i][j].b * 2; // x-dof of node 2
+			this->m_pBarNums[count].e = count; // element number (bar elems only)
+			this->m_pBarNums[count].n1 = pNumber[i][j].a * 2; // x-dof of node 1
+			this->m_pBarNums[count++].n2 = pNumber[i][j].b * 2; // x-dof of node 2
 
 			// also use top edge for top row of elements
 			if (j == yend)
 			{
-				this->bar_nums[count].e = count; // element number (bar elems only)
-				this->bar_nums[count].n1 = pNumber[i][j].d * 2; // x-dof of node 1
-				this->bar_nums[count++].n2 = pNumber[i][j].c * 2; // x-dof of node 2
+				this->m_pBarNums[count].e = count; // element number (bar elems only)
+				this->m_pBarNums[count].n1 = pNumber[i][j].d * 2; // x-dof of node 1
+				this->m_pBarNums[count++].n2 = pNumber[i][j].c * 2; // x-dof of node 2
 			}
 		}
 	}
 
 	// loop through all elements
-	for (i = 0;i < elemX; i++)
+	for (i = 0;i < m_elemX; i++)
 	{
 		for (j = 0;j < elemY; j++)
 		{
 			// use left edge as y-bars
-			this->bar_nums[count].e = count; // element number (bar elems only)
-			this->bar_nums[count].n1 = (pNumber[i][j].a * 2) +1; // y-dof of node 1
-			this->bar_nums[count++].n2 = (pNumber[i][j].d * 2) +1; // y-dof of node 2
+			this->m_pBarNums[count].e = count; // element number (bar elems only)
+			this->m_pBarNums[count].n1 = (pNumber[i][j].a * 2) +1; // y-dof of node 1
+			this->m_pBarNums[count++].n2 = (pNumber[i][j].d * 2) +1; // y-dof of node 2
 
 			// also use right edge for last column of elements
 			if(i == xend)
 			{
-				this->bar_nums[count].e = count; // element number (bar elems only)
-				this->bar_nums[count].n1 = (pNumber[i][j].b * 2) +1; // y-dof of node 1
-				this->bar_nums[count++].n2 = (pNumber[i][j].c * 2) +1; // y-dof of node 2
+				this->m_pBarNums[count].e = count; // element number (bar elems only)
+				this->m_pBarNums[count].n1 = (pNumber[i][j].b * 2) +1; // y-dof of node 1
+				this->m_pBarNums[count++].n2 = (pNumber[i][j].c * 2) +1; // y-dof of node 2
 			}
 		}
 	}

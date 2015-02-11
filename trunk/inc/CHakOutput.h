@@ -53,7 +53,7 @@ public:
     void OutPLotShapeVTK2(CHakMesh& m_mesh, double *lsf, double *alpha, int pinfo, int itt, char *datafile);
     
     // function to output boundary as a mesh for Paraview (with shape sensitivities)
-    void OutBoundVTK(CHakMesh& m_mesh, boundary *bound_in, int num_sens, double **Sens, int itt, char *datafile);
+    void OutBoundVTK(CHakMesh& m_mesh, CHakBoundary *bound_in, int num_sens, double **Sens, int itt, char *datafile);
     
     // function to output boundary integration data
     void OutBoundInt(int numFunc, int numLbound, int *Lbound_nums, double *Lbound, int itt, char *datafile);
@@ -65,7 +65,7 @@ public:
     void OutDispVTK(CHakMesh& m_mesh, int numCase, double *disp, int num_eig, double *vec, int itt, char *datafile);
     
     // function to output object & constraint convergence data
-    void OutConv(int itt, prob *lsprob, double *Obj, double *constr, char *datafile);
+    void OutConv(int itt, CHakOptProblem *lsprob, double *Obj, double *constr, char *datafile);
     
     // function to output covergence history of frequencies
     void OutFreq(int itt, int num_eig, double *freq, char *datafile);

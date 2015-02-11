@@ -2,13 +2,15 @@
  * CHakOptControl.cpp
  *
  *  Created on: Dec 19, 2014
- *      Author: jeehang
+ *      Author: Khalid Ismail, jeehang
  */
 
 #include "CHakOptControl.h"
 
-namespace topopt {
+//namespace topopt {
 
+
+//} /* namespace topopt */
 CHakOptControl::CHakOptControl() {
 	// TODO Auto-generated constructor stub
 
@@ -17,5 +19,3 @@ CHakOptControl::CHakOptControl() {
 CHakOptControl::~CHakOptControl() {
 	// TODO Auto-generated destructor stub
 }
-
-} /* namespace topopt */

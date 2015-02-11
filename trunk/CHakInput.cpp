@@ -227,7 +227,7 @@ int CHakInput::ReadFile(char *datafile)
 							m_mesh.Nodes2[i] = (int *) malloc(m_mesh.NodeY * sizeof(int));
 						}
 
-						// call fucntions to compute data arrays in inMesh (jeehanglee@gmail.com)
+						// call fucntions to compute data arrays in inMesh
 						m_mesh.Numbering();
 						m_mesh.Coordinates();
 						m_mesh.NodeNums2D();
@@ -863,7 +863,7 @@ int CHakInput::ReadFile(char *datafile)
 
 						double tol = m_mesh.m_tolerance;
 						double h = m_mesh.m_lenEdge;
-						int elemX = m_mesh.m_elemX;
+						int m_elemX = m_mesh.m_elemX;
 						int elemY = m_mesh.m_elemY;
 						double xmin, xmax, ymin, ymax;
 
@@ -894,7 +894,7 @@ int CHakInput::ReadFile(char *datafile)
 							// use coords to work out range of elements effected
 							xmin -= tol; ymin -= tol; xmax += tol; ymax += tol;
 							int ex_min = (int)ceil(xmin/h);  if(ex_min < 0){ex_min=0;}
-							int ex_max = (int)floor(xmax/h); if(ex_max > elemX){ex_max=elemX;}
+							int ex_max = (int)floor(xmax/h); if(ex_max > m_elemX){ex_max=m_elemX;}
 							int ey_min = (int)ceil(ymin/h);  if(ey_min < 0){ey_min=0;}
 							int ey_max = (int)floor(ymax/h); if(ey_max > elemY){ey_max=elemY;}
 
@@ -2067,14 +2067,14 @@ int CHakInput::ReadFile(char *datafile)
 			return -1;
 		}
 
-		inMesh->mat_vars = (double *) malloc(inMesh->NumDesMat * sizeof(double));
+		inMesh->m_pMaterialVars = (double *) malloc(inMesh->NumDesMat * sizeof(double));
 		for(j=0;j<inMesh->NumDesMat;j++)
 		{
-			inMesh->mat_vars[j] = 0.5; // start with 50/50 mix
+			inMesh->m_pMaterialVars[j] = 0.5; // start with 50/50 mix
 		}
 
         // FD check
-        //inMesh->mat_vars[17700] = 0.49;
+        //inMesh->m_pMaterialVars[17700] = 0.49;
 
 		// redefine material for all elems with des mat to the first material
 		for(j=0;j<inMesh->NumDesMat;j++)
@@ -2256,7 +2256,7 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 						}
 
 						// read data into the inMesh structure
-						sscanf(token[0],"%i",&inMesh->elemX);
+						sscanf(token[0],"%i",&inMesh->m_elemX);
 						sscanf(token[1],"%i",&inMesh->elemY);
 						if(i>2){
 							sscanf(token[2],"%lf",&inMesh->h);
@@ -2272,9 +2272,9 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 						}
 
 						// check data
-						if(inMesh->elemX < 1 || inMesh->elemY < 1)
+						if(inMesh->m_elemX < 1 || inMesh->elemY < 1)
 						{
-							printf("\nError in input: elems %i x %i! - Abort\n",inMesh->elemX,inMesh->elemY);
+							printf("\nError in input: elems %i x %i! - Abort\n",inMesh->m_elemX,inMesh->elemY);
 							return -1;
 						}
 						if(inMesh->h <= 0.0)
@@ -2289,11 +2289,11 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 						}
 
 						// define all other data in inMesh
-						inMesh->NumElem = inMesh->elemX*inMesh->elemY;
-						inMesh->NodeX = 3+inMesh->elemX;
+						inMesh->NumElem = inMesh->m_elemX*inMesh->elemY;
+						inMesh->NodeX = 3+inMesh->m_elemX;
 						inMesh->NodeY = 3+inMesh->elemY; // one extra node is each direction
-						inMesh->NumNodes = (1+inMesh->elemX)*(1+inMesh->elemY);
-						inMesh->maxX = inMesh->elemX * inMesh->h;
+						inMesh->NumNodes = (1+inMesh->m_elemX)*(1+inMesh->elemY);
+						inMesh->maxX = inMesh->m_elemX * inMesh->h;
 						inMesh->maxY = inMesh->elemY * inMesh->h;
 						inMesh->NodeCoord = (Coord *) calloc(inMesh->NumNodes, sizeof(Coord));
 						inMesh->tol = inMesh->h * 1.0E-6; // rounding tollerance
@@ -2303,8 +2303,8 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 						inMesh->des_mat = false; // no designable material (yet)
 
 						// 2d array memory allocation (array of pointers to pointers)
-						inMesh->Number = (Elem**) malloc(inMesh->elemX * sizeof(Elem*));
-						for(i=0;i<inMesh->elemX;i++) {
+						inMesh->Number = (Elem**) malloc(inMesh->m_elemX * sizeof(Elem*));
+						for(i=0;i<inMesh->m_elemX;i++) {
 							inMesh->Number[i] = (Elem*) malloc(inMesh->elemY * sizeof(Elem));
 						}
 
@@ -2345,7 +2345,7 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 
 				// set variables and memory for bar elements
 				inMesh->bars = true; // problem contains bars
-				nd = (inMesh->elemX * (1+inMesh->elemY)) + (inMesh->elemY * (1+inMesh->elemX));
+				nd = (inMesh->m_elemX * (1+inMesh->elemY)) + (inMesh->elemY * (1+inMesh->m_elemX));
 				inMesh->NumBars = nd; // total number of bars
 				inMesh->bar_nums = (Bseg *) malloc(nd * sizeof(Bseg));
 				inMesh->bar_areas = (double *) malloc(nd * sizeof(double));
@@ -2892,7 +2892,7 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 
 						double tol = inMesh->tol;
 						double h = inMesh->h;
-						int elemX = inMesh->elemX;
+						int m_elemX = inMesh->m_elemX;
 						int elemY = inMesh->elemY;
 						double xmin,xmax,ymin,ymax;
 
@@ -2922,7 +2922,7 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 							// use coords to work out range of elements effected
 							xmin -= tol; ymin -= tol; xmax += tol; ymax += tol;
 							int ex_min = (int)ceil(xmin/h);  if(ex_min < 0){ex_min=0;}
-							int ex_max = (int)floor(xmax/h); if(ex_max > elemX){ex_max=elemX;}
+							int ex_max = (int)floor(xmax/h); if(ex_max > m_elemX){ex_max=m_elemX;}
 							int ey_min = (int)ceil(ymin/h);  if(ey_min < 0){ey_min=0;}
 							int ey_max = (int)floor(ymax/h); if(ey_max > elemY){ey_max=elemY;}
 
@@ -4094,14 +4094,14 @@ int CHakInput::read_input(char *datafile, mesh *inMesh, int *numMat, isoMat *m_m
 			return -1;
 		}
 
-		inMesh->mat_vars = (double *) malloc(inMesh->NumDesMat * sizeof(double));
+		inMesh->m_pMaterialVars = (double *) malloc(inMesh->NumDesMat * sizeof(double));
 		for(j=0;j<inMesh->NumDesMat;j++)
 		{
-			inMesh->mat_vars[j] = 0.5; // start with 50/50 mix
+			inMesh->m_pMaterialVars[j] = 0.5; // start with 50/50 mix
 		}
 
         // FD check
-        //inMesh->mat_vars[17700] = 0.49;
+        //inMesh->m_pMaterialVars[17700] = 0.49;
 
 		// redefine material for all elems with des mat to the first material
 		for(j=0;j<inMesh->NumDesMat;j++)

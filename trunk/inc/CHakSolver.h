@@ -68,7 +68,7 @@ public:
 
 public:
 	// Function that sets up and calls the MA57 to solve Ku = f
-	void FE_Solve(sp_mat *Kg, int *dofMap, double *disp, int freeDof, int order, int numRhs);
+	void FE_Solve(CHakSparseMatrix *Kg, int *dofMap, double *disp, int freeDof, int order, int numRhs);
 
 	// Function that sets up and runs the MA57 Multifrontal Solver
 	void solve(int n, int ne, int *irn, int *jcn, double *A, int n_rhs, double *rhs, int pinfo);
@@ -93,10 +93,10 @@ public:
 	int LPsolve(int n, int m, int nu, double *x, double *c, double *A, double *b, double *u, int pinfo);
 
 	// funciton to use ARPACK reverse communication to solve generalized eigenvalue problem (mode 3)
-	int eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, int *dofMap, double *vals, double *vecs, int pinfo);
+	int eig_solve(int nev_in, CHakSparseMatrix *Kg, CHakSparseMatrix *Mg, int n, int order, int *dofMap, double *vals, double *vecs, int pinfo);
 
 	// multiply a sparse matrix by a vector
-	void Msp_Vec(int n, sp_mat *mat, double *vin, double *vout);
+	void Msp_Vec(int n, CHakSparseMatrix *mat, double *vin, double *vout);
 
 public:
 	CHakMathUtility GetMathUtility() {return m_cMathUtil;}

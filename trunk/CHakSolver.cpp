@@ -54,7 +54,7 @@ CHakSolver::~CHakSolver() {
 //
 
 // Function that sets up and calls the MA57 to solve Ku = f
-void CHakSolver::FE_Solve(sp_mat *Kg, int *dofMap, double *disp, int freeDof, int order, int numRhs)
+void CHakSolver::FE_Solve(CHakSparseMatrix *Kg, int *dofMap, double *disp, int freeDof, int order, int numRhs)
 {
 	int i,j,temp,temp2;
 
@@ -64,7 +64,7 @@ void CHakSolver::FE_Solve(sp_mat *Kg, int *dofMap, double *disp, int freeDof, in
 	cblas_dcopy(temp2, disp, 1, disp_temp, 1);
 
 	// Solve the equation
-	solve(freeDof, Kg->ne, Kg->irn, Kg->jcn, Kg->A, numRhs, disp_temp, 0);
+	solve(freeDof, Kg->m_numEntry, Kg->m_indRow, Kg->m_indCol, Kg->m_pMatEntry, numRhs, disp_temp, 0);
 
 	// Re-insert zero displacements into the displacement array
 	for(i=0;i<order;i++)
@@ -682,7 +682,7 @@ int CHakSolver::LPsolve(int n, int m, int nu, double *x, double *c, double *A, d
 }
 
 // funciton to use ARPACK reverse communication to solve generalized eigenvalue problem (mode 3)
-int CHakSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, int *dofMap, double *vals, double *vecs, int pinfo)
+int CHakSolver::eig_solve(int nev_in, CHakSparseMatrix *Kg, CHakSparseMatrix *Mg, int n, int order, int *dofMap, double *vals, double *vecs, int pinfo)
 {
 	int nev = 2 * nev_in; // always compute twice the required amount (for repeated values)
 	int i,j;
@@ -692,7 +692,7 @@ int CHakSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, 
 	// then factorize Kg using MA57 (use for solve ... )
 
 	// Lots of variables for MA57 fortran multi-frontal solver
-	int num_ent = Kg->ne;
+	int num_ent = Kg->m_numEntry;
 	int lkeep,lfact,lifact,lwork,liwork;
 	int *keep,*ifact,*iwork;
 	double *fact,*work;
@@ -721,7 +721,7 @@ int CHakSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, 
 	iwork = (int *) malloc(liwork * sizeof(int));
 
 	// Do Analysis
-	ma57ad_(&n,&num_ent,Kg->irn,Kg->jcn,&lkeep,keep,iwork,icntl,info,rinfo);
+	ma57ad_(&n,&num_ent,Kg->m_indRow,Kg->m_indCol,&lkeep,keep,iwork,icntl,info,rinfo);
 
 	// re-size integer work array for next phase
 	free(iwork);
@@ -735,7 +735,7 @@ int CHakSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, 
 	ifact = (int *) malloc(lifact * sizeof(int));
 
 	// Do factorization
-	ma57bd_(&n,&num_ent,Kg->A,fact,&lfact,ifact,&lifact,&lkeep,keep,iwork,icntl,cntl,info,rinfo);
+	ma57bd_(&n,&num_ent,Kg->m_pMatEntry,fact,&lfact,ifact,&lifact,&lkeep,keep,iwork,icntl,cntl,info,rinfo);
 
 	// Setup doubleing point workspace
 	lwork = n;
@@ -839,10 +839,10 @@ int CHakSolver::eig_solve(int nev_in, sp_mat *Kg, sp_mat *Mg, int n, int order, 
 }
 
 // multiply a sparse matrix by a vector
-void CHakSolver::Msp_Vec(int n, sp_mat *mat, double *vin, double *vout)
+void CHakSolver::Msp_Vec(int n, CHakSparseMatrix *mat, double *vin, double *vout)
 {
 	int i,rn,cn;
-	int ne = mat->ne;
+	int ne = mat->m_numEntry;
 	// reset vout to zero
 	for(i=0;i<n;i++)
 	{
@@ -852,15 +852,15 @@ void CHakSolver::Msp_Vec(int n, sp_mat *mat, double *vin, double *vout)
 	// multiply
 	for(i=0;i<ne;i++)
 	{
-		rn = mat->irn[i]-1;
-		cn = mat->jcn[i]-1;
+		rn = mat->m_indRow[i]-1;
+		cn = mat->m_indCol[i]-1;
 
-		vout[rn] += mat->A[i] * vin[cn];
+		vout[rn] += mat->m_pMatEntry[i] * vin[cn];
 
 		// symmetry
 		if(rn != cn)
 		{
-			vout[cn] += mat->A[i] * vin[rn];
+			vout[cn] += mat->m_pMatEntry[i] * vin[rn];
 		}
 	}
 }

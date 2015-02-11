@@ -38,15 +38,8 @@ public:
 	// knai20@bath.ac.uk: OOD version
 public:
 	// Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
-	void AFG_Matrix(int mass, double **KE, double **ME, CHakSparseMatrix& Kg, CHakSparseMatrix& Mg, CHakSparseMatrix& lump_mass, double *alpha,
-						mesh *inMesh, isoMat *inMat, double aMin, double mMin);
-
-
-	// knai20@bath.ac.uk: Non OOD version
-public:s
-	// Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
-	void AFG_Matrix(int mass, double **KE, double **ME, sp_mat *Kg, sp_mat *Mg, sp_mat *lump_mass, double *alpha,
-						mesh *inMesh, isoMat *inMat, double aMin, double mMin);
+	void AFG_Matrix(int mass, double **KE, double **ME, CHakSparseMatrix *Kg, CHakSparseMatrix *Mg, CHakSparseMatrix *lump_mass, double *alpha,
+			CHakMesh *inMesh, CHakMaterial *inMat, double aMin, double mMin);
 
 	// function to compute a cut element area
 	double InArea(int eStat, int eNum, int *Lnodes, short *NodeStat, int NumNodes, Coord *NodeCoord,
@@ -60,7 +53,7 @@ public:s
 
 	// Complete square IN element stiffness matix computation
 	// only for isotropic material
-	void KEMatrix(double *KE, isoMat *mat, double t);
+	void KEMatrix(double *KE, CHakMaterial *mat, double t);
 
 	// consistent mass matrix for a 2D plane element
 	void MEMatrix(double *ME, double rho, double area, double t);
@@ -68,16 +61,21 @@ public:s
 	// Function that assemebles the element matricies into the global matrix (in triplet form)
 	// Symmetric matrix - upper triangle
 	void Assemble2(int *K_begin, int *M_begin, int nNod, int nDof, int *tnodes, double *KE, double *ME,
-						sp_mat *Kg, sp_mat *Mg, int mass);
+						CHakSparseMatrix *Kg, CHakSparseMatrix *Mg, int mass);
 
 	// function to free memory for a sparse matrix
-	void free_sp_mat(sp_mat *m);
+	void free_sp_mat(CHakSparseMatrix *m);
 
 	// function to create memory for a sparse matrix
-	void set_sp_mat(sp_mat *m);
+	void set_sp_mat(CHakSparseMatrix *m);
 
 	// function to remove dof from a sparse matrix
-	void rem_sp_mat(sp_mat *m, int *map, int inc);
+	void rem_sp_mat(CHakSparseMatrix *m, int *map, int inc);
+
+	// function to compute self-weight load vector
+	void SelfWeight(CHakMesh *inMesh, CHakMaterial *inMat, double aMin, double mMin, double *alpha,
+	                    int freeDof, int *dofMap, int numCase, double *load_in, double *load_out, Coord *acc);
+
 
 };
 
