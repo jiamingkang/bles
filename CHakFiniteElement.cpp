@@ -47,8 +47,8 @@ CHakFiniteElement::~CHakFiniteElement() {
 // knai20@bath.ac.uk: OOD version
 
 // Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
-void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSparseMatrix& Kg, CHakSparseMatrix& Mg, CHakSparseMatrix& lump_mass, double *alpha,
-					mesh *inMesh, isoMat *inMat, double aMin, double mMin)
+void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSparseMatrix *Kg, CHakSparseMatrix *Mg, CHakSparseMatrix *lump_mass, double *alpha,
+					CHakMesh *inMesh, CHakMaterial *inMat, double aMin, double mMin)
 {
 	int n,m,o,num;
 	int tnodes[4];	// temp array for node numbers
@@ -61,16 +61,16 @@ void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSpars
 	double atemp; // area ratio variable
 	double mtemp,e_fac,p_fac,e_rat,p_rat; // variables for designable material modification
 	// material ratios
-	if(inMesh->des_mat)
+	if(inMesh->m_bDesignableMaterial)
 	{
-		e_rat = inMat[inMesh->mat2].e / inMat[inMesh->mat1].e;
-		p_rat = inMat[inMesh->mat2].rho / inMat[inMesh->mat1].rho;
+		e_rat = inMat[inMesh->m_materialTwo].m_e / inMat[inMesh->m_materialOne].m_e;
+		p_rat = inMat[inMesh->m_materialTwo].m_rho / inMat[inMesh->m_materialOne].m_rho;
 	}
 
 	// read data
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-	Elem **Number = inMesh->Number;
+	int elemX = inMesh->m_elemX;
+	int elemY = inMesh->m_elemY;
+	Elem **Number = inMesh->m_pNumber;
 	double *kptr, *mptr; // pointer to correct base matrices
 
 	// For All Elements
@@ -87,7 +87,7 @@ void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSpars
 					printf("\nERROR! alpha for element %i = %lf!",num,alpha[num]);
 				}
 
-				o = inMesh->mat_type[num]; // material number
+				o = inMesh->m_pMaterialType[num]; // material number
 				kptr = KE[o]; mptr = ME[o]; // point to correct matrices for elem material
 
 				// Read in grid node numbers of current element
@@ -97,7 +97,7 @@ void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSpars
 				tnodes[3] = Number[n][m].d;
 
 				// If element is IN, no need to multiply by alpha (unless using designable material)
-				if(!inMesh->des_mat && atemp > 0.9999)
+				if(!inMesh->m_bDesignableMaterial && atemp > 0.9999)
 				{
 					// Assemble area ratio weighted stiffness matrix into index arrays
 					Assemble2(&K_begin, &M_begin, 4, NUM_DOF, tnodes, kptr, mptr, Kg, Mg, mass);
@@ -106,21 +106,21 @@ void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSpars
 				else
 				{
 					// modify matrices for designable materials
-					if(inMesh->des_mat && num==inMesh->mat_elems[mat_count])
+					if(inMesh->m_bDesignableMaterial && num==inMesh->m_pMaterialElems[mat_count])
 					{
 						// material mix variable
-						mtemp = inMesh->mat_vars[mat_count++];
+						mtemp = inMesh->m_pMaterialVars[mat_count++];
 
 						// modulus factor
-						if(inMesh->mat_lin)
+						if(inMesh->m_bMaterialLin)
 						{
 							e_fac = mtemp*e_rat + (1.0-mtemp);
 						}
                         else
                         {
-                        	// jeehanglee@gmail.com: temp code. Should be refactored....
+                        	// temp code. Should be refactored....
                         	CHakMaterial material;
-                        	e_fac = material.HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]) / inMat[inMesh->mat1].e;
+                        	e_fac = material.HS_mat(mtemp, 0.5, &inMat[inMesh->m_materialOne], &inMat[inMesh->m_materialTwo]) / inMat[inMesh->m_materialOne].m_e;
                         }
                         e_fac *= atemp;
 
@@ -149,55 +149,55 @@ void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSpars
 					Assemble2(&K_begin, &M_begin, 4, NUM_DOF, tnodes, KEQuad, MEQuad, Kg, Mg, mass);
 				}
 			}
-            else if(inMesh->des_mat && num==inMesh->mat_elems[mat_count]){mat_count++;}
+            else if(inMesh->m_bDesignableMaterial && num==inMesh->m_pMaterialElems[mat_count]){mat_count++;}
 		}
 	}
 
 	// Add lumped masses
-	m = lump_mass->ne;
+	m = lump_mass->m_numEntry;
 	if(m>0)
 	{
 		for(n=0;n<m;n++)
 		{
-			Mg->irn[M_begin] = lump_mass->irn[n];
-			Mg->jcn[M_begin] = lump_mass->jcn[n];
-			Mg->A[M_begin++] = lump_mass->A[n];
+			Mg->m_indRow[M_begin] = lump_mass->m_indRow[n];
+			Mg->m_indCol[M_begin] = lump_mass->m_indCol[n];
+			Mg->m_pMatEntry[M_begin++] = lump_mass->m_pMatEntry[n];
 		}
 	}
 
 	// Add bar elements
-	if(inMesh->bars)
+	if(inMesh->m_bars)
 	{
-		int numBar = inMesh->NumBars;
-		double EoL = inMesh->bar_mat->e / inMesh->h; // E / L
+		int numBar = inMesh->m_numBars;
+		double EoL = inMesh->m_pBarMaterialType->m_e / inMesh->m_lenEdge; // E / L
 		double kbar;
 
 		for(n=0;n<numBar;n++)
 		{
-			m = inMesh->bar_nums[n].n1;
-			o = inMesh->bar_nums[n].n2;
-			kbar = EoL * inMesh->bar_areas[n]; // bar stiffness
+			m = inMesh->m_pBarNums[n].n1;
+			o = inMesh->m_pBarNums[n].n2;
+			kbar = EoL * inMesh->m_pBarAreas[n]; // bar stiffness
 
 			// swap if necessary (m < o)
 			if(m > o){num=o; o=m; m=num;}
 
 			// 3 entries
-			Kg->irn[K_begin] = m; Kg->jcn[K_begin] = m; Kg->A[K_begin++] = kbar;
-			Kg->irn[K_begin] = o; Kg->jcn[K_begin] = o; Kg->A[K_begin++] = kbar;
-			Kg->irn[K_begin] = m; Kg->jcn[K_begin] = o; Kg->A[K_begin++] = -kbar;
+			Kg->m_indRow[K_begin] = m; Kg->m_indCol[K_begin] = m; Kg->m_pMatEntry[K_begin++] = kbar;
+			Kg->m_indRow[K_begin] = o; Kg->m_indCol[K_begin] = o; Kg->m_pMatEntry[K_begin++] = kbar;
+			Kg->m_indRow[K_begin] = m; Kg->m_indCol[K_begin] = o; Kg->m_pMatEntry[K_begin++] = -kbar;
 		}
 	}
 
 	// Add designable bc stiffness
-	if(inMesh->des_bc)
+	if(inMesh->m_bDesignableBc)
 	{
-		int numBC = inMesh->NumBC;
+		int numBC = inMesh->m_numBc;
 
 		for(o=0;o<numBC;o++)
 		{
 			// compute element indices
-			m = floor((double)inMesh->BC_nums[o] / (double)elemX);
-			n = inMesh->BC_nums[o] - m*elemX;
+			m = floor((double)inMesh->m_pBcNums[o] / (double)elemX);
+			n = inMesh->m_pBcNums[o] - m*elemX;
 
 			// Read in grid node numbers of current element
 			tnodes[0] = Number[n][m].a;
@@ -210,201 +210,17 @@ void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, CHakSpars
 				num = tnodes[n]*NUM_DOF; // start of nodal dof
 				for(m=0;m<NUM_DOF;m++)   // each dof
 				{
-					Kg->irn[K_begin] = num+m;
-					Kg->jcn[K_begin] = Kg->irn[K_begin];
-					Kg->A[K_begin++] = pow(inMesh->K_bc[o],3.0)*inMesh->K0_bc; // penalize design variable
+					Kg->m_indRow[K_begin] = num+m;
+					Kg->m_indCol[K_begin] = Kg->m_indRow[K_begin];
+					Kg->m_pMatEntry[K_begin++] = pow(inMesh->m_K_bc[o],3.0)*inMesh->m_K0_bc; // penalize design variable
 				}
 			}
 		}
 	}
 
 	// resize matrices
-	Kg->ne = K_begin;
-	Mg->ne = M_begin;
-}
-
-
-
-//
-// Implementation - Interfaces
-//
-// knai20@bath.ac.uk: Non OOD version
-
-// Assembles global stiffness (& maybe mass) matrix for AFG method in triplet format (for MA57 solver)
-void CHakFiniteElement::AFG_Matrix(int mass, double **KE, double **ME, sp_mat *Kg, sp_mat *Mg, sp_mat *lump_mass, double *alpha,
-					mesh *inMesh, isoMat *inMat, double aMin, double mMin)
-{
-	int n,m,o,num;
-	int tnodes[4];	// temp array for node numbers
-	int K_begin = 0;  // Begin variable used to track how many entries have been indexed so far
-	int M_begin = 0;
-	int mat_count = 0; // count for designable material
-
-	double KEQuad[KE_SIZE]; // 2D Array for an Quadrilateral Stiffness Matrix
-	double MEQuad[KE_SIZE]; // 2D Array for an Quadrilateral Mass Matrix
-	double atemp; // area ratio variable
-	double mtemp,e_fac,p_fac,e_rat,p_rat; // variables for designable material modification
-	// material ratios
-	if(inMesh->des_mat)
-	{
-		e_rat = inMat[inMesh->mat2].e / inMat[inMesh->mat1].e;
-		p_rat = inMat[inMesh->mat2].rho / inMat[inMesh->mat1].rho;
-	}
-
-	// read data
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-	Elem **Number = inMesh->Number;
-	double *kptr, *mptr; // pointer to correct base matrices
-
-	// For All Elements
-	for(m=0;m<elemY;m++)
-	{
-		for(n=0;n<elemX;n++)
-		{
-			num = Number[n][m].n; // Element number
-			atemp = alpha[num]; // Element area ratio
-
-			if(atemp > 1.0e-12) // If element has area ratio > 0: calculate area weighted matrix
-			{
-				if(atemp > 1.0) {
-					printf("\nERROR! alpha for element %i = %lf!",num,alpha[num]);
-				}
-
-				o = inMesh->mat_type[num]; // material number
-				kptr = KE[o]; mptr = ME[o]; // point to correct matrices for elem material
-
-				// Read in grid node numbers of current element
-				tnodes[0] = Number[n][m].a;
-				tnodes[1] = Number[n][m].b;
-				tnodes[2] = Number[n][m].c;
-				tnodes[3] = Number[n][m].d;
-
-				// If element is IN, no need to multiply by alpha (unless using designable material)
-				if(!inMesh->des_mat && atemp > 0.9999)
-				{
-					// Assemble area ratio weighted stiffness matrix into index arrays
-					Assemble2(&K_begin, &M_begin, 4, NUM_DOF, tnodes, kptr, mptr, Kg, Mg, mass);
-				}
-
-				else
-				{
-					// modify matrices for designable materials
-					if(inMesh->des_mat && num==inMesh->mat_elems[mat_count])
-					{
-						// material mix variable
-						mtemp = inMesh->mat_vars[mat_count++];
-
-						// modulus factor
-						if(inMesh->mat_lin)
-						{
-							e_fac = mtemp*e_rat + (1.0-mtemp);
-						}
-                        else
-                        {
-                        	// jeehanglee@gmail.com: temp code. Should be refactored....
-                        	CHakMaterial material;
-                        	e_fac = material.HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]) / inMat[inMesh->mat1].e;
-                        }
-                        e_fac *= atemp;
-
-						// density factor
-                        p_fac =  mtemp*p_rat + (1.0-mtemp);
-						p_fac *= (atemp == aMin) ? mMin : atemp;
-					}
-					else
-					{
-						e_fac = atemp;
-						p_fac = (atemp == aMin) ? mMin : atemp;
-					}
-
-					// multiply In stiffness matrix by area ratio
-					for(o=0;o<KE_SIZE;o++) {
-						KEQuad[o] = kptr[o] * e_fac;
-					}
-					// multiply mass matrix by area ratio
-					if(mass==1) {
-						for(o=0;o<KE_SIZE;o++) {
-							MEQuad[o] = mptr[o] * p_fac;
-						}
-					}
-
-					// Assemble area ratio weighted stiffness matrix into index arrays
-					Assemble2(&K_begin, &M_begin, 4, NUM_DOF, tnodes, KEQuad, MEQuad, Kg, Mg, mass);
-				}
-			}
-            else if(inMesh->des_mat && num==inMesh->mat_elems[mat_count]){mat_count++;}
-		}
-	}
-
-	// Add lumped masses
-	m = lump_mass->ne;
-	if(m>0)
-	{
-		for(n=0;n<m;n++)
-		{
-			Mg->irn[M_begin] = lump_mass->irn[n];
-			Mg->jcn[M_begin] = lump_mass->jcn[n];
-			Mg->A[M_begin++] = lump_mass->A[n];
-		}
-	}
-
-	// Add bar elements
-	if(inMesh->bars)
-	{
-		int numBar = inMesh->NumBars;
-		double EoL = inMesh->bar_mat->e / inMesh->h; // E / L
-		double kbar;
-
-		for(n=0;n<numBar;n++)
-		{
-			m = inMesh->bar_nums[n].n1;
-			o = inMesh->bar_nums[n].n2;
-			kbar = EoL * inMesh->bar_areas[n]; // bar stiffness
-
-			// swap if necessary (m < o)
-			if(m > o){num=o; o=m; m=num;}
-
-			// 3 entries
-			Kg->irn[K_begin] = m; Kg->jcn[K_begin] = m; Kg->A[K_begin++] = kbar;
-			Kg->irn[K_begin] = o; Kg->jcn[K_begin] = o; Kg->A[K_begin++] = kbar;
-			Kg->irn[K_begin] = m; Kg->jcn[K_begin] = o; Kg->A[K_begin++] = -kbar;
-		}
-	}
-
-	// Add designable bc stiffness
-	if(inMesh->des_bc)
-	{
-		int numBC = inMesh->NumBC;
-
-		for(o=0;o<numBC;o++)
-		{
-			// compute element indices
-			m = floor((double)inMesh->BC_nums[o] / (double)elemX);
-			n = inMesh->BC_nums[o] - m*elemX;
-
-			// Read in grid node numbers of current element
-			tnodes[0] = Number[n][m].a;
-			tnodes[1] = Number[n][m].b;
-			tnodes[2] = Number[n][m].c;
-			tnodes[3] = Number[n][m].d;
-
-			for(n=0;n<4;n++) // each node
-			{
-				num = tnodes[n]*NUM_DOF; // start of nodal dof
-				for(m=0;m<NUM_DOF;m++)   // each dof
-				{
-					Kg->irn[K_begin] = num+m;
-					Kg->jcn[K_begin] = Kg->irn[K_begin];
-					Kg->A[K_begin++] = pow(inMesh->K_bc[o],3.0)*inMesh->K0_bc; // penalize design variable
-				}
-			}
-		}
-	}
-
-	// resize matrices
-	Kg->ne = K_begin;
-	Mg->ne = M_begin;
+	Kg->m_numEntry = K_begin;
+	Mg->m_numEntry = M_begin;
 }
 
 
@@ -570,12 +386,12 @@ double CHakFiniteElement::Aeven(int i,int j,double e,double g)
 
 // Complete square IN element stiffness matix computation
 // only for isotropic material
-void CHakFiniteElement::KEMatrix(double *KE, isoMat *mat, double t)
+void CHakFiniteElement::KEMatrix(double *KE, CHakMaterial *mat, double t)
 {
 	// multiply by constant thickness
-	double c = mat->mat[0] * t;
-	double d = mat->mat[1] * t;
-	double g = mat->mat[8] * t; // symmetric isotropic material!
+	double c = mat->m_mat[0] * t;
+	double d = mat->m_mat[1] * t;
+	double g = mat->m_mat[8] * t; // symmetric isotropic material!
 
 	int n,m; // Incrementors
 
@@ -624,7 +440,7 @@ void CHakFiniteElement::MEMatrix(double *ME, double rho, double area, double t)
 // Function that assemebles the element matricies into the global matrix (in triplet form)
 // Symmetric matrix - upper triangle
 void CHakFiniteElement::Assemble2(int *K_begin, int *M_begin, int nNod, int nDof, int *tnodes, double *KE, double *ME,
-					sp_mat *Kg, sp_mat *Mg, int mass)
+					CHakSparseMatrix *Kg, CHakSparseMatrix *Mg, int mass)
 {
 	int start,row,col,n,m,rn,cm,k_num,m_num,p,q,i,j,temp; // Incrementors
 	k_num = *K_begin;
@@ -646,17 +462,17 @@ void CHakFiniteElement::Assemble2(int *K_begin, int *M_begin, int nNod, int nDof
 			for(n=0;n<nDof;n++){
 				for(m=start;m<nDof;m++){
 					temp = (dof * (n + rn)) + m + cm; // index correct place in elem matrix
-					Kg->irn[k_num] = row + n;
-					Kg->jcn[k_num] = col + m;
-					Kg->A[k_num] = KE[temp];
+					Kg->m_indRow[k_num] = row + n;
+					Kg->m_indCol[k_num] = col + m;
+					Kg->m_pMatEntry[k_num] = KE[temp];
 					if(mass==1)// also make mass matrix if mass=1
 					{
 						ftemp = ME[temp];
 						if(fabs(ftemp) > 1.0e-12) // ignore zero entries
 						{
-							Mg->irn[m_num] = Kg->irn[k_num];
-							Mg->jcn[m_num] = Kg->jcn[k_num];
-							Mg->A[m_num++] = ftemp;
+							Mg->m_indRow[m_num] = Kg->m_indRow[k_num];
+							Mg->m_indCol[m_num] = Kg->m_indCol[k_num];
+							Mg->m_pMatEntry[m_num++] = ftemp;
 						}
 					}
 					k_num++;
@@ -672,39 +488,39 @@ void CHakFiniteElement::Assemble2(int *K_begin, int *M_begin, int nNod, int nDof
 
 
 // function to free memory for a sparse matrix
-void CHakFiniteElement::free_sp_mat(sp_mat *m)
+void CHakFiniteElement::free_sp_mat(CHakSparseMatrix *m)
 {
-	if(m->irn){free(m->irn); m->irn=0;}
-	if(m->jcn){free(m->jcn); m->jcn=0;}
-	if(m->A){free(m->A); m->A=0;}
+	if(m->m_indRow){free(m->m_indRow); m->m_indRow=0;}
+	if(m->m_indCol){free(m->m_indCol); m->m_indCol=0;}
+	if(m->m_pMatEntry){free(m->m_pMatEntry); m->m_pMatEntry=0;}
 }
 
 // function to create memory for a sparse matrix
-void CHakFiniteElement::set_sp_mat(sp_mat *m)
+void CHakFiniteElement::set_sp_mat(CHakSparseMatrix *m)
 {
 	// first ensure memory if free
 	free_sp_mat(m);
 
 	// then set memory
-	int len = m->ne;
+	int len = m->m_numEntry;
 	if(len > 0)
 	{
-		m->irn = (int *) malloc(len*sizeof(int));
-		m->jcn = (int *) malloc(len*sizeof(int));
-		m->A = (double *) malloc(len*sizeof(double));
+		m->m_indRow = (int *) malloc(len*sizeof(int));
+		m->m_indCol = (int *) malloc(len*sizeof(int));
+		m->m_pMatEntry = (double *) malloc(len*sizeof(double));
 	}
 }
 
 // function to remove dof from a sparse matrix
-void CHakFiniteElement::rem_sp_mat(sp_mat *m, int *map, int inc)
+void CHakFiniteElement::rem_sp_mat(CHakSparseMatrix *m, int *map, int inc)
 {
 	int i,j,k;
 
 	// read data
-	int numEnt = m->ne;
-	int *irn = m->irn;
-	int *jcn = m->jcn;
-	double *A = m->A;
+	int numEnt = m->m_numEntry;
+	int *irn = m->m_indRow;
+	int *jcn = m->m_indCol;
+	double *A = m->m_pMatEntry;
 
 	int temp_ent = 0; // count number entries
 	for(i=0;i<numEnt;i++)
@@ -716,14 +532,134 @@ void CHakFiniteElement::rem_sp_mat(sp_mat *m, int *map, int inc)
 
 			if( (j > -1) && (k > -1) ) // if dof not fixed
 			{
-				m->A[temp_ent] = A[i];
-				m->irn[temp_ent] = j + inc;
-				m->jcn[temp_ent++] = k + inc; // use inc = 1 for Fortran solver
+				m->m_pMatEntry[temp_ent] = A[i];
+				m->m_indRow[temp_ent] = j + inc;
+				m->m_indCol[temp_ent++] = k + inc; // use inc = 1 for Fortran solver
 			}
 		}
 	}
 
 	// reduce entries
-	m->ne = temp_ent;
+	m->m_numEntry = temp_ent;
+}
+
+
+// function to compute self-weight load vector
+void CHakFiniteElement::SelfWeight(CHakMesh *inMesh, CHakMaterial *inMat, double aMin, double mMin, double *alpha,
+                    int freeDof, int *dofMap, int numCase, double *load_in, double *load_out, Coord *acc)
+{
+    int i,j,n,m,o,num,ind,temp,temp2;
+    double atemp, fx,fy;
+    int tnodes[4], Xdof[4], Ydof[4];
+    double mtemp,p_fac,p_rat; // variables for designable material
+    int mat_count = 0; // count for designable material
+    // material ratio
+	if(inMesh->m_bDesignableMaterial)
+	{
+		p_rat = inMat[inMesh->m_materialTwo].m_rho / inMat[inMesh->m_materialOne].m_rho;
+	}
+
+    // read data
+    int totDof = inMesh->m_numNodes * NUM_DOF;
+    int elemX = inMesh->m_elemX;
+	int elemY = inMesh->m_elemY;
+    Elem **Number = inMesh->m_pNumber;
+    double vol = inMesh->m_thinkness * inMesh->m_lenEdge * inMesh->m_lenEdge; // element volume
+
+    // copy load_in to load_temp (expanding)
+    double *load_temp = (double *) calloc(totDof*numCase, sizeof(double));
+    for(i=0;i<totDof;i++)
+    {
+        if(dofMap[i] != -1)	// if dof not fixed copy accross the value
+        {
+            for(j=0;j<numCase;j++)
+            {
+                temp = j * totDof; // to get to correct place in disp
+                temp2 = j * freeDof; // to get to correct place in disp_temp
+                load_temp[i+temp] = load_in[dofMap[i]+temp2];
+            }
+        }
+        // else - already zero
+    }
+
+    // For All Elements
+	for(m=0;m<elemY;m++)
+	{
+		for(n=0;n<elemX;n++)
+		{
+            num = Number[n][m].n; // Element number
+            atemp = alpha[num]; // Element area ratio
+            o = inMesh->m_pMaterialType[num]; // material number
+
+            // Read in grid node numbers of current element
+            tnodes[0] = Number[n][m].a;
+            tnodes[1] = Number[n][m].b;
+            tnodes[2] = Number[n][m].c;
+            tnodes[3] = Number[n][m].d;
+
+            // for each node, compute global dof
+            for(i=0;i<4;i++)
+            {
+                j = NUM_DOF*tnodes[i];
+                Xdof[i] = j; Ydof[i] = j+1;
+            }
+
+            // compute mass of the element
+            if(inMesh->m_bDesignableMaterial)
+            {
+                // material mix variable
+                mtemp = inMesh->m_pMaterialVars[mat_count++];
+
+                // density factor
+                p_fac =  mtemp*p_rat + (1.0-mtemp);
+            }
+            else { p_fac = 1.0; }
+
+            p_fac *= (atemp == aMin) ? mMin : atemp; // total density factor
+            p_fac *= 0.25 * inMat[o].m_rho * vol; // elem mass / 4 (nodes)
+
+            if(atemp > 0.0)
+            {
+                // compute element self-weight load vector for each load case
+                for(j=0;j<numCase;j++)
+                {
+                    ind = totDof*j; // start of current load case
+
+                    // nodal forces (mass x acceleration)
+                    fx = p_fac * acc[j].x;
+                    fy = p_fac * acc[j].y;
+
+                    // for each node add self-weight forces
+                    for(i=0;i<4;i++)
+                    {
+                        load_temp[ind+Xdof[i]] += fx;
+                        load_temp[ind+Ydof[i]] += fy;
+                    }
+                }
+            }
+        }
+    }
+
+    // Additional load for bar elements
+    {
+        // ???
+    }
+
+    // finally remove fixed dof from load_temp -> load_out
+    for(i=0;i<totDof;i++) // for all dof
+    {
+        ind = dofMap[i];
+        if(ind > -1) // if dof not fixed
+        {
+            for(j=0;j<numCase;j++) // for all load cases
+            {
+                n = totDof * j; // point to loaction in load
+                m = freeDof * j; // point to loaction in load_in
+                load_out[m+ind] = load_temp[n+i]; // copy load accross
+            }
+        }
+    }
+
+    free(load_temp);
 }
 

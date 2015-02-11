@@ -64,16 +64,19 @@ public:
 	}
 
 // members
-private:
+//private:
+public:
 	// number of entries (in arrays)
-	int m_numEntry;
+	int m_numEntry; //ne
 
 	// indicators for row and column
-	int m_indRow;
-	int m_indCol;
+	//int m_indRow; //*irn "To be used in encapsulation"
+	//int m_indCol; //*jcn  "To be used in encapsulation"
+	int *m_indRow; //*irn
+	int *m_indCol; //*jcn
 
 	// matrix entry value
-	double *m_pMatEntry;
+	double *m_pMatEntry; //*A
 };
 
 #endif /* CHAKSPARSEMATRIX_H_ */

@@ -38,33 +38,34 @@ public:
 
 public:
 	// Function that numbers all elements and nodes in the FG domain
-	void Numbering(mesh *inMesh);
+	//void Numbering(mesh *inMesh);
 
 	// Function to find the nearest grid node number to a set of co-ordinates
-	int closeNode(mesh *inMesh, double xp, double yp);
-
-	// Function to extract the structure from the lsf
-	// 1. determines the node and element status
-	// 2. discretizes the boundary
-	// 3. computes area ratios for AFG method
-	void Find_struct(mesh *inMesh, levSet *levelset, boundary *bound_in, double *alpha, double aMin);
-
-	// function to compute area ratio for all elements
-	void AFG_area(mesh *inMesh, double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes, int NumBound, Bseg *Boundary, double aMin);
+	//int closeNode(mesh *inMesh, double xp, double yp);
 
 	// Node Co-ordinate calculation function
-	void Coordinates(mesh *inMesh);
+	//void Coordinates(mesh *inMesh);
 
 	// function that orders node numbers into a 2D based on their relative positions
-	void NodeNums2(mesh *inMesh);
+	//void NodeNums2(mesh *inMesh);
 
 	// function to number bars elements
-	void Bar_numbering(mesh *inMesh);
+	//void Bar_numbering(mesh *inMesh);
 
 //
 // OOD version
 //
 public:
+
+	// Function to extract the structure from the lsf
+	// 1. determines the node and element status
+	// 2. discretizes the boundary
+	// 3. computes area ratios for AFG method
+	void FindStruct(CHakLevelSet *m_levelset, CHakBoundary *m_boundary, double *alpha, double aMin);
+
+	// function to compute area ratio for all elements
+	void ComputeAreaRatio(double *alpha, short *NodeStat, short *ElemStat, Coord *AuxNodes, int NumBound, Bseg *Boundary, double aMin);
+
 	// Function that numbers all elements and nodes in the FG domain
 	void Numbering();
 
@@ -83,60 +84,62 @@ public:
 public:
 //private:
 	// num elements in x & y
-	int m_elemX, m_elemY;
+	int m_elemX, m_elemY; //elemX, elemY;
 
 	// total number of elements
-	int m_numElem;
+	int m_numElem;  //NumElem
 
 	// total number of nodes
-	int m_numNodes;
+	int m_numNodes; //NumNodes
 
 	// element edge length & thickness
-	double m_lenEdge, m_thinkness;
+	double m_lenEdge, m_thinkness; //originally h,t
 
 	// rounding tolerance
-	double m_tolerance;;
-	double m_maxX, m_maxY;	// max domain dimensions
+	double m_tolerance;; //originlly tol
+
+	// max domain dimensions
+	double m_maxX, m_maxY;	 //original maxX and maxY
 
 	// pointer to node coordinate array
-	Coord *m_pNodeCoord;
+	Coord *m_pNodeCoord; //originally NodeCoord
 
 	// pointer to element node numbering (2d array)
-	Elem **m_pNumber;
+	Elem **m_pNumber; // originally Number
 
 	// number of nodes in X & Y
-	int NodeX, NodeY;
+	int m_nodeX, m_nodeY;  //Original NodeX, NodeY
 
 	// structured node numbering (2d array)
-	int **Nodes2;
+	int **m_pNodes2D;  //Original Nodes2
 
 	// indicates which material each element is made from
-	int *mat_type;
+	int *m_pMaterialType; // Orignal mat_type
 
 //private:
 	//
 	// additional variables for bar reinforcements
 	// --> may be a separated class (e.g. design variable for bar-reinforcement) or structure
-	// (jeehanglee@gmail.com)
+	//
 	//
 
 	// flag to indicate if bar elements are in the mesh
-	bool bars;
+	bool m_bars;  //Original bars
 
 	// number of bars
-	int NumBars;
+	int m_numBars;  //Original NumBars
 
 	// array to hold bar numbers (n1 = dof 1, n2 = dof 2, e = elem no.)
-	Bseg *bar_nums;
+	Bseg *m_pBarNums; //original bar_nums
 
 	// array of bar areas
-	double *bar_areas;
+	double *m_pBarAreas; //original bar_areas
 
 	// max and min bar areas
-	double bar_max, bar_min;
+	double m_barMax, m_barMin; //original bar_max, bar_min
 
 	// bar material type
-	isoMat *bar_mat;
+	CHakMaterial *m_pBarMaterialType; //original bar_mat
 
 //private:
 	//
@@ -145,19 +148,19 @@ public:
 	//
 
 	// flag to indicate designable bcs are present
-	bool des_bc;
+	bool m_bDesignableBc; //  des_bc
 
 	// number of elements with designable bcs
-	int NumBC;
+	int m_numBc; //NumBC
 
 	// array to store elements with designable bcs
-	int *BC_nums;
+	int *m_pBcNums;  //BC_nums
 
 	// array to store designable bc variables
-	double *K_bc;
+	double *m_K_bc; //K_bc
 
 	// maximum stiffness of bc springs
-	double K0_bc;
+	double m_K0_bc;  //K0_bc
 
 //private:
 	//
@@ -166,25 +169,25 @@ public:
 	//
 
 	// flag to indicate designable material is present
-	bool des_mat;
+	bool m_bDesignableMaterial; //des_mat
 
 	// pointers the two materials
-	int mat1, mat2;
+	int m_materialOne, m_materialTwo; //mat1, mat2
 
 	// number of elements wit hdesignable material
-	int NumDesMat;
+	int m_numDesignableMaterialt; //NumDesMat
 
 	// array of element numbers with designable material
-	int *mat_elems;
+	int *m_pMaterialElems; //mat_elems
 
 	// array to store designable material variables
-	double *mat_vars;
+	double *m_pMaterialVars; //mat_vars
 
 	// flag for simultaneous (true) or sequential (false) optimization of material
-	bool dm_sim;
+	bool m_bDmSim; //dm_sim
 
 	// linear (true) or H-S bound (false) material model
-	bool mat_lin;
+	bool m_bMaterialLin; //mat_lin
 };
 
 #endif /* CHakMesh_H_ */

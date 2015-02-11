@@ -51,27 +51,27 @@ CHakSensitivity::~CHakSensitivity() {
 //
 
 // calculate sensitivies using least squares of integration points for AFG method
-void CHakSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, isoMat *inMat,  double *Nsens,
+void CHakSensitivity::AFG_Sens(CHakMesh *inMesh, CHakBoundary *bound_in, double *alpha, CHakMaterial *inMat,  double *Nsens,
 				double **prim, double **dual, int numDual, int numCase, double *wgt, Coord *gCoord,
 					double aMin, int mode, double *fact, bool sw, Coord *acc)
 {
 	// read in mesh data
-	double h = inMesh->h;
-	double thk = inMesh->t;
-	int NumNodes = inMesh->NumNodes;
-	int elemX = inMesh->elemX;
-	int elemY = inMesh->elemY;
-	int NumElem = inMesh->NumElem;
-	Elem **Number = inMesh->Number;
-	Coord *NodeCoord = inMesh->NodeCoord;
+	double h = inMesh->m_lenEdge;
+	double thk = inMesh->m_thinkness;
+	int NumNodes = inMesh->m_numNodes;
+	int elemX = inMesh->m_elemX;
+	int elemY = inMesh->m_elemY;
+	int NumElem = inMesh->m_numElem;
+	Elem **Number = inMesh->m_pNumber;
+	Coord *NodeCoord = inMesh->m_pNodeCoord;
 	double rad = 2.0 * h; // hard coded for two elements around a node
 
 	int irad = 2; //ceil(rad/h); // search space
 	rad *=rad; // input squared dist to Lsens
-	Coord *AuxNodes = bound_in->AuxNodes;
-	int numBound = bound_in->NumBound;
+	Coord *AuxNodes = bound_in->m_pAuxNodes;
+	int numBound = bound_in->m_numBound;
 	Bseg *Boundary = bound_in->Bound;
-	int Ntot = NumNodes + bound_in->NumAux;
+	int Ntot = NumNodes + bound_in->m_numAux;
 	double alMin = (aMin < 1.0e-6) ? 1.0e-6 : aMin; // numerical tollerance for sens calc
 	if(mode==1){ alMin = (aMin < 1.0e-2) ? 1.0e-2 : aMin; } // increase for eigenvalue sensitivities
 	else if(mode==2){alMin = 0.0;} // for compliant mechanisms
@@ -83,11 +83,13 @@ void CHakSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, 
 	int tnodes[4];
 	int gpoints = NumElem * 4; // number of sensitivity values (4 per element)
 	double *gSens = (double *) calloc(gpoints*numDual,sizeof(double));	// define memory for gauss point sensitivities
-	isoMat *mptr; // pointer for material
+	CHakMaterial *mptr; // pointer for material
 
 	int mat_count = 0; // count for designable material
 	double mtemp; // variables for designable material modification
-	isoMat fgm;
+	CHakMaterial fgm;
+	CHakMultiMaterial multiMaterial;
+
 
 	// Step 1. Compute gauss point senstivities
 
@@ -105,36 +107,36 @@ void CHakSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, 
 				tnodes[2] = Number[n][m].c;
 				tnodes[3] = Number[n][m].d;
 
-				o = inMesh->mat_type[num]; // material number
+				o = inMesh->m_pMaterialType[num]; // material number
 				mptr = &inMat[o]; // point to correct material
 
                 // modify matrices for designable materials
-                if(inMesh->des_mat && num==inMesh->mat_elems[mat_count])
+                if(inMesh->m_bDesignableMaterial && num==inMesh->m_pMaterialElems[mat_count])
                 {
                     // material mix variable
-                    mtemp = inMesh->mat_vars[mat_count++];
+                    mtemp = inMesh->m_pMaterialVars[mat_count++];
 
                     // modulus
-                    if(inMesh->mat_lin)
+                    if(inMesh->m_bMaterialLin)
                     {
-                    	fgm.e =  (1.0-mtemp)*inMat[inMesh->mat1].e + mtemp*inMat[inMesh->mat2].e;
+                    	fgm.m_e =  (1.0-mtemp)*inMat[inMesh->m_materialOne].m_e + mtemp*inMat[inMesh->m_materialTwo].m_e;
                     }
                     else
                     {
-                    	fgm.e = GetMaterial().HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]);
+                    	fgm.m_e = multiMaterial.HS_mat(mtemp, 0.5, &inMat[inMesh->m_materialOne], &inMat[inMesh->m_materialTwo]);
                     }
 
                     // density
-                    fgm.rho =  mtemp*inMat[inMesh->mat2].rho + (1.0-mtemp)*inMat[inMesh->mat1].rho;
+                    fgm.m_rho =  mtemp*inMat[inMesh->m_materialTwo].m_rho + (1.0-mtemp)*inMat[inMesh->m_materialOne].m_rho;
 
                     // material prop matrix
-                    mtemp = fgm.e / inMat[inMesh->mat1].e;
+                    mtemp = fgm.m_e / inMat[inMesh->m_materialOne].m_e;
                     for(i=0;i<9;i++) {
-                        //fgm.mat[i] = mtemp*inMat[inMesh->mat1].mat[i] + (1.0-mtemp)*inMat[inMesh->mat2].mat[i];
-                        fgm.mat[i] = mtemp*inMat[inMesh->mat1].mat[i];
+                        //fgm.mat[i] = mtemp*inMat[inMesh->m_materialOne].mat[i] + (1.0-mtemp)*inMat[inMesh->m_materialTwo].mat[i];
+                        fgm.m_mat[i] = mtemp*inMat[inMesh->m_materialOne].m_mat[i];
                     }
 
-                    fgm.v = inMat[inMesh->mat1].v;
+                    fgm.m_v = inMat[inMesh->m_materialOne].m_v;
                     mptr = &fgm;
                 }
                 else
@@ -170,7 +172,7 @@ void CHakSensitivity::AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, 
 				else
 				{ GaSens_Q4(tnodes, prim, dual, atemp, h, thk, mptr, Gcount, gSens, numCase, numDual, wgt, sw, acc); }
 			}
-            else if(inMesh->des_mat && num==inMesh->mat_elems[mat_count]){mat_count++;} // keep counting
+            else if(inMesh->m_bDesignableMaterial && num==inMesh->m_pMaterialElems[mat_count]){mat_count++;} // keep counting
 			Gcount += 4; // update point count
 		}
 	}
@@ -373,7 +375,7 @@ int CHakSensitivity::Lsens(Coord *pt, int xMax, int xMin, int yMax, int yMin, do
 // Function to calculate sensitivity values for an element at 4 gauss points
 // for for a plane 4-node element (Q4)
 void CHakSensitivity::GaSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
-				isoMat *inMat, int Gcount, double *gSens, int numCase, int numDual, double *wgt, bool sw, Coord *acc)
+				CHakMaterial *inMat, int Gcount, double *gSens, int numCase, int numDual, double *wgt, bool sw, Coord *acc)
 {
 	int i,j,k,n,p,temp,temp2,ind,ind2;	// incrementors etc
 	int totDof = 4*NUM_DOF; // total dof per element
@@ -385,12 +387,12 @@ void CHakSensitivity::GaSens_Q4(int *tnodes, double **prim, double **dual, doubl
 
 	// copy material property matrix
 	double Emat[9];
-	for(i=0;i<9;i++){Emat[i] = inMat->mat[i];}
+	for(i=0;i<9;i++){Emat[i] = inMat->m_mat[i];}
 
 	double h_fact = (t*alpha) / (4.0*h*h); // factor to re-dimension senstivity (inc area ratio & thickness)
     double sw_fact;
     //if(sw){ sw_fact = alpha * inMat->rho * t; } // const factor for self-weight
-    if(sw){ sw_fact = inMat->rho * t; } // const factor for self-weight
+    if(sw){ sw_fact = inMat->m_rho * t; } // const factor for self-weight
 
 	// Evaluate sensitivities at each gauss point
 	for(p=0;p<4;p++)
@@ -491,7 +493,7 @@ void CHakSensitivity::GaSens_Q4(int *tnodes, double **prim, double **dual, doubl
 // Function to calculate additional sensitivity part for eigenvalues
 // for for a plane 4-node element (Q4)
 void CHakSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
-					isoMat *inMat, int Gcount, double *gSens, int num_eig, double *eig)
+		CHakMaterial *inMat, int Gcount, double *gSens, int num_eig, double *eig)
 {
 	int i,j,k,p,temp,temp2,ind,ind2;	// incrementors etc
 	int totDof = 4*NUM_DOF; // total dof per element
@@ -502,7 +504,7 @@ void CHakSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, do
 
 	// copy material property matrix
 	double Emat[9];
-	for(i=0;i<9;i++){Emat[i] = inMat->mat[i];}
+	for(i=0;i<9;i++){Emat[i] = inMat->m_mat[i];}
 
 	double h_fact = (t*alpha) / (4.0*h*h); // factor to re-dimension senstivity (inc area ratio & thickness)
 
@@ -554,7 +556,7 @@ void CHakSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, do
 				ftemp += Iprim*Idual; // add u.p for each direction
 			}
 
-			sens -= eig[k]*ftemp*inMat->rho*alpha*t; // extra factor
+			sens -= eig[k]*ftemp*inMat->m_rho*alpha*t; // extra factor
 
 			// add senstivity to main data array
 			ind = (Gcount+p)*num_eig + k; // point to place in gSens
@@ -568,12 +570,12 @@ void CHakSensitivity::GaEigSens_Q4(int *tnodes, double **prim, double **dual, do
 }
 
 // function that computes bar senstivites for compliance (possible multi-load case)
-void CHakSensitivity::barSens(mesh *inMesh, double *bar_sens, double **prim, int numCase, double *wgt)
+void CHakSensitivity::barSens(CHakMesh *inMesh, double *bar_sens, double **prim, int numCase, double *wgt)
 {
 	// read data
-	int numBars = inMesh->NumBars;
-	double fact = inMesh->bar_mat->e / inMesh->h;
-	Bseg *bar = inMesh->bar_nums;
+	int numBars = inMesh->m_numBars;
+	double fact = inMesh->m_pBarMaterialType->m_e / inMesh->m_lenEdge;
+	Bseg *bar = inMesh->m_pBarNums;
 
 	int b,n,d1,d2;
 	double udiff;
@@ -597,12 +599,12 @@ void CHakSensitivity::barSens(mesh *inMesh, double *bar_sens, double **prim, int
 }
 
 // function to compute designable bc sensitvities for compliance (possible multi-load case)
-void CHakSensitivity::bcSens(mesh *inMesh, double *bc_sens, double **prim, int numCase, double *wgt)
+void CHakSensitivity::bcSens(CHakMesh *inMesh, double *bc_sens, double **prim, int numCase, double *wgt)
 {
 	int n,m,o,c,i,j,temp,ind;
-	int elemX = inMesh->elemX;
-	int numBC = inMesh->NumBC;
-	Elem **Number = inMesh->Number;
+	int elemX = inMesh->m_elemX;
+	int numBC = inMesh->m_numBc;
+	Elem **Number = inMesh->m_pNumber;
 	int tnodes[4];
 	double ftemp,disp;
 
@@ -610,8 +612,8 @@ void CHakSensitivity::bcSens(mesh *inMesh, double *bc_sens, double **prim, int n
 	for(o=0;o<numBC;o++)
 	{
 		// compute element indices
-		m = floor((double)inMesh->BC_nums[o] / (double)elemX);
-		n = inMesh->BC_nums[o] - m*elemX;
+		m = floor((double)inMesh->m_pBcNums[o] / (double)elemX);
+		n = inMesh->m_pBcNums[o] - m*elemX;
 
 		// Read in grid node numbers of current element
 		tnodes[0] = Number[n][m].a;
@@ -636,22 +638,22 @@ void CHakSensitivity::bcSens(mesh *inMesh, double *bc_sens, double **prim, int n
 			}
 
 			// sensitivity (including penalization power)
-			ftemp = inMesh->K_bc[o]; // current design variable
-			bc_sens[o] -= wgt[c] * disp * 3.0*ftemp*ftemp * inMesh->K0_bc;
+			ftemp = inMesh->m_K_bc[o]; // current design variable
+			bc_sens[o] -= wgt[c] * disp * 3.0*ftemp*ftemp * inMesh->m_K0_bc;
 		}
 	}
 }
 
 // function to compute designable material design varibles for compliance
-void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, double *mat_sens, int numCase, double *wgt,
+void CHakSensitivity::matSens_comp(CHakMesh *inMesh, CHakMaterial *inMat, double *KE, double *mat_sens, int numCase, double *wgt,
                     double **prim, double **dual, double *alpha, double aMin, bool sw, Coord *acc)
 {
     int i,j,n,m,ind,ind2,temp,temp2;
 	int tnodes[4];
 	double uKu, sx, sy;
-	int elemX = inMesh->elemX;
-	int numVar = inMesh->NumDesMat;
-	Elem **Number = inMesh->Number;
+	int m_elemX = inMesh->m_elemX;
+	int numVar = inMesh->m_numDesignableMaterialt;
+	Elem **Number = inMesh->m_pNumber;
 
 	int totDof = 4*NUM_DOF; // total dof per element
 	double *Eprim = (double *) malloc(totDof*sizeof(double));	// primary element disp array
@@ -659,10 +661,10 @@ void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, doub
 	double *aux = (double *) malloc(totDof*sizeof(double));
 
 	// realtive material properties
-	double E1 = inMat[inMesh->mat1].e;
-	double E2 = inMat[inMesh->mat2].e;
-    double rho = inMat[inMesh->mat2].rho - inMat[inMesh->mat1].rho;
-    rho *= 0.25 * inMesh->t * inMesh->h * inMesh->h; // multiply by volume to get mass / node
+	double E1 = inMat[inMesh->m_materialOne].m_e;
+	double E2 = inMat[inMesh->m_materialTwo].m_e;
+    double rho = inMat[inMesh->m_materialTwo].m_rho - inMat[inMesh->m_materialOne].m_rho;
+    rho *= 0.25 * inMesh->m_thinkness * inMesh->m_lenEdge * inMesh->m_lenEdge; // multiply by volume to get mass / node
 
 	// sensitivity factor
 	E1 = (E2 - E1)/E1;
@@ -670,11 +672,11 @@ void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, doub
     // for each design variable
 	for(i=0;i<numVar;i++)
 	{
-        if(alpha[inMesh->mat_elems[i]] > aMin)
+        if(alpha[inMesh->m_pMaterialElems[i]] > aMin)
         {
             // compute element indices
-            m = floor((double)inMesh->mat_elems[i] / (double)elemX);
-            n = inMesh->mat_elems[i] - m*elemX;
+            m = floor((double)inMesh->m_pMaterialElems[i] / (double)m_elemX);
+            n = inMesh->m_pMaterialElems[i] - m*m_elemX;
 
             // Read in grid node numbers of current element
             tnodes[0] = Number[n][m].a;
@@ -706,7 +708,7 @@ void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, doub
 
                 // sensitivity: wgt*alpha*dk
                 ind = j*numVar + i; // place in mat_sens
-                mat_sens[ind] = -alpha[inMesh->mat_elems[i]]*wgt[j]*uKu;
+                mat_sens[ind] = -alpha[inMesh->m_pMaterialElems[i]]*wgt[j]*uKu;
 
                 // add sensitivty for self-weight
                 if(sw)
@@ -720,7 +722,7 @@ void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, doub
                         temp++; // local y_dof
                         sy += Eprim[temp] + Edual[temp];
                     }
-                    mat_sens[ind] += alpha[inMesh->mat_elems[i]]*wgt[j]*rho*( (sx*acc[j].x) + (sy*acc[j].y) );
+                    mat_sens[ind] += alpha[inMesh->m_pMaterialElems[i]]*wgt[j]*rho*( (sx*acc[j].x) + (sy*acc[j].y) );
                 }
             }
         }
@@ -742,25 +744,25 @@ void CHakSensitivity::matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, doub
 }
 
 // function to compute designable material design varibles for eigenvalues
-void CHakSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
+void CHakSensitivity::matSens_eig(CHakMesh *inMesh, CHakMaterial *inMat, double *KE, double *ME, double *mat_sens,
 					int numEig, double *eig_vals, double **eig_vecs, double *alpha, double aMin)
 {
 	int i,j,n,m,ind,ind2,temp,temp2;
 	int tnodes[4];
 	double uKu, uMu;
-	int elemX = inMesh->elemX;
-	int numVar = inMesh->NumDesMat;
-	Elem **Number = inMesh->Number;
+	int m_elemX = inMesh->m_elemX;
+	int numVar = inMesh->m_numDesignableMaterialt;
+	Elem **Number = inMesh->m_pNumber;
 
 	int totDof = 4*NUM_DOF; // total dof per element
 	double *Eprim = (double *) malloc(totDof*sizeof(double));	// element eigenvector array
 	double *aux = (double *) malloc(totDof*sizeof(double));
 
 	// realtive material properties
-	double E1 = inMat[inMesh->mat1].e;
-	double E2 = inMat[inMesh->mat2].e;
-	double rho1 = inMat[inMesh->mat1].rho;
-	double rho2 = inMat[inMesh->mat2].rho;
+	double E1 = inMat[inMesh->m_materialOne].m_e;
+	double E2 = inMat[inMesh->m_materialTwo].m_e;
+	double rho1 = inMat[inMesh->m_materialOne].m_rho;
+	double rho2 = inMat[inMesh->m_materialTwo].m_rho;
 
 	// sensitivity factors
 	E1 = (E2 - E1)/E1;
@@ -769,11 +771,11 @@ void CHakSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 	// for each design variable
 	for(i=0;i<numVar;i++)
 	{
-        if(alpha[inMesh->mat_elems[i]] > aMin)
+        if(alpha[inMesh->m_pMaterialElems[i]] > aMin)
         {
             // compute element indices
-            m = floor((double)inMesh->mat_elems[i] / (double)elemX);
-            n = inMesh->mat_elems[i] - m*elemX;
+            m = floor((double)inMesh->m_pMaterialElems[i] / (double)m_elemX);
+            n = inMesh->m_pMaterialElems[i] - m*m_elemX;
 
             // Read in grid node numbers of current element
             tnodes[0] = Number[n][m].a;
@@ -808,7 +810,7 @@ void CHakSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 
                 // sensitivity: alpha*(dk - eig x dm)
                 ind = j*numVar + i; // place in mat_sens
-                mat_sens[ind] = -alpha[inMesh->mat_elems[i]]*(uKu -eig_vals[j]*uMu); // reverse sign for maximize
+                mat_sens[ind] = -alpha[inMesh->m_pMaterialElems[i]]*(uKu -eig_vals[j]*uMu); // reverse sign for maximize
             }
         }
         // if element is out use zero sensitivity
@@ -828,24 +830,24 @@ void CHakSensitivity::matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 }
 
 // function to compute designable material design H-S varibles for eigenvalues
-void CHakSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
+void CHakSensitivity::HS_Sens_eig(CHakMesh *inMesh, CHakMaterial *inMat, double *KE, double *ME, double *mat_sens,
                  int numEig, double *eig_vals, double **eig_vecs, double *alpha, double aMin)
 {
 	int i,j,n,m,ind,ind2,temp,temp2;
 	int tnodes[4];
 	double uKu, uMu;
-	int elemX = inMesh->elemX;
-	int numVar = inMesh->NumDesMat;
-	Elem **Number = inMesh->Number;
+	int elemX = inMesh->m_elemX;
+	int numVar = inMesh->m_numDesignableMaterialt;
+	Elem **Number = inMesh->m_pNumber;
 
 	int totDof = 4*NUM_DOF; // total dof per element
 	double *Eprim = (double *) malloc(totDof*sizeof(double));	// element eigenvector array
 	double *aux = (double *) malloc(totDof*sizeof(double));
 
 	// realtive material properties
-	double E1 = inMat[inMesh->mat1].e;
-	double rho1 = inMat[inMesh->mat1].rho;
-	double rho2 = inMat[inMesh->mat2].rho;
+	double E1 = inMat[inMesh->m_materialOne].m_e;
+	double rho1 = inMat[inMesh->m_materialOne].m_rho;
+	double rho2 = inMat[inMesh->m_materialTwo].m_rho;
 
 	// mass sensitivity factor
 	// rho1 = (rho1 - rho2)/rho1;
@@ -856,11 +858,11 @@ void CHakSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 	// for each design variable
 	for(i=0;i<numVar;i++)
 	{
-        if(alpha[inMesh->mat_elems[i]] > aMin)
+        if(alpha[inMesh->m_pMaterialElems[i]] > aMin)
         {
             // compute element indices
-            m = floor((double)inMesh->mat_elems[i] / (double)elemX);
-            n = inMesh->mat_elems[i] - m*elemX;
+            m = floor((double)inMesh->m_pMaterialElems[i] / (double)elemX);
+            n = inMesh->m_pMaterialElems[i] - m*elemX;
 
             // Read in grid node numbers of current element
             tnodes[0] = Number[n][m].a;
@@ -869,7 +871,7 @@ void CHakSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
             tnodes[3] = Number[n][m].d;
 
             // elastic modulus factor
-            Ea = dE_dalpha(inMesh->mat_vars[i], 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]);
+            Ea = dE_dalpha(inMesh->m_pMaterialVars[i], 0.5, &inMat[inMesh->m_materialOne], &inMat[inMesh->m_materialTwo]);
             Ea /= E1;
 
             // for each eigenvalue
@@ -899,7 +901,7 @@ void CHakSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 
                 // sensitivity: alpha*(dk - eig x dm)
                 ind = j*numVar + i; // place in mat_sens
-                mat_sens[ind] = -alpha[inMesh->mat_elems[i]]*(uKu -eig_vals[j]*uMu); // reverse sign for maximize
+                mat_sens[ind] = -alpha[inMesh->m_pMaterialElems[i]]*(uKu -eig_vals[j]*uMu); // reverse sign for maximize
             }
         }
         // if element is out use zero sensitivity
@@ -919,7 +921,7 @@ void CHakSensitivity::HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, doubl
 }
 
 // derivative of E for H-S bound material model
-double CHakSensitivity::dE_dalpha(double alpha, double hs_int, isoMat *mat1, isoMat *mat2)
+double CHakSensitivity::dE_dalpha(double alpha, double hs_int, CHakMaterial *mat1, CHakMaterial *mat2)
 {
     double dKmax, dKmin, dK, dGmax, dGmin, dG;
     double kmax, kmin, gmax, gmin, khs, ghs;
@@ -927,47 +929,47 @@ double CHakSensitivity::dE_dalpha(double alpha, double hs_int, isoMat *mat1, iso
     double amin = 1.0-alpha;
 
     // bulk modulus
-    fact = amin*mat1->k + alpha*mat2->k;
-    ftemp = mat2->k - mat1->k;
+    fact = amin*mat1->m_k + alpha*mat2->m_k;
+    ftemp = mat2->m_k - mat1->m_k;
     ftemp *= ftemp;
     ftemp *= amin*alpha;
 
-    kmax = fact - (ftemp / (amin*mat2->k + alpha*mat1->k + mat2->g));
-    kmin = fact - (ftemp / (amin*mat2->k + alpha*mat1->k + mat1->g));
+    kmax = fact - (ftemp / (amin*mat2->m_k + alpha*mat1->m_k + mat2->m_g));
+    kmin = fact - (ftemp / (amin*mat2->m_k + alpha*mat1->m_k + mat1->m_g));
 
     khs = hs_int*kmax + (1.0-hs_int)*kmin;
 
     // shear modulus
-    fact = amin*mat1->g + alpha*mat2->g;
-    ftemp = mat2->g - mat1->g;
+    fact = amin*mat1->m_g + alpha*mat2->m_g;
+    ftemp = mat2->m_g - mat1->m_g;
     ftemp *= ftemp;
     ftemp *= amin*alpha;
 
-    ftemp2 = (mat2->k * mat2->g) / (mat2->k + 2.0*mat2->g);
-    gmax = fact - (ftemp / (amin*mat2->g + alpha*mat1->g + ftemp2));
+    ftemp2 = (mat2->m_k * mat2->m_g) / (mat2->m_k + 2.0*mat2->m_g);
+    gmax = fact - (ftemp / (amin*mat2->m_g + alpha*mat1->m_g + ftemp2));
 
-    ftemp2 = (mat1->k * mat1->g) / (mat1->k + 2.0*mat1->g);
-    gmin = fact - (ftemp / (amin*mat2->g + alpha*mat1->g + ftemp2));
+    ftemp2 = (mat1->m_k * mat1->m_g) / (mat1->m_k + 2.0*mat1->m_g);
+    gmin = fact - (ftemp / (amin*mat2->m_g + alpha*mat1->m_g + ftemp2));
 
     ghs = hs_int*gmax + (1.0-hs_int)*gmin;
 
     // bulk modulus derivatives
-    fact = mat2->k - mat1->k;
-    ftemp = amin*mat2->k + alpha*mat1->k + mat2->g; // denom
+    fact = mat2->m_k - mat1->m_k;
+    ftemp = amin*mat2->m_k + alpha*mat1->m_k + mat2->m_g; // denom
     ftemp2 = (1.0-2.0*alpha)*fact;
     ftemp3 = (alpha-alpha*alpha)*fact*fact;
 
     dKmax = 1.0 - (ftemp2/ftemp) - (ftemp3/(ftemp*ftemp));
     dKmax *= fact;
 
-    ftemp = amin*mat2->k + alpha*mat1->k + mat1->g; // denom
+    ftemp = amin*mat2->m_k + alpha*mat1->m_k + mat1->m_g; // denom
     dKmin = 1.0 - (ftemp2/ftemp) - (ftemp3/(ftemp*ftemp));
     dKmin *= fact;
 
     // shear modulus derivatives
-    fact = mat2->g - mat1->g;
-    ftemp = amin*mat2->g + alpha*mat1->g;
-    ftemp += (mat2->k * mat2->g) / (mat2->k + 2.0*mat2->g);
+    fact = mat2->m_g - mat1->m_g;
+    ftemp = amin*mat2->m_g + alpha*mat1->m_g;
+    ftemp += (mat2->m_k * mat2->m_g) / (mat2->m_k + 2.0*mat2->m_g);
 
     ftemp2 = (1.0-2.0*alpha)*fact;
     ftemp3 = (alpha-alpha*alpha)*fact*fact;
@@ -975,8 +977,8 @@ double CHakSensitivity::dE_dalpha(double alpha, double hs_int, isoMat *mat1, iso
     dGmax = 1.0 - (ftemp2/ftemp) - (ftemp3/(ftemp*ftemp));
     dGmax *= fact;
 
-    ftemp = amin*mat2->g + alpha*mat1->g;
-    ftemp += (mat1->k * mat1->g) / (mat1->k + 2.0*mat1->g);
+    ftemp = amin*mat2->m_g + alpha*mat1->m_g;
+    ftemp += (mat1->m_k * mat1->m_g) / (mat1->m_k + 2.0*mat1->m_g);
 
     dGmin = 1.0 - (ftemp2/ftemp) - (ftemp3/(ftemp*ftemp));
     dGmin *= fact;

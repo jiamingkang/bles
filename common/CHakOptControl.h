@@ -82,22 +82,22 @@ public:
 //
 private:
 	// maximum number of interations (should > 0)
-	int m_maxIter;
+	int m_maxIter; //maxItt
 
 	// amount of output (1->3, less->more)
-	int m_outInfo;
+	int m_outInfo; //pinfo
 
 	// convergence criterion (gamma)
-	double m_gmConv;
+	double m_gmConv; //gm
 
 	// narrow band width (2h -> large)
-	double m_lband;
+	double m_lband; //lband
 
 	// minimum area ratio (i.e. small or zero) - stiffness
-	double m_minArea;
+	double m_minArea; //aMin
 
 	// minimum area ratio for mass
-	double m_minMass;
+	double m_minMass; //mMin
 };
 
 #endif /* CHAKOPTCONTROL_H_ */

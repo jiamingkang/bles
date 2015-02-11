@@ -47,7 +47,7 @@ CHakOutput::~CHakOutput() {
 void CHakOutput::OutNumber(CHakMesh& m_mesh, char *datafile)
 {
     // read data
-    int elemX = m_mesh.m_elemX;
+    int m_elemX = m_mesh.m_elemX;
     int elemY = m_mesh.m_elemY;
     Elem **Number = m_mesh.m_pNumber;
     int i,j; // incrementors
@@ -62,7 +62,7 @@ void CHakOutput::OutNumber(CHakMesh& m_mesh, char *datafile)
         fprintf(outfile,"n\ta\tb\tc\td\n"); // column headings
         for(j=0;j<elemY;j++)
         {
-            for(i=0;i<elemX;i++)
+            for(i=0;i<m_elemX;i++)
             {
                 fprintf(outfile,"%i\t",Number[i][j].n);
                 fprintf(outfile,"%i\t",Number[i][j].a);
@@ -110,10 +110,10 @@ void CHakOutput::OutNodeCoord(CHakMesh& m_mesh, char *datafile)
 void CHakOutput::OutPLotShapeVTK2(CHakMesh& m_mesh, double *lsf, double *alpha, int pinfo, int itt, char *datafile)
 {
     // read data
-    int NodeX = m_mesh.NodeX-2;
-    int NodeY = m_mesh.NodeY-2;
+    int NodeX = m_mesh.m_nodeX-2;
+    int NodeY = m_mesh.m_nodeY-2;
     int NumNodes = m_mesh.m_numNodes;
-    int **Nodes2 = m_mesh.Nodes2;
+    int **Nodes2 = m_mesh.m_pNodes2D;
     
     int i,n,m,num;
     
@@ -177,15 +177,15 @@ void CHakOutput::OutPLotShapeVTK2(CHakMesh& m_mesh, double *lsf, double *alpha, 
 }
 
 // function to output boundary as a mesh for Paraview (with shape sensitivities)
-void CHakOutput::OutBoundVTK(CHakMesh& m_mesh, boundary *bound_in, int num_sens, double **Sens, int itt, char *datafile)
+void CHakOutput::OutBoundVTK(CHakMesh& m_mesh, CHakBoundary *bound_in, int num_sens, double **Sens, int itt, char *datafile)
 {
     // read data
     int NumNodes = m_mesh.m_numNodes;
     Coord *nc = m_mesh.m_pNodeCoord;
-    Coord *AuxNodes = bound_in->AuxNodes;
-    int NumBound = bound_in->NumBound;
+    Coord *AuxNodes = bound_in->m_pAuxNodes;
+    int NumBound = bound_in->m_numBound;
     Bseg *Boundary = bound_in->Bound;
-    int Ntot = NumNodes + bound_in->NumAux;
+    int Ntot = NumNodes + bound_in->m_numAux;
     
     int i,n;
     
@@ -284,10 +284,10 @@ void CHakOutput::OutBoundInt(int numFunc, int numLbound, int *Lbound_nums, doubl
 void CHakOutput::OutHJVTK(CHakMesh& m_mesh, double *Vnorm, double *Grad, int itt, char *datafile)
 {
     // read data
-    int NodeX = m_mesh.NodeX-2;
-    int NodeY = m_mesh.NodeY-2;
+    int NodeX = m_mesh.m_nodeX-2;
+    int NodeY = m_mesh.m_nodeY-2;
     int NumNodes = m_mesh.m_numNodes;
-    int **Nodes2 = m_mesh.Nodes2;
+    int **Nodes2 = m_mesh.m_pNodes2D;
     
     int i,k,n,m;
     
@@ -352,10 +352,10 @@ void CHakOutput::OutHJVTK(CHakMesh& m_mesh, double *Vnorm, double *Grad, int itt
 void CHakOutput::OutDispVTK(CHakMesh& m_mesh, int numCase, double *disp, int num_eig, double *vec, int itt, char *datafile)
 {
     // read data
-    int NodeX = m_mesh.NodeX-2;
-    int NodeY = m_mesh.NodeY-2;
+    int NodeX = m_mesh.m_nodeX-2;
+    int NodeY = m_mesh.m_nodeY-2;
     int NumNodes = m_mesh.m_numNodes;
-    int **Nodes2 = m_mesh.Nodes2;
+    int **Nodes2 = m_mesh.m_pNodes2D;
     
     int i,k,n,m,c,ind;
     
@@ -425,9 +425,9 @@ void CHakOutput::OutDispVTK(CHakMesh& m_mesh, int numCase, double *disp, int num
 }
 
 // function to output object & constraint convergence data
-void CHakOutput::OutConv(int itt, prob *lsprob, double *Obj, double *constr, char *datafile)
+void CHakOutput::OutConv(int itt, CHakOptProblem *lsprob, double *Obj, double *constr, char *datafile)
 {
-    int numCon = lsprob->num;
+    int numCon = lsprob->m_numConstraint;
     int i,j,ind; // incrementor
     FILE *outfile;	// File varible for output files
     char plotname[120];	// variable to change names of plotting output files
@@ -442,7 +442,7 @@ void CHakOutput::OutConv(int itt, prob *lsprob, double *Obj, double *constr, cha
         fprintf(outfile,"Iteration\t"); // Iteration
         
         // objective
-        switch (lsprob->obj)
+        switch (lsprob->m_idObjType)
         {
             case 1:
                 fprintf(outfile,"Compliance\t");
@@ -463,7 +463,7 @@ void CHakOutput::OutConv(int itt, prob *lsprob, double *Obj, double *constr, cha
         // constraints
         for(i=0;i<numCon;i++)
         {
-            switch (lsprob->con[i].type)
+            switch (lsprob->m_pConstraint[i].type)
             {
                 case 1:
                     fprintf(outfile,"Volume\t");
@@ -549,7 +549,7 @@ void CHakOutput::OutFreq(int itt, int num_eig, double *freq, char *datafile)
 void CHakOutput::OutBars(CHakMesh& m_mesh, int numFunc, double *sens, int pinfo, int itt, char *datafile)
 {
     // read data
-    int NumBars = m_mesh.NumBars;
+    int NumBars = m_mesh.m_numBars;
     int NumNodes = m_mesh.m_numNodes;
     Elem **Number = m_mesh.m_pNumber;
     Coord *nc = m_mesh.m_pNodeCoord;
@@ -625,7 +625,7 @@ void CHakOutput::OutBars(CHakMesh& m_mesh, int numFunc, double *sens, int pinfo,
         fprintf(outfile,"\nCELL_DATA %i\nSCALARS areas double 1\nLOOKUP_TABLE default\n",NumBars);
         for(i=0;i<NumBars;i++)
         {
-            fprintf(outfile,"%lf\n",m_mesh.bar_areas[i]);
+            fprintf(outfile,"%lf\n",m_mesh.m_pBarAreas[i]);
         }
         
         // also output bar element sensitivities (if required)
@@ -650,10 +650,10 @@ void CHakOutput::OutBars(CHakMesh& m_mesh, int numFunc, double *sens, int pinfo,
 void CHakOutput::OutDesBC(CHakMesh& m_mesh, double *sens, int pinfo, int itt, char *datafile)
 {
     // read data
-    int *BC_nums = m_mesh.BC_nums;
-    double *K_bc = m_mesh.K_bc;
-    int NodeX = m_mesh.NodeX-2;
-    int NodeY = m_mesh.NodeY-2;
+    int *BC_nums = m_mesh.m_pBcNums;
+    double *K_bc = m_mesh.m_K_bc;
+    int NodeX = m_mesh.m_nodeX-2;
+    int NodeY = m_mesh.m_nodeY-2;
     int NumElem = m_mesh.m_numElem;
     
     int i,temp;
@@ -721,11 +721,11 @@ void CHakOutput::OutDesBC(CHakMesh& m_mesh, double *sens, int pinfo, int itt, ch
 void CHakOutput::OutDesMat(CHakMesh& m_mesh, double *alpha, double aMin, int num_sens, double *sens, int pinfo, int itt, char *datafile)
 {
     // read data
-    int NumDesMat = m_mesh.NumDesMat;
-    int *mat_elems = m_mesh.mat_elems;
-    double *mat_vars = m_mesh.mat_vars;
-    int NodeX = m_mesh.NodeX-2;
-    int NodeY = m_mesh.NodeY-2;
+    int NumDesMat = m_mesh.m_numDesignableMaterialt;
+    int *mat_elems = m_mesh.m_pMaterialElems;
+    double *mat_vars = m_mesh.m_pMaterialVars;
+    int NodeX = m_mesh.m_nodeX-2;
+    int NodeY = m_mesh.m_nodeY-2;
     int NumElem = m_mesh.m_numElem;
     
     int i,j,temp;
@@ -848,7 +848,7 @@ void CHakOutput::report(int n,  int m, int nu, double **v)
 void CHakOutput::OutNumber(mesh *inMesh, char *datafile)
 {
 	// read data
-	int elemX = inMesh->elemX;
+	int m_elemX = inMesh->elemX;
 	int elemY = inMesh->elemY;
 	Elem **Number = inMesh->Number;
 	int i,j; // incrementors
@@ -864,7 +864,7 @@ void CHakOutput::OutNumber(mesh *inMesh, char *datafile)
 		fprintf(outfile,"n\ta\tb\tc\td\n"); // column headings
 		for(j=0;j<elemY;j++)
 		{
-			for(i=0;i<elemX;i++)
+			for(i=0;i<m_elemX;i++)
 			{
 				fprintf(outfile,"%i\t",Number[i][j].n);
 				fprintf(outfile,"%i\t",Number[i][j].a);
@@ -1355,9 +1355,9 @@ void CHakOutput::OutBars(mesh *inMesh, int numFunc, double *sens, int pinfo, int
 	int NumNodes = inMesh->NumNodes;
 	Elem **Number = inMesh->Number;
 	Coord *nc = inMesh->NodeCoord;
-	int elemX = inMesh->elemX;
+	int m_elemX = inMesh->elemX;
 	int elemY = inMesh->elemY;
-	int xend = elemX-1;
+	int xend = m_elemX-1;
 	int yend = elemY-1;
 
 	int i,j,n,m;
@@ -1390,7 +1390,7 @@ void CHakOutput::OutBars(mesh *inMesh, int numFunc, double *sens, int pinfo, int
 		// loop through all elements
 		for(j=0;j<elemY;j++)
 		{
-			for(i=0;i<elemX;i++)
+			for(i=0;i<m_elemX;i++)
 			{
 				// use bottom edge as x-bars
 				fprintf(outfile,"2 %i %i\n", Number[i][j].a, Number[i][j].b);
@@ -1404,7 +1404,7 @@ void CHakOutput::OutBars(mesh *inMesh, int numFunc, double *sens, int pinfo, int
 		}
 
 		// loop through all elements
-		for(i=0;i<elemX;i++)
+		for(i=0;i<m_elemX;i++)
 		{
 			for(j=0;j<elemY;j++)
 			{

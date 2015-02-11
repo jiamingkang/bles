@@ -36,13 +36,6 @@ public:
 	virtual ~CHakMaterial();
 
 public:
-	// function to compute elastic modulus from two materials
-	double HS_mat(double alpha, double hs_int, isoMat *mat1, isoMat *mat2);
-
-	// function to compute self-weight load vector
-	void self_weight(mesh *inMesh, isoMat *inMat, double aMin, double mMin, double *alpha,
-	                    int freeDof, int *dofMap, int numCase, double *load_in, double *load_out, Coord *acc);
-
 // private:
 	double m_e;		// modulus?
 	double m_v;		// Poisson's ratio?

@@ -41,36 +41,36 @@ public:
 
 public:
 	// function to weight boundary segments so that lengths are more even
-	void BsegWgt(boundary *bound_in, mesh *inMesh);
+	void BsegWgt(CHakBoundary *bound_in, CHakMesh *inMesh);
 
 	// Function to perfrom boundary intergration of objective and constraint shape sens
-	void BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
+	void BoundInt(CHakMesh *inMesh, CHakLevelSet *levelset, CHakBoundary *bound_in, int numFunc, double **Nsens,
 				  int *Lbound_nums, int *numLbound,  double *Lbound);
 
 private:
 	// number of auxillary nodes
-	int m_numAux;		
+	int m_numAux;	//	NumAux
 
 	// aux node coords
-	Coord *m_pAuxNodes; 
+	Coord *m_pAuxNodes;  //*AuxNodes
 
 	// number of boundary segments
-	int m_numBound; 
+	int m_numBound; //NumBound
 	
 	// boundary segment data
-	Bseg *Bound; 
+	Bseg *Bound; //*Bound
 
 	// grid node -> aux node connectivity
-	int *m_pConnAuxNode; 
+	int *m_pConnAuxNode; //*na_conn
 	
 	// indicator array for na_conn (compressed storage)
-	int *m_pIndConnAuxNode; 
+	int *m_pIndConnAuxNode; //*na_conn_ind
 
 	// boundary segment lengths 
-	double *m_pLenBseg;
+	double *m_pLenBseg; //*BsegLen
 	
 	// boundary segment weights
-	double *m_pWeightBseg; 
+	double *m_pWeightBseg; //*Bwgt
 };
 
 #endif /* CHakBoundary_H_ */

@@ -73,7 +73,7 @@ public:
 
 public:
 	// calculate sensitivies using least squares of integration points for AFG method
-	void AFG_Sens(mesh *inMesh, boundary *bound_in, double *alpha, isoMat *inMat,  double *Nsens,
+	void AFG_Sens(CHakMesh *inMesh, CHakBoundary *bound_in, double *alpha, CHakMaterial *inMat,  double *Nsens,
 				  double **prim, double **dual, int numDual, int numCase, double *wgt, Coord *gCoord,
 					double aMin, int mode, double *fact, bool sw, Coord *acc);
 
@@ -84,33 +84,33 @@ public:
 	// Function to calculate sensitivity values for an element at 4 gauss points
 	// for for a plane 4-node element (Q4)
 	void GaSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
-				isoMat *mat, int Gcount, double *gSens, int numCase, int numDual, double *wgt, bool sw, Coord *acc);
+			CHakMaterial *mat, int Gcount, double *gSens, int numCase, int numDual, double *wgt, bool sw, Coord *acc);
 
 	// Function to calculate additional sensitivity part for eigenvalues
 	// for for a plane 4-node element (Q4)
 	void GaEigSens_Q4(int *tnodes, double **prim, double **dual, double alpha, double h, double t,
-					  isoMat *inMat, int Gcount, double *gSens, int num_eig, double *eig);
+					  CHakMaterial *inMat, int Gcount, double *gSens, int num_eig, double *eig);
 
 	// function that computes bar senstivites for compliance (possible multi-load case)
-	void barSens(mesh *inMesh, double *bar_sens, double **prim, int numCase, double *wgt);
+	void barSens(CHakMesh *inMesh, double *bar_sens, double **prim, int numCase, double *wgt);
 
 	// function to compute designable bc sensitvities for compliance (possible multi-load case)
-	void bcSens(mesh *inMesh, double *bc_sens, double **prim, int numCase, double *wgt);
+	void bcSens(CHakMesh *inMesh, double *bc_sens, double **prim, int numCase, double *wgt);
 
 	// function to compute designable material design varibles for compliance
-	void matSens_comp(mesh *inMesh, isoMat *inMat, double *KE, double *mat_sens, int numCase, double *wgt,
+	void matSens_comp(CHakMesh *inMesh, CHakMaterial *inMat, double *KE, double *mat_sens, int numCase, double *wgt,
 	                  double **prim, double **dual, double *alpha, double aMin, bool sw, Coord *acc);
 
 	// function to compute designable material design varibles for eigenvalues
-	void matSens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
+	void matSens_eig(CHakMesh *inMesh, CHakMaterial *inMat, double *KE, double *ME, double *mat_sens,
 					 int numEig, double *eig_vals, double **eig_vecs, double *alpha, double aMin);
 
 	// function to compute designable material design H-S varibles for eigenvalues
-	void HS_Sens_eig(mesh *inMesh, isoMat *inMat, double *KE, double *ME, double *mat_sens,
+	void HS_Sens_eig(CHakMesh *inMesh, CHakMaterial *inMat, double *KE, double *ME, double *mat_sens,
 	                 int numEig, double *eig_vals, double **eig_vecs, double *alpha, double aMin);
 
 	// derivative of E for H-S bound material model
-	double dE_dalpha(double alpha, double hs_int, isoMat *mat1, isoMat *mat2);
+	double dE_dalpha(double alpha, double hs_int, CHakMaterial *mat1, CHakMaterial *mat2);
 
 public:
 	CHakMaterial GetMaterial() { return m_cMaterial; }

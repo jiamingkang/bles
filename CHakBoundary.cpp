@@ -47,20 +47,20 @@ CHakBoundary::~CHakBoundary() {
 }
 
 // function to weight boundary segments so that lengths are more even
-void CHakBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
+void CHakBoundary::BsegWgt(CHakBoundary *bound_in, CHakMesh *inMesh)
 {
 	// read in data
-	int NumNodes = inMesh->NumNodes;
-	Coord *NodeCoord = inMesh->NodeCoord;
-	int NumBound = bound_in->NumBound;
+	int NumNodes = inMesh->m_numNodes;
+	Coord *NodeCoord = inMesh->m_pNodeCoord;
+	int NumBound = bound_in->m_numBound;
 	Bseg *Lbound = bound_in->Bound;
-	Coord *AuxNodes = bound_in->AuxNodes;
+	Coord *AuxNodes = bound_in->m_pAuxNodes;
 
 	// memory allocation
-    free(bound_in->BsegLen);
-    bound_in->BsegLen = (double *) malloc(NumBound*sizeof(double)); // boundary segment lengths
-    free(bound_in->Bwgt);
-	bound_in->Bwgt = (double *) malloc(NumBound*sizeof(double));	// boundary segment weights
+    free(bound_in->m_pLenBseg);
+    bound_in->m_pLenBseg = (double *) malloc(NumBound*sizeof(double)); // boundary segment lengths
+    free(bound_in->m_pWeightBseg);
+	bound_in->m_pWeightBseg = (double *) malloc(NumBound*sizeof(double));	// boundary segment weights
 
 	int i,j,temp,n1,n2;
 	int s1,s2;
@@ -97,7 +97,7 @@ void CHakBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
 
 		x = x1-x2; y = y11-y2;
 		x*=x; y*=y;
-		bound_in->BsegLen[i] = sqrt(x+y); // boundary segment length
+		bound_in->m_pLenBseg[i] = sqrt(x+y); // boundary segment length
 	}
 
 	for(i=0;i<NumBound;i++)
@@ -110,12 +110,12 @@ void CHakBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
 			{
 				if(Lbound[i].n1 == Lbound[j].n1 || Lbound[i].n1 == Lbound[j].n2)
 				{
-					la = bound_in->BsegLen[j];
+					la = bound_in->m_pLenBseg[j];
 					s1=1;
 				}
 				if(Lbound[i].n2 == Lbound[j].n1 || Lbound[i].n2 == Lbound[j].n2)
 				{
-					lb = bound_in->BsegLen[j];
+					lb = bound_in->m_pLenBseg[j];
 					s2=1;
 				}
 			}
@@ -125,26 +125,26 @@ void CHakBoundary::BsegWgt(boundary *bound_in, mesh *inMesh)
 			}
 		}
 
-		bound_in->Bwgt[i] = lb / (la+lb); // weight for length associated with node 1
-		//bound_in->Bwgt[i] = 0.5; // for even weighting
+		bound_in->m_pWeightBseg[i] = lb / (la+lb); // weight for length associated with node 1
+		//bound_in->m_pWeightBseg[i] = 0.5; // for even weighting
 	}
 }
 
 // Function to perfrom boundary intergration of objective and constraint shape sens
-void CHakBoundary::BoundInt(mesh *inMesh, levSet *levelset, boundary *bound_in, int numFunc, double **Nsens,
+void CHakBoundary::BoundInt(CHakMesh *inMesh, CHakLevelSet *levelset, CHakBoundary *bound_in, int numFunc, double **Nsens,
 				int *Lbound_nums, int *numLbound,  double *Lbound)
 {
 	// read in data
-	bool *fixed = levelset->fixed;
-	double *lsf = levelset->lsf;
-	int NumNodes = inMesh->NumNodes;
-	double tol = inMesh->tol;
+	bool *fixed = levelset->m_pFixedLsf;
+	double *lsf = levelset->m_pNodalLsf;
+	int NumNodes = inMesh->m_numNodes;
+	double tol = inMesh->m_tolerance;
 
-	int NumBound = bound_in->NumBound;
+	int NumBound = bound_in->m_numBound;
 	Bseg *bptr = bound_in->Bound;
-	double *Bseglen = bound_in->BsegLen;
-	double *wgt = bound_in->Bwgt;
-	int Ntot = NumNodes + bound_in->NumAux;
+	double *Bseglen = bound_in->m_pLenBseg;
+	double *wgt = bound_in->m_pWeightBseg;
+	int Ntot = NumNodes + bound_in->m_numAux;
 
 	int i,j,count; // incrementors
 	int n1,n2,p1,p2; // boundary point node numbers

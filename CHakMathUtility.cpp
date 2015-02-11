@@ -52,7 +52,7 @@ void CHakMathUtility::Gauss_Coord(CHakMesh& m_mesh, Coord *gCoord)
 {
 	// read in mesh data
 	double h =m_mesh.m_lenEdge;
-	int elemX = m_mesh.m_elemX;
+	int m_elemX = m_mesh.m_elemX;
 	int elemY = m_mesh.m_elemY;
 	Elem **Number = m_mesh.m_pNumber;
 	Coord *NodeCoord = m_mesh.m_pNodeCoord;
@@ -68,7 +68,7 @@ void CHakMathUtility::Gauss_Coord(CHakMesh& m_mesh, Coord *gCoord)
 	// For All Elements
 	for(m=0;m<elemY;m++)
 	{
-		for(n=0;n<elemX;n++)
+		for(n=0;n<m_elemX;n++)
 		{
 			num = Number[n][m].n * 4;
 			node1 = Number[n][m].a;
@@ -170,7 +170,7 @@ void CHakMathUtility::Gauss_Coord(mesh *inMesh, Coord *gCoord)
 {
 	// read in mesh data
 	double h = inMesh->h;
-	int elemX = inMesh->elemX;
+	int m_elemX = inMesh->m_elemX;
 	int elemY = inMesh->elemY;
 	Elem **Number = inMesh->Number;
 	Coord *NodeCoord = inMesh->NodeCoord;
@@ -186,7 +186,7 @@ void CHakMathUtility::Gauss_Coord(mesh *inMesh, Coord *gCoord)
 	// For All Elements
 	for(m=0;m<elemY;m++)
 	{
-		for(n=0;n<elemX;n++)
+		for(n=0;n<m_elemX;n++)
 		{
 			num = Number[n][m].n * 4;
 			node1 = Number[n][m].a;
