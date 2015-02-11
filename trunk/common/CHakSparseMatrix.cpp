@@ -2,7 +2,7 @@
  * CHakSparseMatrix.cpp
  *
  *  Created on: Dec 19, 2014
- *      Author: Khalid, jeehang
+ *      Author: Khalid Ismail, jeehang
  */
 
 #include "CHakSparseMatrix.h"

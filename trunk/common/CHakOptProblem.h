@@ -38,13 +38,13 @@ public:
 
 private:
 	// objective type identifier
-	int m_idObjType;
+	int m_idObjType; //obj
 
 	// number of constraints
-	int m_numConstraint;
+	int m_numConstraint; //num
 
 	// pointer to array of constraint structs...
-	cnst *m_pConstraint;
+	cnst *m_pConstraint; //con
 };
 
 #endif /* CHAKOPTPROBLEM_H_ */
