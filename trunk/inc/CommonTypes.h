@@ -16,6 +16,21 @@
 #define NUM_DOF 2	// current code for 2d planar elements
 #define KE_SIZE (NUM_DOF * NUM_DOF * 16) // number of entries in elem matrix
 
+
+//General Declaration
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Element and node Numbering information structure
 typedef struct 
 {

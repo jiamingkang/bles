@@ -113,6 +113,12 @@ public:
 	double dE_dalpha(double alpha, double hs_int, CHakMaterial *mat1, CHakMaterial *mat2);
 
 public:
+	// calculate sensitivies using least squares of integration points for AFG method for Hole insertion method
+	void AFG_Sens_hole(mesh *inMesh, boundary *bound_in, double *alpha, isoMat *inMat,  double *Nsens,
+	                   double **prim, double **dual, int numDual, int numCase, double *wgt, Coord *gCoord,
+	                   double aMin, int mode, double *fact, bool sw, Coord *acc, int h_count, int *h_index,
+					   int *h_EmapX, int *h_EmapY, int *h_posN, int *h_posE, double *h_Esens, double *h_Nsens);
+public:
 	CHakMaterial GetMaterial() { return m_cMaterial; }
 	void SetMaterial(CHakMaterial cMat) { m_cMaterial = cMat; }
 

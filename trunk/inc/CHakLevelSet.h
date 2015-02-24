@@ -105,6 +105,44 @@ public:
 	void get_lam0(int n, int m, int numCon, double *lam,  double *s, double *cA, double *b,
 				  double *lam_min, double *lam_max);
 
+	// ---- set of functions for hole insertion algorithm ---- //
+public:
+	//Get the index and map of elements and nodes involved in hole insertion
+	int HoleMap(mesh *inMesh, int *h_index, int *h_EmapX, int *h_EmapY, levSet *levelset, double *alpha);
+
+	//Intialise hole level set function
+	void Intialise_hole_lsf(mesh *inMesh, int h_count, double holeCFL, int *h_index, int *h_EmapX, int *h_EmapY,
+			double *h_Nsens, double *h_lsf, double *h_area, double *h_gMin, double *h_gMax, int num_gam);
+
+	//Get hole lsf from current gammer and sensitvities
+	void Get_h_lsf(int NumNodes, int num_gam, int *h_index, double *Gam, double *h_Nsens, double *h_lsf);
+
+	//Get area of region after hole removal
+	double Get_h_area(int h_count, int *h_EmapX, int *h_EmapY, Elem **Number, double h, double *h_area, double *h_lsf);
+
+	//Get area of cut hole element
+	double Get_Hole_Area_Elem(double lsf1, double lsf2, double lsf3, double lsf4, int eNum);
+
+	//Finite difference for intial gammer set up
+	double Hole_FD_SG(int NumNodes, int num_gam, int *h_index, double *Gam, double *h_Nsens,
+			double *h_lsf, int h_count, int *h_EmapX, int *h_EmapY, Elem **Number, double h,
+			double *h_area, double DA, double TargetV, double perb);
+
+	//Function to perform finite difference anaylsis to get the sensivity of each objective function to a change in gammer.
+	void Hole_FD(int NumNodes, int num_gam, int num_sens, int *h_index, double *Gam,
+			double *h_Nsens, double *h_Esens, double *h_lsf, int h_count, int *h_EmapX,
+			int *h_EmapY, Elem **Number, int NumElem, double h, double *h_area,
+			double *h_gMin, double *GamS);
+
+
+	// function to set velocity (or move dist) using SLP - filter method with jole insertion
+	int SLPsubSol4_hole(mesh *inMesh, levSet *levelset, boundary *bound_in, double alt, double *delCon, int numCon,
+	                    double **sens, double *cA, int n, int *bound, double *lam_in, int *active, double *Vnorm,
+						double *pred, int numAdd, double *add_sens, double *add_min, double *add_max,
+						double *add_change, int pinfo, int *h_index, double *h_Nsens, double *h_Esens,
+						double *h_lsf, int h_count, int *h_EmapX, int *h_EmapY, double *h_area, double *h_gMin,
+						double *h_gMax, int *Reint);
+
 //  temp code. Refactoring required.
 public:
 	CHakSolver getSolver() { return m_solver; }
