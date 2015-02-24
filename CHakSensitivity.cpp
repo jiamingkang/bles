@@ -994,3 +994,261 @@ double CHakSensitivity::dE_dalpha(double alpha, double hs_int, CHakMaterial *mat
 
     return (ftemp);
 }
+
+//for hole insertion method
+// calculate sensitivies using least squares of integration points for AFG method
+void CHakSensitivity::AFG_Sens_hole(mesh *inMesh, boundary *bound_in, double *alpha, isoMat *inMat,  double *Nsens,
+              double **prim, double **dual, int numDual, int numCase, double *wgt, Coord *gCoord,
+              double aMin, int mode, double *fact, bool sw, Coord *acc, int h_count, int *h_index, int *h_EmapX, int *h_EmapY, int *h_posN, int *h_posE, double *h_Esens, double *h_Nsens)
+{
+    // read in mesh data
+    double h = inMesh->h;
+    double thk = inMesh->t;
+    int NumNodes = inMesh->NumNodes;
+    int elemX = inMesh->elemX;
+    int elemY = inMesh->elemY;
+    int NumElem = inMesh->NumElem;
+    Elem **Number = inMesh->Number;
+    Coord *NodeCoord = inMesh->NodeCoord;
+    double rad = 2.0 * h; // hard coded for two elements around a node
+
+    int irad = 2; //ceil(rad/h); // search space
+    rad *=rad; // input squared dist to Lsens
+    Coord *AuxNodes = bound_in->AuxNodes;
+    int numBound = bound_in->NumBound;
+    Bseg *Boundary = bound_in->Bound;
+    int Ntot = NumNodes + bound_in->NumAux;
+    double alMin = (aMin < 1.0e-6) ? 1.0e-6 : aMin; // numerical tollerance for sens calc
+    if(mode==1){ alMin = (aMin < 1.0e-2) ? 1.0e-2 : aMin; } // increase for eigenvalue sensitivities
+    else if(mode==2){alMin = 0.0;} // for compliant mechanisms
+
+    int i,n,m,o,num,ind,node,ex,ey,xMin,xMax,yMin,yMax;
+    double atemp;
+    //if(mode==2){w1 = -1.0/wgt[0]; w2 = wgt[1]*w1*w1;} // extra weights for complinat mech disp constraint
+    int Gcount = 0;		// varible to track number of points evaluated
+    int tnodes[4];
+    int gpoints = NumElem * 4; // number of sensitivity values (4 per element)
+    double *gSens = calloc(gpoints*numDual,sizeof(double));	// define memory for gauss point sensitivities
+    isoMat *mptr; // pointer for material
+
+    int mat_count = 0; // count for designable material
+    double mtemp; // variables for designable material modification
+    isoMat fgm;
+
+    // Step 1. Compute gauss point senstivities
+
+    // For All Elements
+    for(m=0;m<elemY;m++)
+    {
+        for(n=0;n<elemX;n++)
+        {
+            num = Number[n][m].n; // Element number
+            atemp = alpha[num];
+            if(atemp > alMin) // If Element isn't OUT
+            {
+                tnodes[0] = Number[n][m].a;
+                tnodes[1] = Number[n][m].b;
+                tnodes[2] = Number[n][m].c;
+                tnodes[3] = Number[n][m].d;
+
+                o = inMesh->mat_type[num]; // material number
+                mptr = &inMat[o]; // point to correct material
+
+                // modify matrices for designable materials
+                if(inMesh->des_mat && num==inMesh->mat_elems[mat_count])
+                {
+                    // material mix variable
+                    mtemp = inMesh->mat_vars[mat_count++];
+
+                    // modulus
+                    if(inMesh->mat_lin){ fgm.e =  (1.0-mtemp)*inMat[inMesh->mat1].e + mtemp*inMat[inMesh->mat2].e; }
+                    else{ fgm.e = HS_mat(mtemp, 0.5, &inMat[inMesh->mat1], &inMat[inMesh->mat2]); }
+
+                    // density
+                    fgm.rho =  mtemp*inMat[inMesh->mat2].rho + (1.0-mtemp)*inMat[inMesh->mat1].rho;
+
+                    // material prop matrix
+                    mtemp = fgm.e / inMat[inMesh->mat1].e;
+                    for(i=0;i<9;i++) {
+                        //fgm.mat[i] = mtemp*inMat[inMesh->mat1].mat[i] + (1.0-mtemp)*inMat[inMesh->mat2].mat[i];
+                        fgm.mat[i] = mtemp*inMat[inMesh->mat1].mat[i];
+                    }
+
+                    fgm.v = inMat[inMesh->mat1].v;
+                    mptr = &fgm;
+                }
+                else
+                {
+                    mptr = &inMat[o]; // point to correct material (not FGM)
+                }
+
+                //calcualte sensitivity at Gauss points
+                if(mode==1) // eigenvalue sensitivites
+                {
+                    GaEigSens_Q4(tnodes, prim, dual, atemp, h, thk, mptr, Gcount, gSens, numCase, wgt);
+                }
+                else if(mode==2) // compliant mechanism sensitivites
+                {
+                    double *gSens2 = calloc(8, sizeof(double));
+                    double *gSens3 = calloc(4, sizeof(double));	// temp memory for gauss point sensitivities
+
+                    GaSens_Q4(tnodes, prim, dual, atemp, h, thk, mptr, 0, gSens2, 1, 2, wgt, sw, acc);
+                    GaSens_Q4(tnodes, &dual[1], &dual[1], atemp, h, thk, mptr, 0, gSens3, 1, 1, wgt, sw, acc);
+
+                    // process sensitivities for compliant mech
+                    for(i=0;i<4;i++)
+                    {
+                        ind = (Gcount+i)*3; // point to place in gSens
+                        gSens[ind] = -fact[0]*gSens2[(2*i)+1] - fact[1]*gSens3[i];
+                        gSens[ind+1] = gSens2[2*i]*fact[4] + fact[2]*gSens2[(2*i)+1] + fact[3]*gSens3[i];
+                        gSens[ind+2] = gSens3[i]*fact[5];
+                    }
+
+                    free(gSens2);
+                    free(gSens3);
+                }
+                else
+                { GaSens_Q4(tnodes, prim, dual, atemp, h, thk, mptr, Gcount, gSens, numCase, numDual, wgt, sw, acc); }
+            }
+            else if(inMesh->des_mat && num==inMesh->mat_elems[mat_count]){mat_count++;} // keep counting
+            Gcount += 4; // update point count
+        }
+    }
+
+    // Step 2. Compute node sensitivities using least squares method
+
+    double *sens_temp = malloc(numDual * sizeof(double)); // array for sens of each dual state
+
+    // calculate smoothed sensitivities for all boundary (or non-OUT) nodes
+    bool *done = calloc(Ntot, sizeof(bool));
+    double ftemp;
+
+    // first search through each boundary segment
+    for(n=0;n<numBound;n++)
+    {
+        ey = Boundary[n].e / elemX;
+        ex = Boundary[n].e - elemX*ey; // element indices
+        xMin = ex-irad; xMax=ex+irad+1;
+        yMin = ey-irad; yMax=ey+irad+1; // search limits
+        xMin = (xMin < 0) ? 0 : xMin;
+        yMin = (yMin < 0) ? 0 : yMin;
+        xMax = (xMax > elemX) ? elemX : xMax;
+        yMax = (yMax > elemY) ? elemY : yMax; // adjust search limits
+
+        node=Boundary[n].n1; // 1st node number
+        if(!done[node]) // if sens not already computed
+        {
+            ftemp = 1.0;
+            if(node < NumNodes) // If node is a grid node
+            {
+                num = Lsens(&NodeCoord[node], xMax, xMin, yMax, yMin, alMin, alpha, rad, gCoord, gSens, Number, 4, numDual, sens_temp);
+            }
+            else // Otherwise node is an auxillary node
+            {
+                m = node - NumNodes; // position in AuxNodes array
+                num = Lsens(&AuxNodes[m], xMax, xMin, yMax, yMin, alMin, alpha, rad, gCoord, gSens, Number, 4, numDual, sens_temp);
+            }
+            for(i=0;i<numDual;i++)
+            {
+                m = Ntot*i + node; // point to correct place in Nsens
+                Nsens[m] = ftemp * sens_temp[i]; // multiply smoothed sensitivities by weight
+            }
+            done[node] = true;
+        }
+        node=Boundary[n].n2; // 2nd node number
+        if(!done[node]) // if sens not already computed
+        {
+            ftemp = 1.0;
+            if(node < NumNodes) // If node is a grid node
+            {
+                num = Lsens(&NodeCoord[node], xMax, xMin, yMax, yMin, alMin, alpha, rad, gCoord, gSens, Number, 4, numDual, sens_temp);
+            }
+            else // Otherwise node is an auxillary node
+            {
+                m = node - NumNodes; // position in AuxNodes array
+                num = Lsens(&AuxNodes[m], xMax, xMin, yMax, yMin, alMin, alpha, rad, gCoord, gSens, Number, 4, numDual, sens_temp);
+            }
+            for(i=0;i<numDual;i++)
+            {
+                m = Ntot*i + node; // point to correct place in Nsens
+                Nsens[m] = ftemp * sens_temp[i]; // multiply smoothed sensitivities by weight
+            }
+            done[node] = true;
+        }
+    }
+
+    //Get the Hole node sensitvities
+    int A,B,C,D,j,l,k;
+    int ind1,ind2,ind3,ind4;
+    double *max_sens = malloc(numDual*sizeof(double));
+    double *min_sens = malloc(numDual*sizeof(double));
+
+    //for(i=0;i<(NumNodes*numDual);i++){h_Nsens[i] = 0.0;}
+
+    for(i=0;i<h_count;i++)
+    {
+        n = h_EmapX[i];
+        m = h_EmapY[i];
+
+        //printf("\n%i: n: %i, m: %i", i, n, m);
+
+        num = Number[n][m].n;
+        A  = Number[n][m].a;
+        B  = Number[n][m].b;
+        C  = Number[n][m].c;
+        D  = Number[n][m].d;
+
+        for(j=0;j<numDual;j++)
+        {
+            ind1 = (4*num)*numDual+j; // point to place in gSens
+            ind2 = (4*num+1)*numDual+j;
+            ind3 = (4*num+2)*numDual+j;
+            ind4 = (4*num+3)*numDual+j;
+            k = h_posE[j];
+            l = h_posN[j];
+            h_Esens[k+i] = 0.25*(gSens[ind1] + gSens[ind2] + gSens[ind3] + gSens[ind4]);
+            if(h_index[A]==1){h_Nsens[l+A] += 0.25*h_Esens[k+i];}
+            if(h_index[B]==1){h_Nsens[l+B] += 0.25*h_Esens[k+i];}
+            if(h_index[C]==1){h_Nsens[l+C] += 0.25*h_Esens[k+i];}
+            if(h_index[D]==1){h_Nsens[l+D] += 0.25*h_Esens[k+i];}
+        }
+    }
+
+    for(j=0;j<numDual;j++)
+    {
+        k = h_posN[j];
+        max_sens[j] = 0;
+        min_sens[j] = 0;
+
+        for(i=0;i<NumNodes;i++)
+        {
+            if(h_index[i]==1)
+            {
+                max_sens[j] = ((h_Nsens[k+i])>max_sens[j]) ? (h_Nsens[k+i]):max_sens[j];
+                min_sens[j] = ((h_Nsens[k+i])<min_sens[j]) ? (h_Nsens[k+i]):min_sens[j];
+            }
+        }
+        max_sens[j] = max_sens[j]-min_sens[j];
+        //printf("\n Maxsens[%i] = %f", j, max_sens[j]);
+    }
+
+    for(j=0;j<numDual;j++)
+    {
+        k = h_posN[j];
+        for(i=0;i<NumNodes;i++)
+        {
+            if(h_index[i]==1)
+            {
+                h_Nsens[k+i] = h_Nsens[k+i]/max_sens[j];
+            }
+            else{h_Nsens[k+i] =1;}
+        }
+    }
+
+    // clear memory
+    free(max_sens);
+    free(min_sens);
+    free(done);
+    free(gSens);
+    free(sens_temp);
+}

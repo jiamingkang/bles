@@ -3283,3 +3283,1487 @@ void CHakLevelSet::get_lam0(int n, int m, int numCon, double *lam,  double *s, d
 	free(M);
 	free(gc);
 }
+
+
+// ---- set of functions for hole insertion algorithm ---- //
+//Get the index and map of elements and nodes involved in hole insertion
+int CHakLevelSet::HoleMap(mesh *inMesh, int *h_index, int *h_EmapX, int *h_EmapY, levSet *levelset, double *alpha)
+{
+    //Incrementers
+    int m, n, i;
+    int num, A,B,C,D;
+    int HC,NB;
+    //NB = 8*h;
+
+    //Read in Mesh varibles
+    int NumNodes = inMesh->NumNodes;
+    int elemX = inMesh->elemX;
+    int elemY = inMesh->elemY;
+    double *lsf = levelset->lsf;
+    Elem **Number = inMesh->Number;
+
+    int count = 0;
+
+    for(i=0;i<NumNodes;i++){h_index[i] = 0;}
+
+    for(n=0; n<elemX; n++)
+    {
+        for(m=0; m<elemY; m++)
+        {
+            HC = 0;
+            num = Number[n][m].n;
+            if(alpha[num]>0)
+            {
+                A = Number[n][m].a;
+                B = Number[n][m].b;
+                C = Number[n][m].c;
+                D = Number[n][m].d;
+
+                //Find out if node is fixed or inside narrow band
+                if(levelset->fixed)
+                {
+                    if((levelset->fixed[A])||(levelset->active[A])){}
+                    else{HC += 1; h_index[A] = 1;}
+                    if((levelset->fixed[B])||(levelset->active[B])){}
+                    else{HC += 1; h_index[B] = 1;}
+                    if((levelset->fixed[C])||(levelset->active[C])){}
+                    else{HC += 1; h_index[C] = 1;}
+                    if((levelset->fixed[D])||(levelset->active[D])){}
+                    else{HC += 1; h_index[D] = 1;}
+
+                    /*if((levelset->fixed[A])||(levelset->active[A])||lsf[A]<NB){}
+                    else{HC += 1; h_index[A] = 1;}
+                    if((levelset->fixed[B])||(levelset->active[B])||lsf[B]<NB){}
+                    else{HC += 1; h_index[B] = 1;}
+                    if((levelset->fixed[C])||(levelset->active[C])||lsf[C]<NB){}
+                    else{HC += 1; h_index[C] = 1;}
+                    if((levelset->fixed[D])||(levelset->active[D])||lsf[D]<NB){}
+                    else{HC += 1; h_index[D] = 1;}*/
+                }
+                else
+                {
+                    if(levelset->active[A]){}
+                    else{HC += 1; h_index[A] = 1;}
+                    if(levelset->active[B]){}
+                    else{HC += 1; h_index[B] = 1;}
+                    if(levelset->active[C]){}
+                    else{HC += 1; h_index[C] = 1;}
+                    if(levelset->active[D]){}
+                    else{HC += 1; h_index[D] = 1;}
+                }
+                if(HC>0) //if element is attached to none fixed node
+                {
+                    h_EmapX[count] = n;
+                    h_EmapY[count] = m;
+                    count++;
+                }
+            }
+        }
+    }
+
+    return(count);
+}
+
+// Function to initailise the hole level set function and the max and minimum values of gammer (side limits)
+void CHakLevelSet::Intialise_hole_lsf(mesh *inMesh, int h_count, double holeCFL, int *h_index, int *h_EmapX, int *h_EmapY, double *h_Nsens, double *h_lsf, double *h_area, double *h_gMin, double *h_gMax, int num_gam)
+{
+    // read in mesh data
+    double h = inMesh->h;
+    int NumNodes = inMesh->NumNodes;
+    int NumElem = inMesh->NumElem;
+    Elem **Number = inMesh->Number;
+
+    //local varibles
+    int i,j,k,loop;
+    double *Gam = malloc(num_gam*sizeof(double));
+    double minlsf = 0;
+    double Atotal = h*h*h_count;
+   // printf("\nAtotal = %f", Atotal);
+    double TargetV = Atotal * (1-holeCFL);
+    double DA, DAP;
+    double temp,Gtemp,Atemp,Gabove,Gbelow,perb,FDiff;
+
+    //Use gam = 1 to find minlsf and in turn get the minmum gammer values
+    for(j=0;j<num_gam;j++){Gam[j] = 1.0;}
+    for(i=0;i<NumElem;i++){h_area[i] = 1.0;}
+
+    for(i=0;i<NumNodes;i++)
+    {
+        h_lsf[i] = 1.0;
+        if(h_index[i]==1)
+        {
+            temp = 0;
+            for(j=0;j<num_gam;j++)
+            {
+                k = NumNodes * j;
+                h_lsf[i] -= Gam[j] * (1-h_Nsens[k+i]);
+                temp += Gam[j] * (1-h_Nsens[k+i]);
+            }
+            minlsf = (minlsf>temp) ? minlsf:temp;
+        }
+    }
+
+    h_gMin[0] = (1.0/minlsf)*1.00;
+
+
+    for(j=0;j<num_gam;j++){Gam[j] = h_gMin[0];}
+    Get_h_lsf(NumNodes, num_gam, h_index, Gam, h_Nsens, h_lsf);
+    Atemp = Get_h_area(h_count, h_EmapX, h_EmapY, Number, h, h_area, h_lsf);
+
+
+    //Now use newton's method to find max gammer
+    Gtemp = 1.0001*h_gMin[0];
+    perb = 0.0001*h_gMin[0];
+    Gbelow = 0;
+    Gabove = 10000 * Gtemp;
+    loop = 0;
+    do
+    {
+        //printf("\n GammerTemp: %f", Gammer_temp);
+        Get_h_lsf(NumNodes, num_gam, h_index, Gam, h_Nsens, h_lsf);  //Set up lsf hole temp
+        Atemp = Get_h_area(h_count, h_EmapX, h_EmapY, Number, h, h_area, h_lsf);   //Get current area
+        printf("\nAtemp = %f", Atemp);
+
+        // See if removed area Atotal is the matches the targeted maximum (within range)
+        DA = Atemp-TargetV;
+        DAP = Atemp/Atotal;
+
+        //Update overshoot varibles
+        if(DA>0){Gbelow = (Gtemp>Gbelow) ? Gtemp:Gbelow;}
+        else if(DA<0){Gabove = (Gtemp<Gabove) ? Gtemp:Gabove;}
+        //Make allowences for intial gradinet being so low.
+        if(Atotal == 0){Gabove = Gtemp-perb;}
+
+        if(fabs(DA)<0.01)
+        {
+            loop = 501;
+            //printf("\n GammerTemp: %f", Gtemp);
+            //printf("\t Atotal: %f \t DA: %f", Atemp, DA);
+        }
+        else
+        {
+            //Get Gradinet by finite differencing
+            FDiff = Hole_FD_SG(NumNodes,num_gam,h_index,Gam,h_Nsens,h_lsf,h_count,h_EmapX,h_EmapY,Number,h,h_area,DA,TargetV,perb);
+            //printf("\n GammerTemp: %f", Gtemp);
+            //printf("\t Finite Diff: %f", FDiff);
+            //printf("\t Atotal: %f \t DA: %f", Atemp, DA);
+            //cover for no gradient due to too small GammerTemp
+            if(FDiff==0){Gtemp += perb;}
+            else        //Use Netwon Method to update Gammer
+            {
+                Gtemp = Gtemp + (DA/FDiff);
+            }
+
+            //If outside range then bisect the range for the new value.
+            if((Gtemp<Gbelow)||(Gtemp>Gabove)){Gtemp = (Gabove+Gbelow)/2.0;}
+
+            //Update Gammer Temp
+            for(j=0;j<num_gam;j++){Gam[j] = Gtemp;}
+            loop++;
+        }
+    }while(loop<500);
+
+
+    h_gMax[0] = Gtemp;
+
+    printf("\nHole Gamer Side Limits: %f - %f", h_gMin[0], h_gMax[0]);
+
+    //For plotting set up the out put to be gammer max
+    for(j=0;j<num_gam;j++){Gam[j] = h_gMax[0];}
+    Get_h_lsf(NumNodes, num_gam, h_index, Gam, h_Nsens, h_lsf);
+    Atemp = Get_h_area(h_count, h_EmapX, h_EmapY, Number, h, h_area, h_lsf);
+
+    free(Gam);
+}
+
+void CHakLevelSet::Get_h_lsf(int NumNodes, int num_gam, int *h_index, double *Gam, double *h_Nsens, double *h_lsf)
+{
+    int i, j, k;
+
+    for(i=0;i<NumNodes;i++)
+    {
+        h_lsf[i] = 1.0;
+        if(h_index[i]==1)
+        {
+            for(j=0;j<num_gam;j++)
+            {
+                k = NumNodes * j;
+                h_lsf[i] -= Gam[j] * (1-h_Nsens[k+i]);
+            }
+        }
+    }
+}
+
+double CHakLevelSet::Get_h_area(int h_count, int *h_EmapX, int *h_EmapY, Elem **Number, double h, double *h_area, double *h_lsf)
+{
+    int i,j, n, m, num, Icount;
+    double Atotal = 0;
+    int *tnodes = malloc(4*sizeof(int));
+
+    for(i=0;i<h_count;i++)
+    {
+        Icount = 0;
+        n = h_EmapX[i];
+        m = h_EmapY[i];
+
+        //printf("\n%i: n: %i, m: %i", i, n, m);
+
+        num = Number[n][m].n;
+        tnodes[0]  = Number[n][m].a;
+        tnodes[1]  = Number[n][m].b;
+        tnodes[2]  = Number[n][m].c;
+        tnodes[3]  = Number[n][m].d;
+
+        for(j=0;j<4;j++){Icount += (h_lsf[tnodes[j]]>0.0) ? 1:0;}
+
+        if(Icount == 4) //Element is still entirly in the model.
+        {
+            h_area[num] = 1.0;
+            Atotal += h*h*h_area[num];
+        }
+        else if(Icount == 0)    //Element is entirly out of the model
+        {
+            h_area[num] = 0.0;
+            Atotal += h*h*h_area[num];
+        }
+        else    //Calculate the area of the element
+        {
+            //printf("\n\n num:%i (%i, %i)", num, n, m);
+            h_area[num] = Get_Hole_Area_Elem(h_lsf[tnodes[0]], h_lsf[tnodes[1]], h_lsf[tnodes[2]], h_lsf[tnodes[3]], i);
+            h_area[num] *= h*h;
+            Atotal += h_area[num];
+            //printf("\n Atemp: %f\t Atotal:%f ", h_area[num], Atotal);
+        }
+
+    }
+    free(tnodes);
+    return(Atotal);
+}
+
+
+double CHakLevelSet::Get_Hole_Area_Elem(double lsf1, double lsf2, double lsf3, double lsf4, int eNum)
+{
+    int numPts = 0;
+    Coord pts[6]; // Max number of points will be 6
+    int i,j,k,temp,temp2;
+    //Point 1
+    if(lsf1 > -0.0000000000000000001)
+    {
+        pts[numPts].x = 0;
+        pts[numPts++].y = 0;
+    }
+    //Edge 1 to 2
+    if(lsf1 * lsf2 < -0.0000000000000000001)
+    {
+        pts[numPts].x = fabs(lsf1/(lsf2-lsf1));
+        pts[numPts++].y = 0;
+    }
+    //Point 2
+    if(lsf2 > -0.0000000000000000001)
+    {
+        pts[numPts].x = 1;
+        pts[numPts++].y = 0;
+    }
+    //Edge 2 to 3
+    if(lsf2 * lsf3 < -0.0000000000000000001)
+    {
+        pts[numPts].x = 1;
+        pts[numPts++].y = fabs(lsf2/(lsf2-lsf3));
+    }
+    //Point 3
+    if(lsf3 > -0.0000000000000000001)
+    {
+        pts[numPts].x = 1;
+        pts[numPts++].y = 1;
+    }
+    //Edge 3 to 4
+    if(lsf3 * lsf4 < -0.0000000000000000001)
+    {
+        pts[numPts].x = fabs(lsf4/(lsf3-lsf4));
+        pts[numPts++].y = 1;
+    }
+    //Point 4
+    if(lsf4 > -0.0000000000000000001)
+    {
+        pts[numPts].x = 0;
+        pts[numPts++].y = 1;
+    }
+    //Edge 4 to 1
+    if(lsf4 * lsf1 < -0.0000000000000000001)
+    {
+        pts[numPts].x = 0;
+        pts[numPts++].y = fabs(lsf1/(lsf4-lsf1));
+    }
+
+    //printf("\n Enum:%i", eNum);
+    //printf("\n lsf: (%f, %f, %f, %f)\n Pts: ", lsf1, lsf2, lsf3, lsf4);
+    //for(i=0;i<numPts;i++)printf("\t (%f,%f)", pts[i].x, pts[i].y);
+
+    if(numPts < 3) {
+        //printf("\nERROR! Only %i polygon points found for Element %i",numPts,eNum);
+    }
+
+    // Need to check if edges of the polygon cross - and untangle
+    Coord ctemp; // variable to swap points
+    Coord chkPts[6]; // Array to send data to LineCross function
+    if(numPts > 3) // if only 3 points, then segments can't cross
+    {
+        do {
+            temp = 0;
+            for(i=0;i<(numPts-2);i++)
+            {
+                chkPts[0].x = pts[i].x;
+                chkPts[0].y = pts[i].y;
+                chkPts[1].x = pts[i+1].x;
+                chkPts[1].y = pts[i+1].y; // current segment
+
+                temp2 = (i==0) ? (numPts-1) : numPts;
+                for(j=i+2;j<temp2;j++)
+                {
+                    chkPts[2].x = pts[j].x;
+                    chkPts[2].y = pts[j].y;
+
+                    k = (j == (numPts-1)) ? 0:(j+1); // next point round
+
+                    chkPts[3].x = pts[k].x;
+                    chkPts[3].y = pts[k].y; // comparrison segment
+
+                    if(LineCross(chkPts) == 1)
+                    {
+                        // swap end point of 1st seg with start point of 2nd seg
+                        ctemp.x = pts[i+1].x;
+                        ctemp.y = pts[i+1].y;
+                        pts[i+1].x = pts[j].x;
+                        pts[i+1].y = pts[j].y;
+                        pts[j].x = ctemp.x;
+                        pts[j].y = ctemp.y;
+
+                        temp = 1; // indicate a line cross was found
+                        j=numPts;
+                        i=numPts; // break out of the for loops
+                    }
+                }
+            }
+        } while(temp == 1); // Until no line crosses are found
+    }/**/
+
+    // Use PolyArea to compute element area - return value
+    return(PolyArea(numPts, pts));
+}
+
+
+
+double CHakLevelSet::Hole_FD_SG(int NumNodes, int num_gam, int *h_index, double *Gam, double *h_Nsens, double *h_lsf, int h_count, int *h_EmapX, int *h_EmapY, Elem **Number, double h, double *h_area, double DA, double TargetV, double perb)
+{
+    int i;
+    double Atemp,DAperb,diff,FDiff;
+
+    //Get perturbed gammer
+    for(i=0;i<num_gam;i++){Gam[i] = Gam[i] + perb;}
+
+    //Get hole lsf and total area of perturbed gammer
+    Get_h_lsf(NumNodes, num_gam, h_index, Gam, h_Nsens, h_lsf);  //Set up lsf hole temp
+    Atemp = Get_h_area(h_count, h_EmapX, h_EmapY, Number, h, h_area, h_lsf);   //Get current area
+
+    //Get change in the objective
+    DAperb = Atemp-TargetV;
+    diff = DA - DAperb;
+    FDiff = diff/perb;
+
+    return(FDiff);
+}
+
+//Function to perform finite difference anaylsis to get the sensivity of each objective function to a change in gammer.
+void CHakLevelSet::Hole_FD(int NumNodes, int num_gam, int num_sens, int *h_index, double *Gam, double *h_Nsens, double *h_Esens, double *h_lsf, int h_count, int *h_EmapX, int *h_EmapY, Elem **Number, int NumElem, double h, double *h_area, double *h_gMin, double *GamS)
+{
+    int i,j,k,o,l,m,n, Icount, num;
+    double Atemp, Atemp2, Etemp;
+    double perb = 0.001*h_gMin[0];
+    double *h_Aperb = malloc(NumElem*sizeof(double));
+    int *tnodes = malloc(4*sizeof(int));
+
+    //Get hole lsf and total area of current gammer
+    Get_h_lsf(NumNodes, num_gam, h_index, Gam, h_Nsens, h_lsf);  //Set up lsf hole temp
+    Atemp = Get_h_area(h_count, h_EmapX, h_EmapY, Number, h, h_area, h_lsf);   //Get current area
+
+    for(l=0;l<num_gam;l++)
+    {
+        //perturb this value of gammer
+        Gam[l] += perb;
+        for(j=0; j<num_sens; j++)
+        {
+            k = j*num_gam;
+            GamS[k+l] = 0;
+        }
+
+        //Set lsf values from perburbed gammer value
+        Get_h_lsf(NumNodes, num_gam, h_index, Gam, h_Nsens, h_lsf);
+
+        for(i=0;i<h_count;i++)
+        {
+            n = h_EmapX[i];
+            m = h_EmapY[i];
+            num = Number[n][m].n; // Element number
+            Icount = 0;
+
+            tnodes[0] = Number[n][m].a;
+            tnodes[1] = Number[n][m].b;
+            tnodes[2] = Number[n][m].c;
+            tnodes[3] = Number[n][m].d;
+
+            for(j=0;j<4;j++){Icount += (h_lsf[tnodes[j]]>0.0) ? 1:0;}
+
+            if(Icount == 4) //Element is still entirly in the model.
+            {
+                h_Aperb[num] = 1.0*h*h;
+                Atemp += h_Aperb[num];
+                // There can be no change in element volume so no sensitvity
+            }
+            else if(Icount == 0)    //Element is entirly out of the model
+            {
+                h_Aperb[num] = 0.0*h*h;
+                Atemp += h_Aperb[num];
+                //There might have been a change in element densitiy so calclaute contribution to the sensitvity.
+                for(o=0; o<num_sens; o++)
+                {
+                    Etemp = h_Esens[i+(o*h_count)];
+                    k = o*num_gam;
+                    GamS[k+l] += Etemp*((h_area[num]-h_Aperb[num])/perb);
+                }
+            }
+            else    //Calculate the area of the element
+            {
+                //printf("\n\n num:%i (%i, %i)", num, n, m);
+                //printf("\n h_lsf:(%f, %f, %f, %f)", h_lsf[tnodes[0]], h_lsf[tnodes[1]], h_lsf[tnodes[2]], h_lsf[tnodes[3]]);
+                h_Aperb[num] = Get_Hole_Area_Elem(h_lsf[tnodes[0]], h_lsf[tnodes[1]], h_lsf[tnodes[2]], h_lsf[tnodes[3]], i);
+                h_Aperb[num] *= h*h;
+                Atemp = h_Aperb[num];
+                Atemp2 = h_area[num];
+                //printf("\n Atemp: %f\t Atotal:%f ", Atemp[num], Atotal);
+
+                //There might have been a change in element densitiy so calclaute contribution to the sensitvity.
+                for(o=0; o<num_sens; o++)
+                {
+                    Etemp = h_Esens[i+(o*h_count)];
+                    k = o*num_gam;
+                    GamS[k+l] += Etemp*((h_area[num]-h_Aperb[num])/perb);
+                    //printf("\n o: %i  Etemp: %f  deltaA: %f GamS[%i] = %f", o, Etemp, ((h_Aperb[num]-h_area[num])/perb), k+l, GamS[k+l]);
+                }
+            }
+
+        }
+        Gam[l] -= perb;
+
+    }
+
+    /*for(l=0;l<num_gam;l++)
+    {
+        for(j=0; j<num_sens; j++)
+        {
+            k = j*num_gam;
+            GamS[k+l] = 0;
+        }
+    }/**/
+    free(h_Aperb);
+    free(tnodes);
+}
+
+
+
+int CHakLevelSet::SLPsubSol4_hole(mesh *inMesh, levSet *levelset, boundary *bound_in, double alt, double *delCon, int numCon,
+                    double **sens, double *cA, int n, int *bound, double *lam_in, int *active, double *Vnorm, double *pred, int numAdd, double *add_sens, double *add_min, double *add_max, double *add_change, int pinfo, int *h_index, double *h_Nsens, double *h_Esens, double *h_lsf, int h_count, int *h_EmapX, int *h_EmapY, double *h_area, double *h_gMin, double *h_gMax, int *Reint)
+{
+    // read data
+    double h = inMesh->h;
+    double maxX = inMesh->maxX;
+    double maxY = inMesh->maxY;
+    bool *InEdge = inMesh->InEdge;
+    int NumNodes = inMesh->NumNodes;
+    int NumElem = inMesh->NumElem;
+    Coord *NodeCoord = inMesh->NodeCoord;
+    Coord *AuxNodes = bound_in->AuxNodes;
+    Elem **Number = inMesh->Number;
+
+    int m = 1+numCon; // number of shape sensitivities (+1 for the objective)
+    int num_gam = m;
+    int numVar = m + numAdd + num_gam; // total number of variables
+
+    // n = number of boudnary points
+    // cA = matrix of boundary integral coefficients (m x n, 1st row for objective)
+    // sens = matrix of raw shape sensitvites (m x NumTot, 1st row for objective)
+    // bound = boundary point numbers (length = n)
+    // delCon = target change in constraints (length = numCon)
+
+    int i,j,k,z,nd,err,count; // incementors
+    double ftemp, ftemp2, ftempB; // temp variable
+    Coord Crd, Crd2;
+    double a1,del1,del2;
+
+    double *sfg = malloc(m * n * sizeof(double)); // objective & constraint shape sens
+    double *x = malloc(n * sizeof(double));  // boundary move vector
+    double *u_low = malloc(n * sizeof(double)); // upper limit on x
+    double *u_up = malloc(n * sizeof(double));  // lower limit on x
+    double *b = malloc(numCon * sizeof(double)); // constraint change targets (sent to LP)
+    double *lam = malloc(numVar * sizeof(double));	 // multiplers for each shape senstivity (+ add vars)
+    double *maxS = calloc(m,sizeof(double)); // find abolute maximum sensitivty (of each function)
+    double *maxC = calloc(m,sizeof(double)); // find abolute maximum integral coefficient (of each function)
+    //Hole Varibles
+    double *GamS = malloc(num_gam * m * sizeof(double));
+    double *Gam = malloc(num_gam * sizeof(double));
+    double *AddGam_min = malloc(num_gam * sizeof(double));
+    double *AddGam_max = malloc(num_gam * sizeof(double));
+
+
+    // condense the raw senstivity matrix
+    for(i=0;i<n;i++)
+    {
+        nd = bound[i]; // node number
+
+        for(j=0;j<m;j++) // for each function
+        {
+            k = (j*n)+i;
+            sfg[k] = sens[j][nd]; // shape sens for function j
+            //printf("\nsens[%i][%i]=%12.4e, cA=%12.4e",j,nd,sfg[k],cA[k]);
+
+            // find maximums
+            ftemp = fabs(sens[j][nd]);
+            maxS[j] = (ftemp > maxS[j]) ? ftemp : maxS[j];
+            ftemp = fabs(cA[k]);
+            maxC[j] = (ftemp > maxC[j]) ? ftemp : maxC[j];
+        }
+    }
+
+    // maximums for add sens (as well)
+    for(j=0;j<m;j++) // for each function
+    {
+        k=j*numAdd;
+        for(i=0;i<numAdd;i++)
+        {
+            ftemp = fabs(add_sens[k++]);
+            maxC[j] = (ftemp > maxC[j]) ? ftemp : maxC[j];
+        }
+    }
+
+    //Also do this for hole insertion, will require finite difference anaylis
+    for(j=0;j<num_gam;j++) // for each function set the maximum gammer
+    {
+        Gam[j] = h_gMin[0];
+        AddGam_min[j] = 0;
+        AddGam_max[j] = h_gMax[0] - h_gMin[0];
+    }
+    // This function will return the sensitvity of each gammer to each design varrible in gamS
+    Hole_FD(NumNodes,num_gam,m,h_index,Gam,h_Nsens,h_Esens,h_lsf,h_count,h_EmapX,h_EmapY,Number,NumElem,h,h_area,h_gMin,GamS);
+
+    //Now find maximum sensitvity for each one
+    for(j=0;j<m;j++) // for each function find max change by hole insertion
+    {
+        k=j*num_gam;
+        for(i=0;i<num_gam;i++)
+        {
+            ftemp = fabs(GamS[k]);
+            //printf("\n\n MaxC[%i] = %f\t ftemp = %f ", j, maxC[j], ftemp);
+            //maxC[j] = (ftemp > maxC[j]) ? ftemp : maxC[j];
+            k++;
+        }
+    }
+
+
+    // normalize sfg (max magnitude = 1)
+    for(j=0;j<m;j++) // for each function
+    {
+        k=(j*n);
+        if(maxS[j] < 1.0e-20){maxS[j]=1.0;}
+        if(maxC[j] < 1.0e-20){maxC[j]=1.0;}
+        ftemp = 1.0 / maxS[j]; ftemp2 = 1.0 / maxC[j];
+        if(pinfo==3){ printf("\nmaxS[%i]=%12.4e, maxC[%i]=%12.4e",j+1,maxS[j],j+1,maxC[j]); }
+        for(i=0;i<n;i++)
+        {
+            sfg[k+i] *= ftemp; // scale shape sensitivities
+            cA[k+i] *= ftemp2;  // also scale boundary integral coeffs
+        }
+        lam[j] = lam_in[j]; // read in start lambda values
+        //lam[j] = 0.0; // EDIT
+
+        k=j*numAdd;
+        for(i=0;i<numAdd;i++)
+        {
+            add_sens[k++] *= ftemp2; // scale add var sensitivities
+        }
+        k=j*num_gam;
+        for(i=0;i<num_gam;i++)
+        {
+            GamS[k++] *= ftemp2; // scale add var sensitivities
+        }
+    }
+
+    for(j=1;j<m;j++)
+    {
+        delCon[j-1] /= maxC[j]; // need to also scale the constraint change targets
+    }
+
+    // set side constraints, special cosiderations for points near domain edge
+    double max_delD = h * alt; // maximum boundary move value
+
+    for(i=0;i<n;i++)
+    {
+        u_low[i] = -max_delD;
+        u_up[i] = max_delD;
+
+        j = bound[i]; // node number
+        if(j < NumNodes) {
+            Crd.x = NodeCoord[j].x;
+            Crd.y = NodeCoord[j].y;
+        }
+        else {
+            k = j - NumNodes;
+            Crd.x = AuxNodes[k].x;
+            Crd.y = AuxNodes[k].y;
+        }
+
+        // Now work out if that node lies within one grid spacing of the boundary of the domain
+        if((Crd.x < h) || (Crd.x > (maxX - h)) || (Crd.y < h) || (Crd.y > (maxY - h)))
+        {
+            // find shortest distance from node to domain boundary
+            a1 = maxX-Crd.x;
+            del1 = (Crd.x < a1) ? Crd.x : a1;
+            a1 = maxY - Crd.y;
+            del2 = (Crd.y < a1) ? Crd.y : a1;
+            a1 = (del1 < del2) ? del1 : del2;
+
+            u_low[i] = (-a1 > u_low[i]) ? -a1 : u_low[i]; // modify lower limit
+            //printf("\n Other_edge: (%f, %f)\t a1 = %f u_low[%i] = %f", Crd.x, Crd.y, a1, i, u_low[i]);
+        }
+        //Search through the domian edge array to see if the edge node is near the edge
+        for(z=0;z<NumNodes;z++)
+        {
+            //printf("\n(%f, %f) InEdge[%i] = %f", NodeCoord[z].x, NodeCoord[z].y, z, InEdge[z]);
+            if(InEdge[z]==1)
+            {
+                Crd2.x = NodeCoord[z].x;
+                Crd2.y = NodeCoord[z].y;
+                //printf("\n(%f, %f) InEdge[%i] = %i", NodeCoord[z].x, NodeCoord[z].y, z, InEdge[z]);
+                if((Crd.x==Crd2.x)&&(fabs(Crd.y-Crd2.y)<1.0*h))
+                {
+                    // find shortest distance from node to domain boundary
+                    a1 = fabs(Crd2.y-Crd.y);
+                    u_low[i] = (-a1 > u_low[i]) ? -a1 : u_low[i]; // modify lower limit
+                    //printf("\n Y_edge: (%f, %f)\t a1 = %f u_low[%i] = %f", Crd.x, Crd.y, a1, i, u_low[i]);
+                }
+                if((Crd.y==Crd2.y)&&(fabs(Crd.x-Crd2.x)<1.0*h))
+                {
+                    // find shortest distance from node to domain boundary
+                    a1 = fabs(Crd2.x-Crd.x);
+                    u_low[i] = (-a1 > u_low[i]) ? -a1 : u_low[i]; // modify lower limit
+                    //printf("\n X_edge: (%f, %f)\t a1 = %f u_low[%i] = %f", Crd.x, Crd.y, a1, i, u_low[i]);
+                }
+            }
+        }
+    }
+
+    // modify for aux nodes near fixed nodes
+    if(levelset->fixed)
+    {
+        for(i=0;i<NumNodes;i++)
+        {
+            // if fixed, check for neighbouring aux nodes
+            if(levelset->fixed[i])
+            {
+                nd = bound_in->na_conn_ind[i+1];
+                for(j=bound_in->na_conn_ind[i+1];j<nd;j++)
+                {
+                    // compute dist from aux node to fixed node
+                    k = bound_in->na_conn[j]; // aux node number
+                    Crd.x = NodeCoord[j].x - AuxNodes[k].x; // x dist
+                    Crd.y = NodeCoord[j].y - AuxNodes[k].y; // y dist
+                    a1 = (Crd.x * Crd.x) + (Crd.y * Crd.y); // sqrd dist
+                    a1 = sqrt(a1); // dist
+
+                    // get variable number
+                    count = k + NumNodes; // aux node num in bound
+                    for(k=0;k<n;k++){ if(bound[k] == count){break;} }
+
+                    // if fixed node is in - modify upper limit
+                    if(levelset->lsf[i] > 0.0)
+                    {
+                        u_up[k] = (a1 < u_up[k]) ? a1 : u_up[k];
+                    }
+                    // otherwise - modify lower limit
+                    else
+                    {
+                        u_low[k] = (-a1 > u_low[k]) ? -a1 : u_low[k];
+                    }
+                }
+            }
+        }
+    }
+
+    // estimate desired change in constraints to form b
+
+    // first find max & min constrant changes (x c_mod)
+    double c_mod = ((numAdd>0)||(num_gam>0)) ? 0.1 : 0.2;
+    c_mod = 0.2;
+    err = 0;
+    for(i=1;i<m;i++)
+    {
+        k=i*n; // point to correct place in cA array
+        // del1 = max
+        // del2 = min
+
+        del1=0.0; del2=0.0;
+        for(j=0;j<n;j++)
+        {
+            if(cA[k] > 0.0){
+                del1 += cA[k]*u_up[j];
+                del2 += cA[k]*u_low[j];
+            }
+            else {
+                del1 += cA[k]*u_low[j];
+                del2 += cA[k]*u_up[j];
+            }
+            k++;
+        }
+
+        del2 *= c_mod; // modify
+
+        // add additional variable contributions
+        if(numAdd>0)
+        {
+            k=i*numAdd;
+            for(j=0;j<numAdd;j++)
+            {
+                if(add_sens[k] > 0.0){
+                    del1 += add_sens[k]*add_max[j];
+                    del2 += add_sens[k]*add_min[j]*c_mod;
+                }
+                else {
+                    del1 += add_sens[k]*add_min[j];
+                    del2 += add_sens[k]*add_max[j]*c_mod;
+                }
+                k++;
+            }
+        }
+
+        if(num_gam>0)
+        {
+            k=i*num_gam;
+            for(j=0;j<num_gam;j++)
+            {
+                if(GamS[k] > 0.0){
+                    del1 += GamS[k]*AddGam_max[j];
+                    del2 += GamS[k]*AddGam_min[j]*c_mod;
+                }
+                else {
+                    del1 += GamS[k]*AddGam_min[j];
+                    del2 += GamS[k]*AddGam_max[j]*c_mod;
+                }
+                k++;
+            }
+        }
+
+        if(delCon[i-1] < 0.0) // if reduction in constraint
+        {
+            b[i-1] = (delCon[i-1] < del2) ? del2 : delCon[i-1]; // set limit
+            active[i-1] = 1; // active constraint
+        }
+        else // if increase (or no change) in constraint
+        {
+            if(delCon[i-1] > del1)
+            {
+                b[i-1] = del1;
+                active[i-1] = 0; // not active
+                err = 1; // need to reorganise some data
+            }
+            else
+            {
+                b[i-1] = delCon[i-1];
+                active[i-1] = 2; // "nearly" active
+            }
+        }
+        if(pinfo==3)
+        { printf("\ndel1=%12.4e, del2=%12.4e, delCon=%12.4e",del1,del2,delCon[i-1]);
+            printf("\nConstraint %i change target = %12.4e, %12.4e",i,b[i-1]*maxC[i],b[i-1]); }
+    }
+
+    // reduce arrays if some constraint not active
+    int numAct = numCon;
+    if(err == 1)
+    {
+        count = 0; // count active constraints
+        for(i=0;i<numCon;i++)
+        {
+            if(active[i] != 0)
+            {
+                if(count != i)
+                {
+                    // copy data
+                    k=(i+1)*n;
+                    nd=(count+1)*n;
+
+                    for(j=0;j<n;j++)
+                    {
+                        sfg[nd+j] = sfg[k+j]; // copy shape sensitivities
+                        cA[nd+j] = cA[k+j];  // copy boundary integral coeffs
+                    }
+
+                    k=(i+1)*numAdd;
+                    nd=(count+1)*numAdd;
+
+                    for(j=0;j<numAdd;j++)
+                    {
+                        add_sens[nd++] = add_sens[k++]; // copy add var sensitivities
+                    }
+
+                    k=(i+1)*num_gam;
+                    nd=(count+1)*num_gam;
+
+                    for(j=0;j<num_gam;j++)
+                    {
+                        GamS[nd++] = GamS[k++]; // copy add var sensitivities
+                    }
+
+                    // other data to copt accross
+                    maxS[count+1] = maxS[i+1];
+                    maxC[count+1] = maxC[i+1];
+                    b[count] = b[i];
+                    lam[count+1] = lam[i+1];
+                }
+                count++; // increase number of active constraint
+            }
+        }
+        // other variables to set
+        numAct = count;
+        m = 1+numAct;
+        numVar = m+numAdd+num_gam;
+    }
+
+    printf("\nActive constraints = %i",numAct);
+
+    // need default if numAct = 0 !!
+    if(numAct == 0)
+    {
+        printf("\nNo active constraints");
+        lam[0] = -0.5; // reduction in objective
+        get_delD(n, m, x, lam, sfg, u_up, u_low);
+
+        // use x to define Vnorm (at boundry points)
+        for(i=0;i<n;i++)
+        {
+            j = bound[i]; // node number
+            Vnorm[j] = x[i];
+        }
+
+        // pseudo move on add var
+        for(i=0;i<numAdd;i++)
+        {
+            add_change[i] = (add_sens[i]>0.0) ? add_min[i] : add_max[i];
+        }
+
+        // pseudo move on add gammer
+        for(i=0;i<num_gam;i++)
+        {
+            Gam[i] = (GamS[i]>0.0) ? h_gMin[0] + AddGam_min[i] : h_gMin[0] + AddGam_max[i];
+        }
+
+        // save predicted value
+        pred[0] = (cblas_ddot(n, x, 1, cA, 1)+cblas_ddot(numAdd, add_sens, 1, add_change, 1)) * maxC[0];
+        printf("\nPredicted obj change = %12.4e", pred[0]);
+
+        // clean-up and exit
+        free(sfg);
+        free(x);
+        free(u_up);
+        free(u_low);
+        free(b);
+        free(maxS);
+        free(maxC);
+        free(lam);
+        return 0;
+    }
+
+    // if there are more than 10 variables, need to add slack variables for LP solve using primal-dual
+    int numVarLP = numVar; // no slack
+    if(numVar > 10)
+    {
+        // number of slack variables is equal to the number of active constriants (all inequalities)
+        numVarLP = numVar + numAct; // total number of variables (inc slack) for LP solve
+    }
+
+    // get lambda limits
+    double *min_lam = malloc(m * sizeof(double));
+    double *max_lam = malloc(m * sizeof(double));
+    getLamLim(n, m, max_lam, min_lam, sfg, cA, u_up, u_low, pinfo);
+
+    // re-scale to make each lamba approx -1 -> +1
+    for(j=0;j<m;j++) // for each function
+    {
+        k=(j*n);
+        ftemp = (fabs(max_lam[j]) > fabs(min_lam[j])) ? fabs(max_lam[j]) : fabs(min_lam[j]);
+        for(i=0;i<n;i++) { sfg[k++] *= ftemp; } // scale shape sensitivities
+
+        min_lam[j] /= ftemp;
+        max_lam[j] /= ftemp; // these should be magnitude near 1
+    }
+
+    // SLP loop to find "optimal" values for lam
+    // lots of data arrays
+    double *min_lam_step = calloc(numVarLP, sizeof(double));
+    double *max_lam_step = malloc(numVarLP * sizeof(double)); // limits for current step size
+    double *lim_lam = malloc(numVar * sizeof(double));      // limits for reduced step lengths in SLP
+    double *dlam = malloc(m * numVarLP * sizeof(double));     // gradients of obj & constraint, wrt lam
+    double *lam_trial = malloc(numVar * sizeof(double));    // trial values for lambda
+    double *lam_step = malloc(numVarLP * sizeof(double));     // change in lambda
+    double *lam_best =  malloc(numVar * sizeof(double));    // best solutionlambda
+    double *b_step = malloc(numAct * sizeof(double));  // targets for constraint change, change !
+    double *g_trial = malloc(numAct * sizeof(double)); // trial constraint values (using lam_trial)
+    double *g_lam = malloc(numAct * sizeof(double));   // constraint values
+    double *g_shift = malloc(numAct * sizeof(double)); // shift due to shift to lam_min=0 in LP
+    double f_filter[200];
+    double h_filter[200]; // filters for objective and constraints
+    double f_best, h_best;
+
+    for(i=0;i<numVarLP;i++){lam_step[i] = 0.0;}
+
+    double obj, act_obj, del_obj, pred_obj, pred_obj_trial, hcon, hcon_trial; // obj & constraint values
+    int accept, redo; // flags for what is happening in algorithm
+    int fcount = 1; // count number of filters
+
+    // step size variables
+    double step, step_max, step_min;
+    step_min = 1.0e-4;
+    step_max = 0.1;
+    step = step_max; // initial step size
+
+    // copy add var sensitivites & limits to dlam (will not change during SLP opt)
+    //double *add_shift = calloc(numAct,sizeof(double)); // shift in constraints due to shift in add var
+    if(numAdd > 0)
+    {
+        for(j=0;j<m;j++) // for each function
+        {
+            k=(j*numAdd); // pointer to add_sens
+            nd=(j*numVarLP + m); // pointer to dlam
+
+            for(i=0;i<numAdd;i++)
+            {
+                dlam[nd++] = add_sens[k++]; // copy across
+            }
+        }
+
+        for(i=0;i<numAdd;i++)
+        {
+            lim_lam[i+m] = add_max[i] - add_min[i]; // copy across
+            min_lam_step[i+m] = add_min[i];
+        }
+    }
+
+    if(num_gam>0)
+    {
+        for(j=0;j<m;j++) // for each function
+        {
+            k=(j*num_gam); //pointer to correct gam sens
+            nd=(j*numVarLP + m + numAdd); //Pointer to correct location in dlam
+
+            for(i=0;i<num_gam;i++)
+            {
+                //printf("\nk = %i, nd = %i", k, nd);
+                dlam[nd++] = GamS[k++]; // copy across
+            }
+        }
+
+        for(i=0;i<num_gam;i++)
+        {
+            lim_lam[i+m+numAdd] = AddGam_max[i] - AddGam_min[i]; // copy across
+            min_lam_step[i+m+numAdd] = AddGam_min[i];
+            //printf("\nmin_lam_step[%i] = %f", i+m+numAdd, min_lam_step[i+m+numAdd]);
+        }
+    }
+
+    // if there are more than 10 variables, add "gradients" for slack variables
+    if(numVar > 10)
+    {
+        // objective (does not get effetced by slack vars)
+        for(j=numVar;j<numVarLP;j++){ dlam[j] = 0.0; }
+
+        for(j=1;j<m;j++) // for each constraint (j = row in dLam)
+        {
+            nd = j*numVarLP + numVar; // start of row + jump to start of additional grads
+            for(k=0;k<numAct;k++) // column in dLam
+            {
+                dlam[nd++] = (k+1 == j) ? 1.0 : 0.0; // identity matrix
+            }
+        }
+    }
+
+    // test
+    /*lam_trial[0] = -1.5;
+     lam_trial[1] = 0.0;
+     for(i=0;i<300;i++)
+     {
+     // evaluate constraints & objective at lam_trail
+     get_delD(n, m, x, lam_trial, sfg, u_up, u_low); // boundary movement vector
+     obj = cblas_ddot(n, x, 1, cA, 1); // objective
+     printf("\n%f , %lf",lam_trial[0],obj);
+     lam_trial[0] += 0.01;
+     }*/
+
+    // choose initial lam for vel func
+    if(numVar<5)
+    {
+        // minimise constraint violation to get start point for SLP
+        get_lam0(n, m, numAct, lam, sfg, cA, b, min_lam, max_lam);
+        err = con_min3(n, m, numAct, lam, sfg, &cA[n], b, min_lam, max_lam, u_up, u_low, pinfo);
+    }
+    else{ for(i=0;i<numVar;i++){lam[i] = 0.0;} } // initially zero
+
+    for(i=0;i<m;i++){ lam_best[i] = lam[i]; }
+    for(i=m;i<numVar;i++){ lam_best[i] = 0.0; lam[i]=0.0; } // initial change in add var and hole varribles is zero
+
+    // evaluate constraints & objective at initial point (lam)
+    get_delD(n, m, x, lam, sfg, u_up, u_low); // initial boundary movement vector
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, numAct, n, 1.0, &cA[n], n, x, 1, 0.0, g_lam, 1); // constraints
+    obj = cblas_ddot(n, x, 1, cA, 1); // objective
+    pred_obj = 1.0e+20; hcon=0.0; // initial values (to start algorithm)
+    if(pinfo==3){printf("\nobj = %12.4e",obj);}
+    f_best = 1.0e+20;
+
+    // compute initial hcon value
+    for(i=0;i<numAct;i++)
+    {
+        // normalize constraint violation (if target not small)
+        if(pinfo==3){printf("\n%i g_lam = %12.4e",i+1,g_lam[i]);}
+        ftemp = (g_lam[i]-b[i]) / fabs(b[i]); //*maxS[i+1];
+        ftemp = (ftemp > 0.0) ? ftemp : 0.0; // inequality constraint
+        if(pinfo==3){printf(" hcon = %f",ftemp);}
+        hcon = (ftemp > hcon) ? ftemp : hcon; // choose maximum
+    }
+    f_filter[0] = -1.0e+12; h_filter[0] = (hcon < 1000.0) ? 1000.0 : hcon; // initial filters
+    h_best = hcon;
+
+    // get finite difference gradient approximations (at initial point)
+    get_slpGrad(n, m, numVarLP, lam, sfg, cA, u_up, u_low, max_lam, min_lam, dlam, pinfo);
+
+    int stop = 0; // flag to signal convergence
+    int lp_info = (pinfo == 3) ? 2 : 0;
+    count = 0; // counter for number of iterations
+    redo = 0;
+    // START loop
+    do
+    {
+        if(pinfo==3){ printf("\nstep = %f",step); }
+
+        // ------- solve LP sub-problem with step, lam ------ //
+
+        // set limits for lambda step
+        for(i=0;i<m;i++)
+        {
+            ftemp = lam[i] - step;
+            min_lam_step[i] = (ftemp > min_lam[i]) ? -step : min_lam[i]-lam[i];
+            ftemp = lam[i] + step;
+            max_lam_step[i] = (ftemp < max_lam[i]) ? step : max_lam[i]-lam[i];
+
+            // shift limit, so that lam_step min = 0: lam_new = lam + lam_step + min_lam_step
+            lim_lam[i] = max_lam_step[i] - min_lam_step[i];
+
+            //printf("\nlam[%i] = %f min_lam[%i] = %f max_lam[%i] = %f step = %f lim_lam_[%i] = %f", i, lam[i], i, min_lam[i], i, max_lam[i], step, i, lim_lam[i]);
+        }
+
+        // modify constraint targets for LP sub-problem
+        // shift in constraint for shift in lam_step
+        cblas_dgemv(CblasRowMajor, CblasNoTrans, numAct, numVarLP, 1.0, &dlam[numVarLP], numVarLP, min_lam_step, 1, 0.0, g_shift, 1);
+
+        for(i=0;i<numAct;i++)
+        {
+            // LP target = original - current - shift
+            b_step[i] = b[i] - g_lam[i] - g_shift[i];
+            if(pinfo==3){printf("\nLP constraint target %i = %f",i+1,b_step[i]);}
+        }
+        if(pinfo==3){printf("\n");}
+
+        // sub-solve function for the trust region method (to get lam_step)
+        if(numVar > 10)
+        {
+            i=0;
+            ftemp = 0.5;
+            do{
+                err = LPsolve(numVarLP, numAct, numVar, lam_step, dlam, &dlam[numVarLP], b_step, lim_lam, pinfo);
+                if(err==-1){
+                    for(j=0;j<numAct;j++){b_step[j] = ftemp*b[j] - g_lam[j] - g_shift[j];}
+                    ftemp*=0.5;
+                }
+                i++;
+            } while(err==-1 && i<5);
+        }
+        else
+        {
+            k=0;
+            ftemp = 0.5;
+            do
+            {
+                err = lp_simplex(numVar, numAct, numVar, lam_step, dlam, &dlam[numVar], b_step, lim_lam, lp_info);
+                if(err==-1){
+                    for(j=0;j<numAct;j++){b_step[j] = ftemp*b[j] - g_lam[j] - g_shift[j];}
+                    ftemp*=0.5;
+                }
+                if(err==-1 && numAdd==0 && num_gam==0){err = trust_sub(numVar, numAct, numVar, lam_step, dlam, &dlam[numVar], b_step, lim_lam, pinfo);}
+                k++;
+            } while(err==-1 && k<5);
+
+        }
+        for(i=0;i<m;i++)
+        {
+            lam_step[i] += min_lam_step[i]; // shift back
+            if(pinfo==3){printf("\nLam_step%i = %12.4e",i+1,lam_step[i]);}
+        }
+
+        // -------- End of LP sub-solve phase -------- //
+
+        // if the LP was feasible
+        if(err != -1 && redo == 0)
+        {
+            // check change in lambda (convergence condition)
+            ftemp = 0.0;
+            for(i=0;i<m;i++)
+            {
+                ftemp = (fabs(lam_step[i]) > ftemp) ? fabs(lam_step[i]) : ftemp;
+            }
+            if(ftemp < 1.0e-6){stop=1;} // if small change, we have convergence!!
+        }
+
+        // if not converged yet
+        if((stop != 1))
+        {
+            if(numVar<11 || err==0)
+            {
+                for(i=0;i<m;i++)
+                {
+                    lam_trial[i] = lam[i] + lam_step[i]; // compute trial lambda values
+                    if(pinfo==3){printf("\nLam_trial %i = %f",i+1,lam_trial[i]);}
+                }
+                for(i=m;i<numVar;i++){ lam_step[i] += min_lam_step[i]; lam_trial[i] = lam_step[i];
+                    if(pinfo==3 && i<10){printf("\nLam_trial %i = %f",i+1,lam_trial[i]);}}
+
+                get_delD(n, m, x, lam_trial, sfg, u_up, u_low);
+
+                // compute actual & predicted objective change
+                act_obj = cblas_ddot(n, x, 1, cA, 1); // actual new objective
+                if(numAdd>0){ ftemp = cblas_ddot(numAdd, add_sens, 1, &lam_trial[m], 1);
+                    act_obj += ftemp; } // + for add variables
+                if(num_gam>0){ ftempB = cblas_ddot(num_gam, GamS, 1, &lam_trial[m+numAdd], 1);
+                    act_obj += ftempB; } // + for hole variables
+
+                del_obj = obj - act_obj; // actual reduction in obj value (+ve = reduction)
+                pred_obj_trial = -cblas_ddot(m,lam_step,1,dlam,1); // predicted change (+ve = reduction)
+                //printf("\npred_obj=%f, ftemp=%f",pred_obj_trial,ftemp);
+
+                if(numAdd>0){ pred_obj_trial += cblas_ddot(numAdd, add_sens, 1, &lam[m], 1) - ftemp; }
+                if(num_gam>0){ pred_obj_trial += cblas_ddot(num_gam, GamS, 1, &lam[m+numAdd], 1) - ftempB; }
+                if(pinfo==3){printf("\nact_obj=%f, del_obj=%f, pred_obj=%f",act_obj,del_obj,pred_obj_trial);}
+
+                // compute maximum magnitude of constraint violation (normalized)
+                cblas_dgemv(CblasRowMajor, CblasNoTrans, numAct, n, 1.0, &cA[n], n, x, 1, 0.0, g_trial, 1);
+                if(numAdd > 0)
+                {
+                    // + for add variables
+                    for(i=0;i<numAct;i++)
+                    {
+                        k = (i+1)*numAdd; // point to correct location in add_sens
+                        g_trial[i] += cblas_ddot(numAdd, &add_sens[k], 1, &lam_trial[m], 1);
+                    }
+                }
+                if(num_gam > 0)
+                {
+                    // + for hole varribles
+                    for(i=0;i<numAct;i++)
+                    {
+                        k = (i+1)*num_gam; // point to correct location in GamS
+                        g_trial[i] += cblas_ddot(num_gam, &GamS[k], 1, &lam_trial[m+numAdd], 1);
+                    }
+                }
+
+                hcon_trial = 0.0;
+                for(i=0;i<numAct;i++)
+                {
+                    // normalize constrant violation (if target not small)
+                    if(pinfo==3){printf("\n%i g_trial = %12.4e",i+1,g_trial[i]);}
+                    ftemp = (g_trial[i]-b[i]) / fabs(b[i]); //*maxS[i+1];
+                    ftemp = (ftemp > 0.0) ? ftemp : 1.0e-12; // inequality constraint
+                    if(pinfo==3){printf(" hcon = %12.4e",ftemp);}
+                    hcon_trial = (ftemp > hcon_trial) ? ftemp : hcon_trial; // choose maximum
+                }
+                if(hcon_trial < 1.0e-4){hcon_trial=1.0e-12;}
+                ftemp2 = 1.0e-4*hcon*hcon; // squared x small
+                if(pinfo==3){printf(" ftemp2 = %12.4e",ftemp2);}
+
+                // check current values against the filter (and previous values)
+                accept = 1;
+                if(redo == 0)
+                {
+                    if(pred_obj < ftemp2) // if previous an h-type iterate
+                    {
+                        // check acceptability to previous values
+                        // at least improvement in objective or constraint
+                        if(del_obj < (1.0e-4*hcon) && hcon_trial > 0.99*hcon){ accept = 0; }
+                        if(pinfo==3 && accept==0){printf("\nfail on prev filter");}
+                    }
+                }
+                if(accept == 1)
+                {
+                    // check acceptability wrt the filter
+                    for(i=0;i<fcount;i++)
+                    {
+                        if(redo == 1){
+                            if(hcon_trial > 0.99*h_filter[i])
+                            { accept = 0; break; }
+                        }
+                        // must dominate at least obj or constraints (maybe both)
+                        else if( act_obj > f_filter[i]-(1.0e-4*h_filter[i]) && hcon_trial > 0.99*h_filter[i])
+                        { accept = 0; break; } // not acceptable
+                    }
+                    if(pinfo==3 && accept==0){printf("\nfail on current filter");}
+                }
+
+                // still need to check other conditions (trust region)
+                if(redo == 0 && accept == 1)
+                {
+                    redo=1;
+                    if(del_obj < 0.1*pred_obj_trial && pred_obj_trial >= ftemp2){ accept = 0; }
+                    if(pinfo==3 && accept==0){printf("\nfail on trust region");}
+                }
+            }
+            else
+            {
+                accept = 0; // do not accept LPsolve that failed
+            }
+
+            // if not acceptable re-solve LP sub-problem
+            if(accept == 0)
+            {
+                // also improve model by updating gradient using the new info
+                step *= 0.5;
+
+                /*if(numAdd > 0)
+                 {
+                 cblas_dgemv(CblasRowMajor, CblasNoTrans, numAct, n, 1.0, &cA[n], n, x, 1, 0.0, g_trial, 1);
+                 }
+                 for(i=0;i<m;i++) // row in dlam (function)
+                 {
+                 for(j=0;j<m;j++) // col in A
+                 {
+                 k = i*numVar + j;
+                 if(fabs(lam_step[j]) < 1.0e-4){ del1 = dlam[k]; }
+                 else
+                 {
+                 // pseudo gradient
+                 if(i>0) { del1 = (g_trial[i-1] - g_lam[i-1]) / lam_step[j]; }
+                 else { del1 = -del_obj / lam_step[j];}
+                 }
+                 if(pinfo==3){printf("\ndlam[%i,%i] %12.4e , %12.4e",i,j,dlam[k],del1);}
+                 dlam[k] += del1;
+                 dlam[k] *= 0.5; // average of linear + pseudo gradients
+                 }
+                 }*/
+            }
+
+            // otherwise accept the new point
+            else
+            {
+                if(pinfo==3){ printf("\naccept point - pred_obj=%12.4e , ftemp2=%12.4e",pred_obj,ftemp2); }
+                // if h-type iterate - add previous point to the filter
+                if(pred_obj < ftemp2)
+                {
+                    f_filter[fcount] = obj;
+                    h_filter[fcount++] = hcon;
+                    if(pinfo==3){ printf("\n%12.4e, %12.4e added to filter",obj,hcon); }
+                    if(fcount == 200){printf("\nWarn -filter reached 200!");}
+                }
+
+                // update obj and constraint violation values (& lam)
+                pred_obj = pred_obj_trial;
+                obj = act_obj;
+                hcon = hcon_trial; // save for next iteration
+                for(i=0;i<numVar;i++){ lam[i] = lam_trial[i]; }
+                get_delD(n, m, x, lam, sfg, u_up, u_low); // initial boundary movement vector
+                cblas_dgemv(CblasRowMajor, CblasNoTrans, numAct, n, 1.0, &cA[n], n, x, 1, 0.0, g_lam, 1);
+
+                // update best point
+                if( (hcon < 1.0e-4 && obj < f_best) || hcon < h_best)
+                {
+                    f_best = obj;
+                    h_best = hcon;
+                    if(pinfo==3){ printf("\nupdate best lam"); }
+                    for(i=0;i<numVar;i++){ lam_best[i] = lam[i]; }
+                }
+
+                // get finite difference gradient approximations (at new point)
+                get_slpGrad(n, m, numVarLP, lam, sfg, cA, u_up, u_low, max_lam, min_lam, dlam, pinfo);
+
+                // Get New Hole finite difference Gradient approximation.
+                for(j=0;j<num_gam;j++) // for each function
+                {
+                    k = j+m+numAdd;
+                    Gam[j] = h_gMin[0] + lam[k]; //Get current updated Gammer values for finite difference calcualtion
+                }
+                // This function will return the sensitvity of each gammer to each design varrible in gamS
+                Hole_FD(NumNodes,num_gam,m,h_index,Gam,h_Nsens,h_Esens,h_lsf,h_count,h_EmapX,h_EmapY,Number,NumElem,h,h_area,h_gMin,GamS);
+
+                //Update dlam for new holes.
+                for(j=0;j<m;j++) // for each function
+                {
+                    k=(j*num_gam); // pointer to add_sens
+                    nd=(j*numVarLP + m + numAdd); // pointer to dlam
+
+                    for(i=0;i<num_gam;i++)
+                    {
+                        dlam[nd++] = GamS[k++]; // copy across
+                    }
+                }
+
+                count++; // update count of accepted points
+
+                // reset step to maximum
+                step = step_max;
+                redo = 0;
+            }
+
+            // if LP was not feasible
+            if(step < step_min)
+            {
+                if(pinfo==3){ printf("\nbreak-out"); }
+                count = 200;
+            }
+        }
+
+        // reduce step max after some iterations
+        if(count == 25){step_max = 0.05;}
+        if(count == 50){step_max = 0.025;}
+        if(count == 75){step_max = 0.0125;}
+    } while (stop==0 && count < 100);
+    // END loop
+
+    if(h_best < 1.0e-4)
+    {
+        if(count == 200){ printf("\nSLP sub-solve stopped"); }
+        else{printf("\nSLP sub-solve converged in %i itt",count);}
+        err = 0;
+        //if(count < 200)
+        {
+            lam_in[0] = lam_best[0];
+            count = 0;
+            for(i=0;i<numCon;i++)
+            {
+                if(active[i] != 0){ lam_in[i+1] = lam_best[count+1]; }
+                else{ lam_in[i+1] = 0.0; }
+            }
+        }
+    }
+    else
+    {
+        err = 2;
+        printf("\nSLP sub-solve did not converge!");
+        for(i=0;i<=numCon;i++) { lam_in[i] = 0.0; } // re-set
+    }
+
+    // recover best solution
+    for(i=0;i<m;i++){ lam[i] = lam_best[i]; printf("\nlam %i = %12.4e",i,lam[i]); }
+    get_delD(n, m, x, lam, sfg, u_up, u_low);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, numAct, n, 1.0, &cA[n], n, x, 1, 0.0, g_lam, 1);
+    if(numAdd > 0)
+    {
+        // + for add variables
+        for(i=0;i<numAct;i++)
+        {
+            k = (i+1)*numAdd; // point to correct location in add_sens
+            g_lam[i] += cblas_ddot(numAdd, &add_sens[k], 1, &lam_best[m], 1);
+        }
+    }
+    if(h_count > 0)
+    {
+        // + for hole varribles
+        for(i=0;i<numAct;i++)
+        {
+            k = (i+1)*num_gam; // point to correct location in add_sens
+            g_lam[i] += cblas_ddot(num_gam, &GamS[k], 1, &lam_best[m+numAdd], 1);
+        }
+    }
+
+    // use x to define Vnorm (at boundry points)
+    for(i=0;i<n;i++)
+    {
+        j = bound[i]; // node number
+        Vnorm[j] = x[i];
+    }
+
+    for(i=0;i<numAdd;i++)
+    {
+        add_change[i] = lam_best[i+m];
+    }
+
+    printf("\n");
+    printf("\nh_gMin = %f\th_gMax = %f", h_gMin[0], h_gMax[0]);
+    for(i=0;i<num_gam;i++)
+    {
+        printf("\nlam_best[%i] = %f", i+m+numAdd, lam_best[i+m+numAdd]);
+        //if(lam_best[i+m+numAdd]>AddGam_max[i]){lam_best[i+m+numAdd] = AddGam_max[i];}
+        Gam[i] = h_gMin[0] + lam_best[i+m+numAdd];
+        printf("\t Gam[%i] = %f", i, Gam[i]);
+    }
+
+    //Now use gammer to work out if any holes have been inserted
+    Get_h_lsf(NumNodes, num_gam, h_index, Gam, h_Nsens, h_lsf);
+
+    for(i=0;i<NumNodes;i++)
+    {
+        if(h_index[i]==1)
+        {
+            if(h_lsf[i]<-0.000000000000001)
+            {
+                Reint[0] = 1;
+                break;
+            }
+        }
+    }
+
+    // save predicted values (used in realxation in main loop)
+    // reset from potentially inactive constraints
+    m = 1+numCon;
+    pred[0] = f_best * maxC[0];
+    printf("\nPredicted obj change = %12.4e", pred[0]);
+    count = 0;
+    for(i=1;i<m;i++)
+    {
+        if(active[i-1] != 0)
+        {
+            count++;
+            pred[i] = g_lam[count-1] * maxC[count];
+            printf("\nPredicted cnst %i change = %12.4e",i,pred[i]);
+        }
+    }
+
+    // Clean up
+    free(sfg);
+    free(x);
+    free(u_up);
+    free(u_low);
+    free(b);
+    free(maxS);
+    free(maxC);
+    free(lam);
+    free(lam_best);
+    free(min_lam);
+    free(max_lam);
+    free(lim_lam);
+    free(lam_trial);
+    free(lam_step);
+    free(g_lam);
+    free(g_shift);
+    free(g_trial);
+    free(b_step);
+    free(min_lam_step);
+    free(max_lam_step);
+    free(dlam);
+    free(GamS);
+    free(Gam);
+    free(AddGam_min);
+    free(AddGam_max);
+    //free(add_shift);
+    return err;
+}

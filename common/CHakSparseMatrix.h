@@ -9,8 +9,10 @@
 #define CHAKSPARSEMATRIX_H_
 
 #include <iostream>
+#include "common/CHakMatrix.h"
 
-class CHakSparseMatrix {
+
+class CHakSparseMatrix : public CHakMatrix {
 
 public:
 	CHakSparseMatrix();
