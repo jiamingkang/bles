@@ -123,6 +123,17 @@ public:
 
 	// function to print solution to screen
 	void report(int n,  int m, int nu, double **v);
+
+	 // knai20@bath.ac.uk: hole and stress related functions
+	//Plot hole information
+	void OutPLotHoleVTK(mesh *inMesh, double *h_Nsens, int *h_EmapX, int *h_EmapY, double *h_Esens, int *h_index, int h_count, double *h_lsf, double *h_area, int num_sens, int pinfo, int itt, char *datafile);
+
+	//Plot stress information
+	void OutPLotStresssVTK2(mesh *inMesh, double *lsf, double *EStress, int pinfo, int itt, char *datafile);
+
+	// function to output object & constraint convergence data
+	void OutConv(int itt, prob *lsprob, double *Obj, double *constr, char *datafile, double *MaxStress);
+
 };
 
 #endif /* CHakOutput_H_ */

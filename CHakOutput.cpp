@@ -1639,3 +1639,304 @@ void CHakOutput::report(int n,  int m, int nu, double **v)
 
 	printf("\n\n-------------------");
 }
+
+
+
+//Plot hole information
+void CHakOutput::OutPLotHoleVTK(mesh *inMesh, double *h_Nsens, int *h_EmapX, int *h_EmapY, double *h_Esens, int *h_index, int h_count, double *h_lsf, double *h_area, int num_sens, int pinfo, int itt, char *datafile)
+{
+    // read data
+    int NodeX = inMesh->NodeX-2;
+    int NodeY = inMesh->NodeY-2;
+    int NumNodes = inMesh->NumNodes;
+    int **Nodes2 = inMesh->Nodes2;
+    int elemX = inMesh->elemX;
+    int elemY = inMesh->elemY;
+    Elem **Number = inMesh->Number;
+
+    int i,j,k,n,m,num;
+
+    FILE *outfile;	// File varible for output files
+    char plotname[120];	// variable to change names of plotting output files
+
+    // Write initial signed distance value information file
+    sprintf(plotname,"%s_hole_%i.vtk",datafile,itt); // set name for current output file
+    outfile = fopen(plotname, "w");
+
+    if(outfile == NULL){
+        printf("\nFailed to open signed distance paraview writefile\n");
+    }
+    else
+    {
+        fprintf(outfile,"# vtk DataFile Version 3.0\n");
+        fprintf(outfile,"Para0\n");
+        fprintf(outfile,"ASCII\n");
+        fprintf(outfile,"DATASET RECTILINEAR_GRID\n");
+        fprintf(outfile,"DIMENSIONS %i %i %i\n", NodeX, NodeY, 1);
+        fprintf(outfile,"X_COORDINATES %i int\n", NodeX);
+        for(i=0;i<NodeX;i++){fprintf(outfile,"%i ", i);}
+        fprintf(outfile,"\nY_COORDINATES %i int\n", NodeY);
+        for(i=0;i<NodeY;i++){fprintf(outfile,"%i ",i);}
+        fprintf(outfile,"\nZ_COORDINATES %i int\n", 1);
+        for(i=0;i<1;i++){fprintf(outfile,"%i ",i);}
+
+        fprintf(outfile,"\n\nPOINT_DATA %i\n", NumNodes);
+        fprintf(outfile,"SCALARS index double 1\n");
+        fprintf(outfile,"LOOKUP_TABLE default\n");
+
+        // Now to print out the node values
+        NodeX++;
+        NodeY++;
+
+        for(m=1;m<NodeY;m++)
+        {
+            for(n=1;n<NodeX;n++)
+            {
+                num = Nodes2[n][m];
+                fprintf(outfile,"%i\n", h_index[num]);
+            }
+        }
+
+        for(i=0;i<num_sens;i++)
+        {
+            fprintf(outfile,"SCALARS hole_sens%i double 1\n", i);
+            fprintf(outfile,"LOOKUP_TABLE default\n");
+
+            for(m=1;m<NodeY;m++)
+            {
+                for(n=1;n<NodeX;n++)
+                {
+                    num = Nodes2[n][m];
+                    j = NumNodes*i;
+                    fprintf(outfile,"%lf\n", h_Nsens[j+num]);
+                }
+            }
+        }
+        fprintf(outfile,"SCALARS hole_lsf double 1\n");
+        fprintf(outfile,"LOOKUP_TABLE default\n");
+
+        for(m=1;m<NodeY;m++)
+        {
+            for(n=1;n<NodeX;n++)
+            {
+                num = Nodes2[n][m];
+                fprintf(outfile,"%lf\n", h_lsf[num]);
+            }
+        }
+
+        int NumElem = inMesh->NumElem;
+        fprintf(outfile,"\n\nCELL_DATA %i\n", NumElem);
+        fprintf(outfile,"SCALARS alpha double 1\n");
+        fprintf(outfile,"LOOKUP_TABLE default\n");
+
+        for(n=0;n<NumElem;n++)
+        {
+            fprintf(outfile,"%lf\n", h_area[n]);
+        }
+
+    }
+    fclose(outfile);
+    printf("\nHole sensivtiy info file written (Paraview)\n");
+
+    sprintf(plotname,"%s_hole_%i.txt",datafile,itt); // set name for current output file
+    outfile = fopen(plotname, "w");
+    /*for(k=0;k<num_sens;k++)
+    {
+        n = NumNodes*k;
+        fprintf(outfile,"%f", h_Nsens[n+Number[0][0].a]);
+        for(i=0;i<elemX;i++)
+        {
+            fprintf(outfile,"\t%f", Ihole_sens[n+Number[i][0].b]);
+        }
+        for(j=0;j<elemY;j++)
+        {
+            fprintf(outfile,"\n%f", Ihole_sens[n+Number[0][j].d]);
+            for(i=0;i<elemX;i++)
+            {
+                fprintf(outfile,"\t%f", Ihole_sens[n+Number[i][j].c]);
+            }
+        }
+        fprintf(outfile,"\n\n\n");
+    }*/
+
+    fprintf(outfile,"%f", h_lsf[Number[0][0].a]);
+    for(i=0;i<elemX;i++)
+    {
+        fprintf(outfile,"\t%f", h_lsf[Number[i][0].b]);
+    }
+    for(j=0;j<elemY;j++)
+    {
+        fprintf(outfile,"\n%f", h_lsf[Number[0][j].d]);
+        for(i=0;i<elemX;i++)
+        {
+            fprintf(outfile,"\t%f", h_lsf[Number[i][j].c]);
+        }
+    }
+
+    fclose(outfile);/**/
+
+}
+
+void CHakOutput::OutPLotStresssVTK2(mesh *inMesh, double *lsf, double *EStress, int pinfo, int itt, char *datafile)
+{
+    // read data
+    int NodeX = inMesh->NodeX-2;
+    int NodeY = inMesh->NodeY-2;
+    int NumNodes = inMesh->NumNodes;
+    int **Nodes2 = inMesh->Nodes2;
+
+    int i,n,m,num;
+
+    FILE *outfile;	// File varible for output files
+    char plotname[120];	// variable to change names of plotting output files
+
+    // Write initial signed distance value information file
+    sprintf(plotname,"A_%s_Stress_%i.vtk",datafile,itt); // set name for current output file
+    outfile = fopen(plotname, "w");
+
+    if(outfile == NULL){
+        printf("\nFailed to open results paraview input writefile\n");
+    }
+    else
+    {
+        fprintf(outfile,"# vtk DataFile Version 3.0\n");
+        fprintf(outfile,"Para0\n");
+        fprintf(outfile,"ASCII\n");
+        fprintf(outfile,"DATASET RECTILINEAR_GRID\n");
+        fprintf(outfile,"DIMENSIONS %i %i %i\n", NodeX, NodeY, 1);
+        fprintf(outfile,"X_COORDINATES %i int\n", NodeX);
+        for(i=0;i<NodeX;i++){fprintf(outfile,"%i ", i);}
+        fprintf(outfile,"\nY_COORDINATES %i int\n", NodeY);
+        for(i=0;i<NodeY;i++){fprintf(outfile,"%i ",i);}
+        fprintf(outfile,"\nZ_COORDINATES %i int\n", 1);
+        for(i=0;i<1;i++){fprintf(outfile,"%i ",i);}
+
+        fprintf(outfile,"\n\nPOINT_DATA %i\n", NumNodes);
+        fprintf(outfile,"SCALARS lsf double 1\n");
+        fprintf(outfile,"LOOKUP_TABLE default\n");
+
+        // Now to print out the node values
+        NodeX++;
+        NodeY++;
+
+        for(m=1;m<NodeY;m++)
+        {
+            for(n=1;n<NodeX;n++)
+            {
+                num = Nodes2[n][m];
+                fprintf(outfile,"%f\n", lsf[num]);
+            }
+        }
+
+        // also output element area ratios (if required)
+        if(pinfo<5)
+        {
+            int NumElem = inMesh->NumElem;
+            fprintf(outfile,"\n\nCELL_DATA %i\n", NumElem);
+            fprintf(outfile,"SCALARS Element_Stress double 1\n");
+            fprintf(outfile,"LOOKUP_TABLE default\n");
+
+            for(n=0;n<NumElem;n++)
+            {
+                fprintf(outfile,"%f\n", EStress[n]);
+            }
+        }
+    }
+    fclose(outfile);
+    printf("\nSigned Distance Info File written (Paraview)\n");
+}
+
+// function to output object & constraint convergence data for stress function
+void OutConv(int itt, prob *lsprob, double *Obj, double *constr, char *datafile, double *MaxStress)
+{
+	int numCon = lsprob->num;
+	int i,j,ind; // incrementor
+	FILE *outfile;	// File varible for output files
+	char plotname[120];	// variable to change names of plotting output files
+
+	sprintf(plotname,"%s_Convergence.txt",datafile); // set name for output file
+	outfile = fopen(plotname, "w");
+	if(outfile == NULL){
+		printf("\nFailed to open Convergence writefile\n");
+	}
+	else{
+		// column headings
+		fprintf(outfile,"Iteration\t"); // Iteration
+
+		// objective
+		switch (lsprob->obj)
+		{
+			case 1:
+				fprintf(outfile,"Compliance\t");
+				break;
+            case 27:
+                fprintf(outfile,"Pnorm_Stress\t");
+                break;
+			case 2:
+				fprintf(outfile,"Volume\t");
+				break;
+			case 3:
+				fprintf(outfile,"1st Frequency\t");
+				break;
+			case 5:
+				fprintf(outfile,"Mechanial Advantage\t");
+				break;
+			default:
+				fprintf(outfile, "Objective\t");
+		}
+
+		// constraints
+		for(i=0;i<numCon;i++)
+		{
+			switch (lsprob->con[i].type)
+			{
+				case 1:
+					fprintf(outfile,"Volume\t");
+					break;
+				case 2:
+					fprintf(outfile,"Mass\t");
+					break;
+				case 3:
+					fprintf(outfile,"Compliance\t");
+					break;
+				case 5:
+					fprintf(outfile,"Displacement diff\t");
+					break;
+				case 6:
+					fprintf(outfile,"Eigenvalue ratio\t");
+					break;
+				case 7:
+					fprintf(outfile,"Input displacement\t");
+					break;
+				case 10:
+					fprintf(outfile,"Support cost\t");
+					break;
+                case 27:
+                    fprintf(outfile,"Pnorm_Stress\t");
+                    break;
+				default:
+					fprintf(outfile, "Constraint %i\t",i+1);
+			}
+		}
+        if(MaxStress[1]>0){fprintf(outfile, "Max_Stress\t");}
+		fprintf(outfile, "\n");
+
+		// DATA
+		for(i=0;i<=itt;i++)
+		{
+			fprintf(outfile,"%i\t",i); // Iteration
+			fprintf(outfile,"%12.4e",Obj[i]); // Objective
+
+			for(j=0;j<numCon;j++)
+			{
+				ind = (numCon*i)+j;
+				fprintf(outfile,"\t%12.4e",constr[ind]); // Constraint
+			}
+            if(MaxStress[i]>0){fprintf(outfile, "\t%12.4e",MaxStress[i]);}
+			fprintf(outfile, "\n");
+		}
+	}
+	fclose(outfile);
+	printf("\nConvergence History file written");
+}
+

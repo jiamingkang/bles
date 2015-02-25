@@ -66,7 +66,7 @@ typedef struct
 	double data[4]; // data for constraint (first value is value)
 } cnst;
 
-// jeehanglee@gmail.com --> moved to CHakSparseMatrix
+//  --> moved to CHakSparseMatrix
 // sparse matrix in triplet form
 typedef struct
 {
@@ -75,7 +75,7 @@ typedef struct
 	double *A; // matrix entry value
 } sp_mat;
 
-// jeehanglee@gmail.com --> moved to CHakOptControl
+//  --> moved to CHakOptControl
 // structure containing optimization controls
 typedef struct
 {
@@ -87,7 +87,7 @@ typedef struct
 	double mMin;  // minimum area ratio for mass
 } ctrl;
 
-// jeehanglee@gmail.com --> moved to CHakOptProblem
+//  --> moved to CHakOptProblem
 // structure to hold optimization problem defintion
 typedef struct
 {
@@ -96,7 +96,7 @@ typedef struct
 	cnst *con; // pointer to array of constraint structs
 } prob;
 
-// jeehanglee@gmail.com --> moved to CHakMaterial
+//  --> moved to CHakMaterial
 // isotropic material structure
 typedef struct
 {
@@ -105,7 +105,7 @@ typedef struct
 	double mat[9];  // material property matrix
 } isoMat;
 
-// jeehanglee@gmail.com --> moved to CHakMesh
+//  --> moved to CHakMesh
 // mesh information structure
 typedef struct
 {
@@ -140,9 +140,13 @@ typedef struct
 	double *mat_vars;	// array to store designable material variables
     bool dm_sim;        // flag for simultaneous (true) or sequential (false) optimization of material
     bool mat_lin;       // linear (true) or H-S bound (false) material model
+
+    //Added for hole insertion code
+    bool *InEdge;       //Indicates Nodes that are on an edge that is inside the design domain.
+
 } mesh;
 
-// jeehanglee@gmail.com --> moved to CHakBoundary
+//  --> moved to CHakBoundary
 // boundary discretization info
 typedef struct
 {
@@ -155,7 +159,7 @@ typedef struct
 	double *BsegLen, *Bwgt; // boundary segment lengths & weights
 } boundary;
 
-// jeehanglee@gmail.com --> moved to CHaKLevelSet
+//  --> moved to CHaKLevelSet
 // structure for the level set function
 typedef struct
 {
@@ -167,5 +171,11 @@ typedef struct
 	int numMine;  // number of mines on edge of narrow band
 	int *mine;    // mine node numbers
 } levSet;
+
+//Added for hole insertion code
+/*Structure for position of nodes */
+typedef struct {
+    short x,y;
+} Pos;
 
 #endif // __COMMON_TYPES_H
