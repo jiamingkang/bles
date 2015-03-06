@@ -25,7 +25,7 @@ CHak3DContIncomp_8::~CHak3DContIncomp_8() {
 
 
 // make C8M element stiffness matrix
-void C8M::makeKe()
+void CHak3DContIncomp_8::makeKe()
 {
 	int i,j,k,inc; //,err;
 	double sum, Jdet, Jdet2;
@@ -158,7 +158,7 @@ void C8M::makeKe()
 	}
 }
 
-void C8M::makeMe()
+void CHak3DContIncomp_8::makeMe()
 {
 	if(Me){delete [] Me;}
 	Me = new double [300]();
@@ -167,7 +167,7 @@ void C8M::makeMe()
 }
 
 // function to get element displacement array
-void C8M::getDisp(double *elDisp, double *globDisp)
+void CHak3DContIncomp_8::getDisp(double *elDisp, double *globDisp)
 {
 	int i,j,nd;
 	int ind = 0;
@@ -184,7 +184,7 @@ void C8M::getDisp(double *elDisp, double *globDisp)
 }
 
 // function to get element complex displacement array
-void C8M::getDispC(dcompLPK *elDisp, dcompLPK *globDisp)
+void CHak3DContIncomp_8::getDispC(dcompLPK *elDisp, dcompLPK *globDisp)
 {
 	int i,j,nd;
 	int ind = 0;
@@ -201,7 +201,7 @@ void C8M::getDispC(dcompLPK *elDisp, dcompLPK *globDisp)
 }
 
 // compute C8M strain tensor at a point in the element
-void C8M::strain(Coord3D p, double *elDisp, double *stn)
+void CHak3DContIncomp_8::strain(Coord3D p, double *elDisp, double *stn)
 {
 	Coord3D np[8];
 	double B[144];	// Strain displacement matrix
@@ -235,7 +235,7 @@ void C8M::strain(Coord3D p, double *elDisp, double *stn)
 }
 
 // compute C8M stress tensor at a point in the element
-void C8M::stress(Coord3D p, double *elDisp, double *strs)
+void CHak3DContIncomp_8::stress(Coord3D p, double *elDisp, double *strs)
 {
 	double stn[6];
 
@@ -249,7 +249,7 @@ void C8M::stress(Coord3D p, double *elDisp, double *strs)
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, 6, 6, 1.0, Em, 6, stn, 1, 0.0, strs, 1);
 }
 
-void C8M::makeVol()
+void CHak3DContIncomp_8::makeVol()
 {
     if(volume < 0.0)
     {
@@ -262,14 +262,14 @@ void C8M::makeVol()
 }
 
 // add self-weight loading to a global loading vector
-void C8M::addWeight(Coord3D vec, double mag, int *dof_ind, double *gload)
+void CHak3DContIncomp_8::addWeight(Coord3D vec, double mag, int *dof_ind, double *gload)
 {
     C8_addWeight(this, &vec, mag, dof_ind, gload);
 }
 
 
 // compute C8M sensitivities at all gauss points, for eigenvalue problems
-void C8M::shpSens_Eig(int numDual, int numEig, double **disp_prim, double **disp_dual,
+void CHak3DContIncomp_8::shpSens_Eig(int numDual, int numEig, double **disp_prim, double **disp_dual,
                     double *eig, double *wgt_case, double *gSens, int pNum, double alpha)
 {
     int i,j,p,l,d,ind;
@@ -388,7 +388,7 @@ void C8M::shpSens_Eig(int numDual, int numEig, double **disp_prim, double **disp
 }
 
 // compute C8M sensitivities at all gauss points, for complex eigenvalue problems
-void C8M::shpSens_CEig(int numDual, int numEig, dcompLPK **disp_prim, dcompLPK **disp_dual,
+void CHak3DContIncomp_8::shpSens_CEig(int numDual, int numEig, dcompLPK **disp_prim, dcompLPK **disp_dual,
                       dcompLPK *eig, dcompLPK *wgt_case, double *gSens, int pNum, double K_fact, double alpha)
 {
     int i,j,p,ind;
@@ -564,7 +564,7 @@ void C8M::shpSens_CEig(int numDual, int numEig, dcompLPK **disp_prim, dcompLPK *
 }
 
 // compute C8M sensitivities at all gauss points, for complex eigenvalue problems
-void C8M::shpSens_CEig2(int numDual, int numEig, dcompLPK **eig_flut, double **eig_vec,
+void CHak3DContIncomp_8::shpSens_CEig2(int numDual, int numEig, dcompLPK **eig_flut, double **eig_vec,
                        dcompLPK *eig, dcompLPK *wgt_case, double *gSens, int pNum, double alpha)
 {
     // numEig is the number of modes used in the reduced model
@@ -738,7 +738,7 @@ void C8M::shpSens_CEig2(int numDual, int numEig, dcompLPK **eig_flut, double **e
 }
 
 // compute C8M sensitivities at all gauss points
-void C8M::shpSens(int numDual, int numCase, double **disp_prim, double **disp_dual,
+void CHak3DContIncomp_8::shpSens(int numDual, int numCase, double **disp_prim, double **disp_dual,
                   double *wgt_fact, double *wgt_case, double *gSens, int pNum, double *Nf, double alpha, int mode)
 {
     int i,j,p,l,d,ind;
@@ -860,7 +860,7 @@ void C8M::shpSens(int numDual, int numCase, double **disp_prim, double **disp_du
 }
 
 // compute C8M element density sensitivity
-void C8M::elemSens(int numDual, int numCase, double **disp_prim, double **disp_dual,
+void CHak3DContIncomp_8::elemSens(int numDual, int numCase, double **disp_prim, double **disp_dual,
                   double *wgt_fact, double *wgt_case, double *elSens, int eNum, double *Nf, int mode)
 {
     int l,d,ind;
@@ -937,7 +937,7 @@ void C8M::elemSens(int numDual, int numCase, double **disp_prim, double **disp_d
 }
 
 // compute C8M element density sensitivity - complex Eigenvalue
-void C8M::elemSens_CEig(int numDual, int numEig, dcompLPK **disp_prim, dcompLPK **disp_dual,
+void CHak3DContIncomp_8::elemSens_CEig(int numDual, int numEig, dcompLPK **disp_prim, dcompLPK **disp_dual,
                         dcompLPK *eig, dcompLPK *wgt_case, double *elSens, double K_fact, int eNum)
 {
     dcompLPK ud[24], dd[24], stemp, ctemp, mtemp;
@@ -1024,7 +1024,7 @@ void C8M::elemSens_CEig(int numDual, int numEig, dcompLPK **disp_prim, dcompLPK 
 }
 
 // compute C8M element density sensitivity - complex Eigenvalue
-void C8M::elemSens_CEig2(int numDual, int numEig, double **eig_vecs, dcompLPK **right, dcompLPK **left,
+void CHak3DContIncomp_8::elemSens_CEig2(int numDual, int numEig, double **eig_vecs, dcompLPK **right, dcompLPK **left,
                         dcompLPK eig, dcompLPK *wgt_case, double *elSens, double K_fact, int eNum)
 {
     int l;
