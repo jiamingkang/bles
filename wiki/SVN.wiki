@@ -4,7 +4,7 @@
 svn copy [-r ${revision-number}] ${SOURCE_URL} ${DESTINATION_URL} [-m "message describing the details of the version"}
 
 -- Example: 
-svn copy [-r r36] \
+svn copy [-r r37] \
 https://bles.googlecode.com/svn/trunk \
 https://bles.googlecode.com/svn/tags/OOD-v0.2 \
 -m "OOD running version v0.2"
